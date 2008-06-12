@@ -41,7 +41,7 @@ Example:
 
 import math, numpy
 from PIL import Image, ImageOps
-from matplotlib.toolkits.basemap import Basemap
+from mpl_toolkits.basemap import Basemap
 
 #define private dictionary for converting between lens projection descriptions and matplotlib.basemap projection descriptions
 __proj_codes={'equidistant':'aeqd','equisolidangle':'laea','gnomonic':'gnom'}
