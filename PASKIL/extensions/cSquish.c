@@ -8,7 +8,7 @@
 /************************************************************************/
 
 static PyObject * cSquish_compress(PyObject *self, PyObject *args){
-	
+
 	PyArrayObject *numarray_data,*numarray_mask; //pointers to python array object
 	PyObject *indata,*inmask; //pointer to python object to hold input arguments
 	int *raw_data=NULL,*mask=NULL; //pointer to C array to hold raw data
@@ -83,7 +83,6 @@ static PyObject * cSquish_compress(PyObject *self, PyObject *args){
 	}
 	
 	masked_data = malloc(masked_length * sizeof(int));
-
 	
 	/*apply the mask to the data - this involves copying the pixels from the image that correspond to 
 	  non-zero pixels in the mask image into the masked_data array */
@@ -113,34 +112,21 @@ static PyObject * cSquish_compress(PyObject *self, PyObject *args){
 	fputc(strlen(header_data),ofp);
 	fputs(header_data,ofp);
 	fprintf(ofp,"%d ",(int)NUM_CHARS);
-	//int num = NUM_CHARS;
-	//fputc(65537,ofp);
-	//return NULL;
 	
 	//write decoding table
 	for (i = 0; i < NUM_CHARS; i++)
     {
         fprintf(ofp,"%d ",encoded_data->canonicalList[i].codeLen);
-        //fputc(encoded_data->canonicalList[i].codeLen,ofp);
     }
-///////////////////////////////////////////
-	for (i = 150; i < 160; i++)
-	{
-   		printf("written data = %d\n",encoded_data->data->array[i]);
 
-    }
-/////////////////////////////////////////////
 	//write data
 	double num_bytes = ceil((double)encoded_data->size/8.0); //calculate number of bytes in bit array
-	fprintf(ofp,"%d ",(int)num_bytes);
-	//fputc((int)num_bytes,ofp);
 	
-	printf("Number of bytes before writing = %d\n",(int)num_bytes);
+	fprintf(ofp,"%d ",(int)num_bytes);
 	
 	for (i=0; i < num_bytes; i++)
 	{
-		//fputc((encoded_data->data->array[i]),ofp);
-		fprintf(ofp,"%c ",(encoded_data->data->array[i]));
+		fprintf(ofp,"%c",(encoded_data->data->array[i]));
 	}	
 
 	fclose(ofp);
@@ -182,14 +168,14 @@ static PyObject * cSquish_decompress(PyObject *self, PyObject *args){
 	int *decode_table;
 	int num_chars,num_bytes;
 	int i;
-	unsigned long long int j;
-	byte_t length;
+	unsigned long long int j,length;
     char decodedEOF;
     int *lenIndex;
 	unsigned char *data;
 	canonical_list_t *canonicalList;
 	bit_array_t *code;
-	printf("decompressing...\n");
+	int *decoded_data;
+
 	if(!PyArg_ParseTuple(args, "s", &filename))
 	{ 
 		PyErr_SetString(PyExc_ValueError,"Filename argument must be a string");
@@ -209,15 +195,11 @@ static PyObject * cSquish_decompress(PyObject *self, PyObject *args){
 	
 	/*read header data*/
 	header_length = fgetc(ifp);
-	printf("header_length=%d\n",header_length);
 	header_data = malloc((header_length+1)*sizeof(char));
 	
 	fgets(header_data, header_length+1, ifp);
-	printf("%s\n",header_data);
 	
 	fscanf(ifp,"%d",&num_chars);
-	//num_chars=fgetc(ifp);
-	printf("num_chars=%d\n",num_chars);
 
 	/*read decode table*/
 	decode_table = malloc(num_chars*sizeof(int));
@@ -225,15 +207,14 @@ static PyObject * cSquish_decompress(PyObject *self, PyObject *args){
 	for (i = 0; i < num_chars; i++)
     {
         fscanf(ifp,"%d ",&decode_table[i]);
-        //decode_table[i]=fgetc(ifp);
     }
+    
     /*read encoded data*/
     fscanf(ifp,"%d ",&num_bytes); //read length of data
-    //num_bytes=fgetc(ifp);
-    printf("number of bytes = %d\n",num_bytes);
+
     data = malloc(num_bytes*sizeof(unsigned char));
     i = 0;
-    while (fscanf(ifp,"%c ",&data[i])!=EOF)
+    while (fscanf(ifp,"%c",&data[i])!=EOF)
     {
     	i++;
 	}	
@@ -258,27 +239,20 @@ static PyObject * cSquish_decompress(PyObject *self, PyObject *args){
     /* assign the codes using same rule as encode */
     if (AssignCanonicalCodes(canonicalList) == 0)
     {
-
-        for (i = 0; i < NUM_CHARS; i++)
+        for (i = 0; i < num_chars; i++)
         {
             if(canonicalList[i].code != NULL)
             {
                 BitArrayDestroy(canonicalList[i].code);
-            }
-         
+            } 
         }
+        
         free(canonicalList);
+        free(data);
 		PyErr_SetString(PyExc_RuntimeError,"Failed to assign the codes.");
         return NULL;
     }
-///////////////////////////////////////////
-	for (i = 150; i < 160; i++)
-	{
-   		printf("read data = %d\n",data[i]);
-
-    }
-/////////////////////////////////////////////
-    exit(1);
+    
     /* now we have a huffman code that matches the code used on the encode */
 	
 	/*convert the data array back to a bit array*/
@@ -287,16 +261,18 @@ static PyObject * cSquish_decompress(PyObject *self, PyObject *args){
 	
 	bit_arr_data->array = data;
 	bit_arr_data->numBits = num_bytes*8; 
-	printf("Number of bytes after writing = %d\n",num_bytes);
-
+	
+	/*create an array to hold the decoded data*/
+	
+	
     /* create an index of first code at each possible length */
     lenIndex = malloc(num_chars * sizeof(int));
- printf("got here\n");   
+  
     for (i = 0; i < num_chars; i++)
     {
         lenIndex[i] = num_chars;
     }
-printf("got here\n");
+
     for (i = 0; i < num_chars; i++)
     {	
         if (lenIndex[canonicalList[i].codeLen] > i)
@@ -305,55 +281,64 @@ printf("got here\n");
             lenIndex[canonicalList[i].codeLen] = i;
         }
     }
-printf("got here\n");	
+	
 	/* allocate canonical code list */
-    code = BitArrayCreate(num_chars);
+    code = BitArrayCreate(NUM_CHARS-1);
     if (code == NULL)
     {
-       
+        PyErr_SetString(PyExc_MemoryError,"Failed to create bit array for code");
+        for (i = 0; i < num_chars; i++)
+        {
+            if(canonicalList[i].code != NULL)
+            {
+                BitArrayDestroy(canonicalList[i].code);
+            } 
+        }
+        free(canonicalList);
+        BitArrayDestroy(bit_arr_data);
+        free(bit_arr_data);
         return NULL;
     }
-	
+
+
     /* decode input file */
-    length = 1;
+    length = 0; //used to be 1
+    BitArrayClearAll(code);
     decodedEOF = FALSE;
     j=0;
-	
-    while(/*((newBit = BitFileGetBit(bfpIn)) != EOF) &&*/ !decodedEOF)
+    
+
+    while(!decodedEOF)
     {	
         if (BitArrayTestBit(bit_arr_data,j))
         {
-            BitArraySetBit(code, length);
+            BitArraySetBit(code, length); 
         }
-
+        
         length++;
 		j++;
-		//printf("length = %d\n",length);
+
         if (lenIndex[length] != num_chars)
         {
             /* there are code of this length */
             for(i = lenIndex[length]; (i < num_chars) && (canonicalList[i].codeLen == length); i++)
             {
-            	//printf("in for loop\n");
                 if ((BitArrayCompare(canonicalList[i].code, code) == 0) && (canonicalList[i].codeLen == length))
                 {
-                    printf("read symbol %d\n",canonicalList[i].value);
-                    exit(1);
-                    /* we just read a symbol output decoded value */
                     if (canonicalList[i].value != EOF_CHAR)
                     {
                         //fputc(canonicalList[i].value, fpOut);
-                        printf("%d ",canonicalList[i].value);
+                       // printf("read symbol %d\n",canonicalList[i].value);
                     }
                     else
                     {
                         decodedEOF = TRUE;
                     }
+                      
                     BitArrayClearAll(code);
                     length = 0;
                     break;
                 }
-                //exit(1);
             }
         }
     }
@@ -361,12 +346,90 @@ printf("got here\n");
     
 	return NULL;
 }
+
+/************************************************************************/
+static PyObject * cSquish_getHeader(PyObject *self, PyObject *args){
+	
+	char *filename;
+	FILE *ifp;
+	int header_length;
+	char *header_data;
+	char id[4];
+	PyObject *header_py;
+	
+	if(!PyArg_ParseTuple(args, "s", &filename))
+	{ 
+		PyErr_SetString(PyExc_ValueError,"Filename argument must be a string");
+		return NULL;
+	}
+		
+	ifp=fopen(filename,"rb");
+	
+	/*check that file is an sqd file*/
+	fgets(id,4,ifp);
+		
+	if (strcmp(id,"sqd"))
+	{
+		PyErr_SetString(PyExc_IOError,"Unrecognised file format");
+		return NULL;	
+	}	
+		
+	/*read header data*/
+	header_length = fgetc(ifp);
+	header_data = malloc((header_length+1)*sizeof(char));
+	
+	if (header_data == NULL)
+	{
+		PyErr_SetString(PyExc_MemoryError,"Failed to allocate memory for header data string");
+		return NULL;
+	}
+		
+	fgets(header_data, header_length+1, ifp);
+		
+	fclose(ifp);
+	
+	/*convert the string to a python string*/
+	header_py = PyString_FromString(header_data);
+	
+	free(header_data);
+	return header_py;
+}
+		
+/************************************************************************/
+
+static PyObject * cSquish_isSqd(PyObject *self, PyObject *args){
+	
+	char *filename;
+	FILE *ifp;
+	char id[4];
+	
+	if(!PyArg_ParseTuple(args, "s", &filename))
+	{ 
+		PyErr_SetString(PyExc_ValueError,"Filename argument must be a string");
+		return NULL;
+	}
+		
+	ifp=fopen(filename,"rb");
+	
+	/*check that file is an sqd file*/
+	fgets(id,4,ifp);
+		
+	if (strcmp(id,"sqd"))
+	{
+		Py_RETURN_FALSE;
+	}else
+	{
+		Py_RETURN_TRUE;
+	}
+}				
 /************************************************************************/
 //               Define Python Extension bits
 /************************************************************************/
 static PyMethodDef cSquish_methods[] = {
 	{"compress", cSquish_compress, METH_VARARGS, ""},
 	{"decompress", cSquish_decompress, METH_VARARGS, ""},
+	{"getHeader", cSquish_getHeader, METH_VARARGS,""},
+	{"isSqd", cSquish_isSqd,METH_VARARGS,""},
 	{NULL, NULL}
 };
 

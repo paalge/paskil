@@ -78,30 +78,33 @@ encoded_array_t *CHuffmanEncodeArray(int *raw_data,int raw_length){
 	/*create bit array for encoded data*/
 	encoded_data = BitArrayCreate(bit_array_length);
 	
+	BitArrayClearAll(encoded_data);
 	
 	/*do the encoding*/
-	k=0;
-	for (i = 0; i < raw_length; i++) 
-	{
-		c=raw_data[i];
-		for (j = 0; j < canonicalList[c].codeLen; j++)
+	i=0;
+	j=0;
+	while(j<raw_length)
+	{	
+		c=raw_data[j];
+
+		for (k = 0; k < canonicalList[c].codeLen; k++)
 		{
-			if (BitArrayTestBit(canonicalList[c].code, j))
+			if (BitArrayTestBit(canonicalList[c].code, k))
 			{
-				BitArraySetBit(encoded_data, k);
-			}
-			k++;	
-		}				
+				BitArraySetBit(encoded_data, k+i);
+			}	
+		}
+		i+=canonicalList[c].codeLen;
+		j++;		
 	}
-	
+
 	//encode the EOF
 	for (j = 0; j < canonicalList[EOF_CHAR].codeLen; j++)
 		{
 			if (BitArrayTestBit(canonicalList[EOF_CHAR].code, j))
 			{
-				BitArraySetBit(encoded_data, k);
-			}
-			k++;	
+				BitArraySetBit(encoded_data, bit_array_length-canonicalList[EOF_CHAR].codeLen+j);
+			}	
 		}
     
     /*store encoded data in structure*/
@@ -183,8 +186,7 @@ huffman_node_t *GenerateTreeFromArray(int *raw_data, int raw_length)
         }
         else
         {
-            fprintf(stderr,
-                "Input file contains too many 0x%02X to count.\n", c);
+            fprintf(stderr,"Input file contains too many 0x%02X to count.\n", c);
             return NULL;
         }
     }
@@ -276,160 +278,6 @@ huffman_node_t *GenerateTreeFromArray(int *raw_data, int raw_length)
 *                                FUNCTIONS
 ***************************************************************************/
 
-
-///****************************************************************************
-//*   Function   : CHuffmanDecodeFile
-//*   Description: This routine reads a Huffman coded file and writes out a
-//*                decoded version of that file.
-//*   Parameters : inFile - Name of file to decode
-//*                outFile - Name of file to write a tree to
-//*   Effects    : Huffman encoded file is decoded
-//*   Returned   : TRUE for success, otherwise FALSE.
-//****************************************************************************/
-//int CHuffmanDecodeFile(char *inFile, char *outFile)
-//{
-//    bit_file_t *bfpIn;
-//    FILE *fpOut;
-//    bit_array_t *code;
-//    byte_t length;
-//    char decodedEOF;
-//    int i, newBit;
-//    int lenIndex[NUM_CHARS];
-//
-//    /* open binary output file and bitfile input file */
-//    if ((bfpIn = BitFileOpen(inFile, BF_READ)) == NULL)
-//    {
-//        perror(inFile);
-//        return FALSE;
-//    }
-//
-//    if (outFile == NULL)
-//    {
-//        fpOut = stdout;
-//    }
-//    else
-//    {
-//        if ((fpOut = fopen(outFile, "wb")) == NULL)
-//        {
-//            BitFileClose(bfpIn);
-//            perror(outFile);
-//            return FALSE;
-//        }
-//    }
-//
-//    /* allocate canonical code list */
-//    code = BitArrayCreate(256);
-//    if (code == NULL)
-//    {
-//        perror("Bit array allocation");
-//        BitFileClose(bfpIn);
-//        fclose(fpOut);
-//        return FALSE;
-//    }
-//
-//    /* initialize canonical list */
-//    for (i = 0; i < NUM_CHARS; i++)
-//    {
-//        canonicalList[i].codeLen = 0;
-//        canonicalList[i].code = NULL;
-//    }
-//
-//    /* populate list with code length from file header */
-//    if (!ReadHeader(canonicalList, bfpIn))
-//    {
-//        BitArrayDestroy(code);
-//        BitFileClose(bfpIn);
-//        fclose(fpOut);
-//        return FALSE;
-//    }
-//
-//    /* sort the header by code length */
-//    qsort(canonicalList, NUM_CHARS, sizeof(canonical_list_t),
-//        CompareByCodeLen);
-//
-//    /* assign the codes using same rule as encode */
-//    if (AssignCanonicalCodes(canonicalList) == 0)
-//    {
-//        /* failed to assign codes */
-//        BitFileClose(bfpIn);
-//        fclose(fpOut);
-//
-//        for (i = 0; i < NUM_CHARS; i++)
-//        {
-//            if(canonicalList[i].code != NULL)
-//            {
-//                BitArrayDestroy(canonicalList[i].code);
-//            }
-//        }
-//
-//        return FALSE;
-//    }
-//
-//    /* now we have a huffman code that matches the code used on the encode */
-//
-//    /* create an index of first code at each possible length */
-//    for (i = 0; i < NUM_CHARS; i++)
-//    {
-//        lenIndex[i] = NUM_CHARS;
-//    }
-//
-//    for (i = 0; i < NUM_CHARS; i++)
-//    {
-//        if (lenIndex[canonicalList[i].codeLen] > i)
-//        {
-//            /* first occurance of this code length */
-//            lenIndex[canonicalList[i].codeLen] = i;
-//        }
-//    }
-//
-//    /* decode input file */
-//    length = 0;
-//    BitArrayClearAll(code);
-//    decodedEOF = FALSE;
-//
-//    while(((newBit = BitFileGetBit(bfpIn)) != EOF) && (!decodedEOF))
-//    {
-//        if (newBit != 0)
-//        {
-//            BitArraySetBit(code, length);
-//        }
-//
-//        length++;
-//
-//        if (lenIndex[length] != NUM_CHARS)
-//        {
-//            /* there are code of this length */
-//            for(i = lenIndex[length];
-//                (i < NUM_CHARS) && (canonicalList[i].codeLen == length);
-//                i++)
-//            {
-//                if ((BitArrayCompare(canonicalList[i].code, code) == 0) &&
-//                    (canonicalList[i].codeLen == length))
-//                {
-//                    /* we just read a symbol output decoded value */
-//                    if (canonicalList[i].value != EOF_CHAR)
-//                    {
-//                        fputc(canonicalList[i].value, fpOut);
-//                    }
-//                    else
-//                    {
-//                        decodedEOF = TRUE;
-//                    }
-//                    BitArrayClearAll(code);
-//                    length = 0;
-//
-//                    break;
-//                }
-//            }
-//        }
-//    }
-//
-//    /* close all files */
-//    BitFileClose(bfpIn);
-//    fclose(fpOut);
-//
-//    return TRUE;
-//}
 
 /****************************************************************************
 *   Function   : CompareByCodeLen
