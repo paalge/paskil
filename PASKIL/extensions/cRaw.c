@@ -8406,6 +8406,40 @@ static PyObject * cRaw_getRawData(PyObject *self, PyObject *args){
 
 /**************************************************************************************************/
 
+//define doc string for function
+static char cRaw_canDecode_doc[] = "canDecode(fp): Function returns True if the file can be decoded by cRaw, False otherwise, where fp is a Python file pointer to an open binary file (rb).";
+
+static PyObject * cRaw_canDecode(PyObject *self, PyObject *args){
+	PyObject *indata; //pointer to python object holding input arguments to function
+	int status=0;
+	
+	//create global variables structure for use with dcraw code
+	struct glob_var *globals;
+	struct glob_var global_variables;
+	global_variables = createGlobals(); //have to keep a 'real' i.e. non-pointer version of the structure, else it gets garbage collected
+	globals=&global_variables;
+
+	//parse the arguments passed to the function
+	if(!PyArg_ParseTuple(args, "O", &indata)){ //no increase to the object's reference count
+		PyErr_SetString(PyExc_ValueError,"Invalid parameters");
+		return NULL;
+	}
+	
+	//convert the python file pointer to a C file pointer and store in dcraw's global variable ifp
+	ifp= PyFile_AsFile(indata);
+
+
+	//Use code taken from dcraw to get identify the file
+	status = (identify(),!is_raw); //read the image header data
+	
+	if (status)
+	{
+		Py_RETURN_FALSE;
+	}else
+	{
+		Py_RETURN_TRUE;
+	}
+}
 
 /************************************************************************/
 //               Define Python Extension bits
@@ -8413,6 +8447,7 @@ static PyObject * cRaw_getRawData(PyObject *self, PyObject *args){
 static PyMethodDef cRaw_methods[] = {
 	{"getTimestamp", cRaw_getTimestamp, METH_VARARGS, cRaw_getTimestamp_doc},
 	{"getRawData", cRaw_getRawData, METH_VARARGS, cRaw_getRawData_doc},
+	{"canDecode", cRaw_canDecode, METH_VARARGS, cRaw_canDecode_doc},
 	{NULL, NULL}
 };
 

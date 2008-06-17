@@ -112,9 +112,9 @@ Writing Your Own Plugin:
     straightforwards to write plugins. A template plugin is provided in the PASKIL.plugins package to help point
     you in the right direction.
     
-    A plugin consists of a single class with two methods. The test method should return true if the image passed
+    A plugin consists of a single class with two methods. The test method should return true if the image filename passed
     to it is of the type that the plugin can open and false otherwise. The open method should return an allskyImage
-    object containing the image and its metadata. Simple! However, there are a few things to keep in mind. The image
+    object or an allskyRaw object containing the image and its metadata. Simple! However, there are a few things to keep in mind. The image
     passed to the plugin may not be the type that the plugin is expecting. In which case it should return false rather
     than raising an exception. Also, the test method should be able to uniquely identify an image if possible. For 
     example, it is not recommended to claim that because an image is a PNG it is the type that the plugin can open. In
@@ -126,13 +126,14 @@ Writing Your Own Plugin:
 
 import allskyImage
 import pyfits, Image, ImageOps
+from PASKIL.extensions import cRaw,cSquish
 
 types = [] #list to hold all available plugins
 
 
 ###################################################################################
 
-def load(image, info_file, force):
+def load(image_filename, info_filename, force):
     """    
     Returns the plugin object needed to open the image. Raises TypeError if no plugin is found. This should
     only be needed for debugging purposes.
@@ -143,11 +144,11 @@ def load(image, info_file, force):
         i = 0
         
     while i < len(types):
-        if types[i].test(image, info_file):
+        if types[i].test(image_filename, info_filename):
             return types[i]
         i += 1
 
-    raise TypeError,("allskyImagePlugins.load(): Unrecognised filetype for "+image.filename+". Make sure you have imported the required plugin for the image.")
+    raise TypeError,("allskyImagePlugins.load(): Unrecognised filetype for "+image_filename+". Make sure you have imported the required plugin for the image.")
 
     
 ###################################################################################
@@ -180,10 +181,16 @@ class PASKIL_Allsky_Image_PNG():
         
     ###################################################################################    
         
-    def test(self,image,info_file):
+    def test(self, image_filename, info_filename):
         """
-        Returns true if 'image' is in the PASKIL PNG format, false otherwise.
+        Returns true if 'image_filename' is in the PASKIL PNG format, false otherwise.
         """
+        #load image
+        try:
+            image = Image.open(image_filename)
+        except:
+            return False
+        
         #look in the image header data to see if this image is from PASKIL
         keys=image.info.keys()
         if keys.count('header')==1 and keys.count('camera')==1 and keys.count('processing')==1:
@@ -193,10 +200,12 @@ class PASKIL_Allsky_Image_PNG():
             
     ###################################################################################    
         
-    def open(self,image,info_file):
+    def open(self, image_filename, info_filename):
         """
-        Returns an allskyImage object containing the image data and image metadata contained in 'image'.
+        Returns an allskyImage object containing the image data and image metadata contained in 'image_filename'.
         """
+        image = Image.open(image_filename)
+        
         #read image header data
         info=image.info
 
@@ -234,10 +243,15 @@ class PASKIL_Allsky_Image_FITS():
     
     ###################################################################################        
     
-    def test(self,image,info_file):
+    def test(self, image_filename ,info_filename):
         """
-        Returns true if 'image' is in the PASKIL FITS format, false otherwise.
+        Returns true if image_filename is in the PASKIL FITS format, false otherwise.
         """
+        try:
+            image = Image.open(image_filename)
+        except:
+            return False
+        
         #check image has fits format
         if image.format != 'FITS':
             return False
@@ -245,7 +259,7 @@ class PASKIL_Allsky_Image_FITS():
         #if it is a FITS image, then check if it is a PASKIL fits image
         
         #open fits file using pyfits
-        hdulist=pyfits.open(image.filename)
+        hdulist=pyfits.open(image_filename)
         
         #look in the header of the primary hdu for the PASKIL tag
         try:
@@ -261,7 +275,7 @@ class PASKIL_Allsky_Image_FITS():
     
     ###################################################################################    
     
-    def open(self,image,info_file):
+    def open(self, image_filename, info_filename):
         """
         Returns an allskyImage object containing the image data and image metadata contained in 'image'.
         """
@@ -270,7 +284,7 @@ class PASKIL_Allsky_Image_FITS():
         processing={}
         
         #open fits file using pyfits
-        hdulist=pyfits.open(image.filename)
+        hdulist=pyfits.open(image_filename)
         
         #read header data locations from header
         header_hdu=hdulist[hdulist[0].header['PSKHEAD']]
@@ -317,7 +331,37 @@ class PASKIL_Allsky_Image_FITS():
         
     ###################################################################################            
 ###################################################################################    
-                
+
+class PASKIL_Allsky_Image_SQD():
+    """
+    Plugin class used to load the PASKIL sqd raw image format. This is a compressed format consisting
+    of a header string compressed using the zlib module and four channel image data compressed using the
+    cSquish PASKIL extension module (Huffman compression).
+    """
+    
+    def __init__(self):
+        self.name = "PASKIL All-Sky sqd Image"
+        
+    ###################################################################################                
+    
+    def test(self, image_filename, info_filename):
+        """
+        Returns True if the file is an sqd file, False otherwise.
+        """
+        return cSquish.isSqd(image_filename)
+    
+    ###################################################################################                   
+
+    def open(self, image_filename, info_filename):
+        """
+        Returns a new allskyRaw.rawImage object containing the data contained in the sqd file.
+        """
+        return allskyRaw.sqdImage(image_filename)
+        
+     ###################################################################################            
+###################################################################################           
+                  
 #register plugins
 register(PASKIL_Allsky_Image_PNG())
 register(PASKIL_Allsky_Image_FITS())
+register(PASKIL_Allsky_Image_SQD())

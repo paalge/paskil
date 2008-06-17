@@ -34,7 +34,8 @@ Example:
 ################################################################################################################################################################
 
 from PIL import Image, ImageOps, ImageDraw, ImageFilter, ImageFont, ImageChops 
-import misc, allskyImagePlugins, allskyProj 
+import misc, allskyImagePlugins, allskyProj
+from extensions import cSquish
 import pyfits, numpy
 import sys, datetime, os, math
 import warnings
@@ -42,9 +43,9 @@ import warnings
 
 ##Functions
 
-def new(image_file, site_info_file="",force=False):
+def new(image_filename, site_info_file="",force=False):
     """
-    Creates a new allskyImage object. The image_file argument specifies the image to be read. The site_info_file 
+    Creates a new allskyImage object. The image_filename argument specifies the image to be read. The site_info_file 
     option should be the filename of the site information file (if one is required). This is an optional file 
     containing image metadata. A filepointer to this file is passed to the allskyImagePlugin open method, see
     the allskyImagePlugins module for details. The default value is "", no site_info_file. The force option
@@ -53,22 +54,17 @@ def new(image_file, site_info_file="",force=False):
     from the image header, rather than an external source.
     """    
 
-    #load image
-    image=Image.open(image_file)
-
-    #load site info file if there is one
     if site_info_file != "":
-        info_file=open(site_info_file, "r") #open file read only
+        info_filename=site_info_file
     else:
-        info_file = None
+        info_filename = None
     
     #Load correct image plugin to open image
-    filetype=allskyImagePlugins.load(image, info_file,force)
+    filetype=allskyImagePlugins.load(image_filename, info_filename,force)
     
     #Return allskyImage object
-    allsky_image = filetype.open(image, info_file)
-    if info_file != None:
-        info_file.close()
+    allsky_image = filetype.open(image_filename, info_filename)
+
     return allsky_image
 
 #allskyImage class definition
@@ -78,11 +74,14 @@ def new(image_file, site_info_file="",force=False):
 class allskyImage:
     """
     Holds both the image data and the image metadata associated with an all-sky image. Provides methods
-    for manipulating both. Unless stated otherwise, all methods return a new allskyImage object."""
+    for manipulating both. Unless stated otherwise, all methods return a new allskyImage object.
+    """
+    
     def __init__(self, image, image_file, info):
     #This function in run when the class is instanciated. It sets up the class attributes.
     
         #set private class attributes
+        self.__loaded = False #shows if the image data has been loaded yet.
         self.__image=image.copy()
         self.__image.__info={}
         self.__size=self.__image.size
@@ -95,6 +94,8 @@ class allskyImage:
         self.__info['processing']=info['processing'].copy()
     
     ###################################################################################
+
+    
     #define getters 
     def getSize(self): 
         """
@@ -139,45 +140,50 @@ class allskyImage:
         producing a histogram). It is therefore recommended to apply the time stamp as a final step in 
         processing.
         """
-        #create new allskyImage object
-        new_image=allskyImage(self.__image, self.__filename, self.__info)
         
         #check that colour table has already been applied
-        if new_image.__info['processing'].keys().count('applyColourTable') == 0:
+        if self.__info['processing'].keys().count('applyColourTable') == 0:
             warnings.warn("Adding a time stamp before applying a colour table will result in the colour table being applied to the time stamp as well!")
             sys.stdout.flush()
             
         #check if a time stamp has already been applied
-        if new_image.__info['processing'].keys().count('addTimeStamp') != 0:
-            warnings.warn("A timestamp has already been applied to "+new_image.__filename)
+        if self.__info['processing'].keys().count('addTimeStamp') != 0:
+            warnings.warn("A timestamp has already been applied to "+self.__filename)
+            return self
         
         #attempt to read time data from header
         try:
-            time=datetime.datetime.strptime(new_image.__info['header']['Creation Time'], "%d %b %Y %H:%M:%S %Z")
+            time=datetime.datetime.strptime(self.__info['header']['Creation Time'], "%d %b %Y %H:%M:%S %Z")
         except KeyError:
-            raise  IOError, "Cannot read time data from header for image "+new_image.__filename
+            raise  IOError, "Cannot read time data from header for image "+self.__filename
+        
+        #create copy of image
+        new_image = self.__image.copy()
             
         #create a datetime string with the desired format
         time_string = time.strftime(format)
             
-        draw=ImageDraw.Draw(new_image.__image)#create draw object of image
+        draw=ImageDraw.Draw(new_image)#create draw object of image
         font = ImageFont.truetype("/usr/share/fonts/truetype/freefont/FreeSans.ttf", size=fontsize)#load font. This is likley to cause problems on systems where the fonts are stored under a different location. You'll just have to look for a suitable font, and change the path specified here - sorry!
             
         #find size of timestamp
         text_width, text_height=draw.textsize(time_string, font=font)
         
         #if text is too big for image then complain and quit
-        if text_width > new_image.__size[0] | text_height > new_image.__size[1]:
+        if text_width > new_image.size[0] | text_height > new_image.size[1]:
             raise ValueError, "Timestamp is too big for image!"
         
         #insert timestamp
-        x_position=int((new_image.__size[0]-text_width)/2)
-        draw.text((x_position, new_image.__size[1]-text_height-4), time_string, font=font, fill=colour)
+        x_position=int((new_image.size[0]-text_width)/2)
+        draw.text((x_position, new_image.size[1]-text_height-4), time_string, font=font, fill=colour)
+        
+        #create copy of info
+        new_info = self.getInfo()
         
         #update processing history
-        new_image.__info['processing']['addTimeStamp']=""
+        new_info['processing']['addTimeStamp']=""
         
-        return new_image
+        return allskyImage(new_image, self.__filename, new_info)
         
     ###################################################################################    
     
@@ -235,6 +241,10 @@ class allskyImage:
         The colour_table argument should be a colourTable object as defined in the allskyColour 
         module.
         """
+        #cannot apply a colour table to an RGB image
+        if self.__image.mode == "RGB":
+            raise TypeError, "Cannot apply a colour table to an RGB image"
+        
         #create new allskyImage object
         new_image=allskyImage(self.__image, self.__filename, self.__info)
                 
@@ -290,7 +300,7 @@ class allskyImage:
         
         elif self.__info['camera']['lens_projection'] == 'equisolidangle':
             #calculate focal length
-            focal_length=float(new_image.__info['camera']['Radius'])/(2.0*math.sin(math.radians(new_image.__info['camera']['fov_angle'])/2.0))
+            focal_length=float(new_image.__info['camera']['Radius'])/(2.0*math.sin(math.radians(float(new_image.__info['camera']['fov_angle']))/2.0))
             
             #calculate radius for masking circle
             radius=int((2.0*focal_length*math.sin(math.radians(fov_angle)/2.0))+0.5)
@@ -608,7 +618,7 @@ class allskyImage:
                     
                 strip[i]=prepend    
                     
-        return strip    
+        return strip  
     
     ###################################################################################
     
@@ -628,7 +638,8 @@ class allskyImage:
         
         return new_image
         
-    ###################################################################################    
+    ###################################################################################
+        
     def projectToHeight(self, height, grid_size=300,background='black'):
         """
         Returns a projection object which can be used to create map projections of the allsky image.
@@ -842,6 +853,7 @@ class allskyImage:
         
         else:
             raise ValueError, "Illegal value for format argument, expecting \'png\' or \'fits\'."
+        
     ###################################################################################        
 ###################################################################################                
         

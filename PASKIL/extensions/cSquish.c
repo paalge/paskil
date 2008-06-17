@@ -5,6 +5,24 @@
 #include <math.h>
 #include <string.h>
 
+/*STRUCTURES*/
+
+struct sqd_header_t
+{
+	int header_length;
+	int image_width;
+	int image_height;
+	char *header_data;
+	int num_chars;
+};
+
+typedef struct sqd_header_t sqd_header_t;
+
+/*PROTOTYPES*/
+FILE * openSqd(PyObject *args);
+sqd_header_t * readSqdHeader(FILE *ifp);
+void freeHeader(sqd_header_t *header);
+
 /************************************************************************/
 
 static PyObject * cSquish_compress(PyObject *self, PyObject *args){
@@ -36,9 +54,9 @@ static PyObject * cSquish_compress(PyObject *self, PyObject *args){
 		goto _fail;	
 	}
 	
-	//get array width and height (before it is cast into a 1D C array
-	raw_width=numarray_data->dimensions[0];
-	raw_height=numarray_data->dimensions[1];
+	//get array width and height (before it is cast into a 1D C array)
+	raw_width=(int)numarray_data->dimensions[0];
+	raw_height=(int)numarray_data->dimensions[1];
 	
 	if(raw_width == 0 || raw_height== 0)
 	{
@@ -48,12 +66,16 @@ static PyObject * cSquish_compress(PyObject *self, PyObject *args){
 		raw_length=raw_width*raw_height;
 	}
 	
-	mask_width=numarray_mask->dimensions[0];
-	mask_height=numarray_mask->dimensions[1];
+	mask_width=(int)numarray_mask->dimensions[0];
+	mask_height=(int)numarray_mask->dimensions[1];
+	
+
+	printf("mask_height = %d mask_width = %d\n",mask_height,mask_width);
+	printf("raw_height = %d raw_width = %d\n",raw_height,raw_width);
 
 	
 	//check that the mask and raw arrays are the same shape
-	if (raw_width != mask_width || raw_height != mask_height)
+	if ((raw_width != mask_width) || (raw_height != mask_height))
 	{
 		PyErr_SetString(PyExc_ValueError,"Mask and Data arrays must have same shape");
 		goto _fail;	
@@ -105,11 +127,16 @@ static PyObject * cSquish_compress(PyObject *self, PyObject *args){
 	
 	/*open the output file for writing*/
 	FILE *ofp;
-	ofp = fopen(strcat(filename, ".sqd"),"wb");
+	ofp = fopen(strcat(filename, ".sqd"),"wb"); 
+	if (ofp == NULL)
+	{
+		PyErr_SetString(PyExc_IOError,"Cannot open file ");
+		return NULL;
+	}
 
 	//write header data
 	fputs("sqd",ofp);
-	fputc(strlen(header_data),ofp);
+	fprintf(ofp,"%d %d %d ",strlen(header_data),raw_width,raw_height);
 	fputs(header_data,ofp);
 	fprintf(ofp,"%d ",(int)NUM_CHARS);
 	
@@ -160,14 +187,9 @@ _fail:
 
 static PyObject * cSquish_decompress(PyObject *self, PyObject *args){
 
-	char *filename;
-	FILE *ifp;
-	int header_length;
-	char *header_data;
-	char id[4];
 	int *decode_table;
-	int num_chars,num_bytes;
-	int i;
+	int num_bytes,raw_length;
+	int i,k;
 	unsigned long long int j,length;
     char decodedEOF;
     int *lenIndex;
@@ -175,36 +197,27 @@ static PyObject * cSquish_decompress(PyObject *self, PyObject *args){
 	canonical_list_t *canonicalList;
 	bit_array_t *code;
 	int *decoded_data;
-
-	if(!PyArg_ParseTuple(args, "s", &filename))
-	{ 
-		PyErr_SetString(PyExc_ValueError,"Filename argument must be a string");
+	sqd_header_t *header;	
+	
+	FILE *ifp = openSqd(args);
+	
+	if (ifp == NULL)
+	{
 		return NULL;
 	}
-	
-	ifp=fopen(filename,"rb");
 
-	/*check that file is an sqd file*/
-	fgets(id,4,ifp);
-	
-	if (strcmp(id,"sqd"))
-	{
-		PyErr_SetString(PyExc_IOError,"Unrecognised file format");
-		return NULL;	
-	}	
-	
 	/*read header data*/
-	header_length = fgetc(ifp);
-	header_data = malloc((header_length+1)*sizeof(char));
+	header = readSqdHeader(ifp);
 	
-	fgets(header_data, header_length+1, ifp);
-	
-	fscanf(ifp,"%d",&num_chars);
+	if (header == NULL)
+	{
+		return NULL;
+	}
 
 	/*read decode table*/
-	decode_table = malloc(num_chars*sizeof(int));
+	decode_table = malloc(header->num_chars*sizeof(int));
 	
-	for (i = 0; i < num_chars; i++)
+	for (i = 0; i < header->num_chars; i++)
     {
         fscanf(ifp,"%d ",&decode_table[i]);
     }
@@ -224,9 +237,9 @@ static PyObject * cSquish_decompress(PyObject *self, PyObject *args){
 	
     /*convert decode table to canonicalList*/
     /* initialize canonical list */
-    canonicalList = malloc(num_chars * sizeof(canonical_list_t));
+    canonicalList = malloc(header->num_chars * sizeof(canonical_list_t));
     
-    for (i = 0; i < num_chars; i++)
+    for (i = 0; i < header->num_chars; i++)
     {
         canonicalList[i].codeLen = decode_table[i];
         canonicalList[i].code = NULL;
@@ -234,12 +247,12 @@ static PyObject * cSquish_decompress(PyObject *self, PyObject *args){
     }
 
     /* sort the header by code length */
-    qsort(canonicalList, num_chars, sizeof(canonical_list_t), CompareByCodeLen);
+    qsort(canonicalList, header->num_chars, sizeof(canonical_list_t), CompareByCodeLen);
     
     /* assign the codes using same rule as encode */
     if (AssignCanonicalCodes(canonicalList) == 0)
     {
-        for (i = 0; i < num_chars; i++)
+        for (i = 0; i < header->num_chars; i++)
         {
             if(canonicalList[i].code != NULL)
             {
@@ -249,6 +262,8 @@ static PyObject * cSquish_decompress(PyObject *self, PyObject *args){
         
         free(canonicalList);
         free(data);
+        free(decode_table);
+        freeHeader(header);
 		PyErr_SetString(PyExc_RuntimeError,"Failed to assign the codes.");
         return NULL;
     }
@@ -266,14 +281,14 @@ static PyObject * cSquish_decompress(PyObject *self, PyObject *args){
 	
 	
     /* create an index of first code at each possible length */
-    lenIndex = malloc(num_chars * sizeof(int));
+    lenIndex = malloc(header->num_chars * sizeof(int));
   
-    for (i = 0; i < num_chars; i++)
+    for (i = 0; i < header->num_chars; i++)
     {
-        lenIndex[i] = num_chars;
+        lenIndex[i] = header->num_chars;
     }
 
-    for (i = 0; i < num_chars; i++)
+    for (i = 0; i < header->num_chars; i++)
     {	
         if (lenIndex[canonicalList[i].codeLen] > i)
         {
@@ -283,11 +298,11 @@ static PyObject * cSquish_decompress(PyObject *self, PyObject *args){
     }
 	
 	/* allocate canonical code list */
-    code = BitArrayCreate(NUM_CHARS-1);
+    code = BitArrayCreate(header->num_chars-1);
     if (code == NULL)
     {
         PyErr_SetString(PyExc_MemoryError,"Failed to create bit array for code");
-        for (i = 0; i < num_chars; i++)
+        for (i = 0; i < header->num_chars; i++)
         {
             if(canonicalList[i].code != NULL)
             {
@@ -295,8 +310,9 @@ static PyObject * cSquish_decompress(PyObject *self, PyObject *args){
             } 
         }
         free(canonicalList);
+        free(decode_table);
+        freeHeader(header);
         BitArrayDestroy(bit_arr_data);
-        free(bit_arr_data);
         return NULL;
     }
 
@@ -306,7 +322,19 @@ static PyObject * cSquish_decompress(PyObject *self, PyObject *args){
     BitArrayClearAll(code);
     decodedEOF = FALSE;
     j=0;
+    k=0;
     
+    /*guess the size that the decoded data will be - it can't be bigger than the unmasked image
+     * so raw_length is an upper bound*/
+    if(header->image_width == 0 || header->image_height== 0)
+	{
+		raw_length = header->image_width + header->image_height;
+	}else
+	{
+		raw_length = header->image_width * header->image_height;
+	}
+    
+    decoded_data = malloc(raw_length*sizeof(int));
 
     while(!decodedEOF)
     {	
@@ -318,17 +346,17 @@ static PyObject * cSquish_decompress(PyObject *self, PyObject *args){
         length++;
 		j++;
 
-        if (lenIndex[length] != num_chars)
+        if (lenIndex[length] != header->num_chars)
         {
             /* there are code of this length */
-            for(i = lenIndex[length]; (i < num_chars) && (canonicalList[i].codeLen == length); i++)
+            for(i = lenIndex[length]; (i < header->num_chars) && (canonicalList[i].codeLen == length); i++)
             {
                 if ((BitArrayCompare(canonicalList[i].code, code) == 0) && (canonicalList[i].codeLen == length))
                 {
                     if (canonicalList[i].value != EOF_CHAR)
                     {
-                        //fputc(canonicalList[i].value, fpOut);
-                       // printf("read symbol %d\n",canonicalList[i].value);
+                       decoded_data[k] = canonicalList[i].value;
+                       k++;
                     }
                     else
                     {
@@ -342,63 +370,124 @@ static PyObject * cSquish_decompress(PyObject *self, PyObject *args){
             }
         }
     }
-    free(lenIndex);
     
-	return NULL;
+    
+    /*clean up*/
+    for (i = 0; i < header->num_chars; i++)
+    {
+            if(canonicalList[i].code != NULL)
+            {
+                BitArrayDestroy(canonicalList[i].code);
+            } 
+    }
+    
+    free(lenIndex);
+    freeHeader(header);
+    free(canonicalList);
+    free(decode_table);
+    BitArrayDestroy(bit_arr_data);
+    BitArrayDestroy(code);
+    
+    
+    /*Unmask the decoded data*/
+    
+    //convert C image array into a numpy array object
+  	PyArrayObject *image_data = NA_NewArray(decoded_data, tInt32,1,raw_length);
+    
+	return image_data;
 }
 
 /************************************************************************/
+
 static PyObject * cSquish_getHeader(PyObject *self, PyObject *args){
 	
-	char *filename;
-	FILE *ifp;
-	int header_length;
-	char *header_data;
-	char id[4];
-	PyObject *header_py;
+	sqd_header_t *header;
+	PyObject *header_py;	
 	
-	if(!PyArg_ParseTuple(args, "s", &filename))
-	{ 
-		PyErr_SetString(PyExc_ValueError,"Filename argument must be a string");
+	FILE *ifp = openSqd(args);
+	
+	if (ifp == NULL)
+	{
 		return NULL;
 	}
-		
-	ifp=fopen(filename,"rb");
-	
-	/*check that file is an sqd file*/
-	fgets(id,4,ifp);
-		
-	if (strcmp(id,"sqd"))
-	{
-		PyErr_SetString(PyExc_IOError,"Unrecognised file format");
-		return NULL;	
-	}	
-		
+
 	/*read header data*/
-	header_length = fgetc(ifp);
-	header_data = malloc((header_length+1)*sizeof(char));
+	header = readSqdHeader(ifp);
 	
-	if (header_data == NULL)
+	if (header == NULL)
 	{
-		PyErr_SetString(PyExc_MemoryError,"Failed to allocate memory for header data string");
 		return NULL;
 	}
-		
-	fgets(header_data, header_length+1, ifp);
-		
+	
 	fclose(ifp);
 	
 	/*convert the string to a python string*/
-	header_py = PyString_FromString(header_data);
+	header_py = PyString_FromString(header->header_data);
 	
-	free(header_data);
+	if (header_py == NULL)
+	{
+		PyErr_SetString(PyExc_MemoryError,"Failed to create Python string");
+	}
+	
+	freeHeader(header);
 	return header_py;
 }
 		
 /************************************************************************/
 
 static PyObject * cSquish_isSqd(PyObject *self, PyObject *args){
+
+	FILE *ifp = openSqd(args);	
+		
+	if (ifp == NULL)
+	{
+		Py_RETURN_FALSE;
+	}else
+	{
+		fclose(ifp);
+		Py_RETURN_TRUE;
+	}
+}
+
+/************************************************************************/
+
+static PyObject * cSquish_getSize(PyObject *self, PyObject *args){
+
+	FILE *ifp = openSqd(args);
+	sqd_header_t *header;
+	PyObject *size;	
 	
+	if (ifp == NULL)
+	{
+		return NULL;
+	}
+	
+	/*read header data*/
+	header = readSqdHeader(ifp);
+	
+	if (header == NULL)
+	{
+		return NULL;
+	}
+	
+	fclose(ifp);
+	
+	/*build a python tuple of the size*/
+	size = PyTuple_Pack(2, PyInt_FromLong((long)header->image_width),PyInt_FromLong((long)header->image_height));
+	
+	freeHeader(header);
+	
+	if (size == NULL)
+	{
+		PyErr_SetString(PyExc_MemoryError,"Failed to create Python Tuple");
+		return NULL;	
+	}
+	return size;
+}
+
+/************************************************************************/
+
+FILE * openSqd(PyObject *args){
 	char *filename;
 	FILE *ifp;
 	char id[4];
@@ -408,20 +497,65 @@ static PyObject * cSquish_isSqd(PyObject *self, PyObject *args){
 		PyErr_SetString(PyExc_ValueError,"Filename argument must be a string");
 		return NULL;
 	}
-		
+	
 	ifp=fopen(filename,"rb");
 	
+	if (ifp == NULL)
+	{
+		PyErr_SetString(PyExc_IOError,"Cannot open file.");
+		return NULL;
+	}
+
 	/*check that file is an sqd file*/
 	fgets(id,4,ifp);
-		
+	
 	if (strcmp(id,"sqd"))
 	{
-		Py_RETURN_FALSE;
-	}else
-	{
-		Py_RETURN_TRUE;
+		PyErr_SetString(PyExc_IOError,"Unrecognised file format");
+		fclose(ifp);
+		return NULL;	
 	}
-}				
+	
+	return ifp;
+}
+
+/************************************************************************/
+
+sqd_header_t * readSqdHeader(FILE *ifp){
+	
+	sqd_header_t *header = NULL;
+	
+	header = malloc(sizeof(sqd_header_t));
+	
+	if (header == NULL)
+	{
+		PyErr_SetString(PyExc_MemoryError,"Failed to allocate memory for header data structure");
+		return NULL;
+	}
+	
+	//move to end of id string
+	rewind(ifp);
+	fseek(ifp,3,SEEK_SET);
+	
+	/*read header data*/
+	fscanf(ifp,"%d %d %d ",&header->header_length, &header->image_width, &header->image_height);
+	header->header_data = malloc((header->header_length+1)*sizeof(char));
+	
+	fgets(header->header_data, header->header_length+1, ifp);
+	
+	fscanf(ifp,"%d",&header->num_chars);
+	
+	return header;
+	
+}
+	
+/************************************************************************/
+
+void freeHeader(sqd_header_t *header){
+	free(header->header_data);
+	free(header);
+}	
+				
 /************************************************************************/
 //               Define Python Extension bits
 /************************************************************************/
@@ -430,6 +564,7 @@ static PyMethodDef cSquish_methods[] = {
 	{"decompress", cSquish_decompress, METH_VARARGS, ""},
 	{"getHeader", cSquish_getHeader, METH_VARARGS,""},
 	{"isSqd", cSquish_isSqd,METH_VARARGS,""},
+	{"getSize",cSquish_getSize,METH_VARARGS,""},
 	{NULL, NULL}
 };
 
