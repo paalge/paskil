@@ -1,5 +1,4 @@
-from PIL import Image
-from allskyImage import allskyImage
+import Image,ImageChops
 import allskyImage
 import datetime,numpy,zlib
 import warnings
@@ -13,12 +12,9 @@ def getHeaderData(filename):
     """
     
     #read compressed header from file using cSquish extension
-    compressed_header = cSquish.getHeader(filename)
+    header = cSquish.getHeader(filename)
         
-    #decompress header string and convert back to a dictionary
-    header = eval(zlib.decompress(compressed_header))
-        
-    return header
+    return eval(header)
     
 ###################################################################################   
 
@@ -81,20 +77,21 @@ def getRawData(filename):
     fp.close()
 
     #split the array into 4 arrays (one for each color) and convert the data into Int32
-    red_data=numpy.array(raw_data[:,0],dtype='int32')
-    red_data.shape = (width,height)
+    red_data=numpy.array(raw_data[:,0],dtype="int32")
+    red_data.shape = (height,width)
 
-    green1_data=numpy.array(raw_data[:,1],dtype='int32')
-    green1_data.shape = (width,height)
+    green1_data=numpy.array(raw_data[:,1],dtype="int32")
+    green1_data.shape = (height,width)
     
-    blue_data=numpy.array(raw_data[:,2],dtype='int32')
-    blue_data.shape = (width,height)
+    blue_data=numpy.array(raw_data[:,2],dtype="int32")
+    blue_data.shape = (height,width)
     
-    green2_data=numpy.array(raw_data[:,3],dtype='int32')
-    green2_data.shape = (width,height)
+    green2_data=numpy.array(raw_data[:,3],dtype="int32")
+    green2_data.shape = (height,width,)
     
     #convert the raw data array back into an image
     image1=Image.fromarray(red_data)
+    #image2=Image.fromstring("I",(width,height),green1_data.tostring())
     image2=Image.fromarray(green1_data)
     image3=Image.fromarray(blue_data)
     image4=Image.fromarray(green2_data)
@@ -139,7 +136,7 @@ class rawImage(allskyImage.allskyImage):
     Holds the separate channels of a raw image file.
     """
     
-    def __init__(self, filename, info, size, channels=[]):
+    def __init__(self, filename, info, channels=[]):
         
         #set private class attributes
         self.__channels = channels
@@ -148,19 +145,14 @@ class rawImage(allskyImage.allskyImage):
             self.__loaded = False
         else:
             self.__loaded = True
-                
-        self.__size = size
-        self.__filename = filename
-        self.__info = {}
-        self.__image = None #this is a variable used to get the methods from allskyImage to work
+
+        #create dummy image object to pass to allskyImage.allskyImage.__init__()
+        dummy_image = Image.new("1",(0,0))
         
-        #make hard copies of the info libraries 
-        self.__info['camera'] = info['camera'].copy()
-        self.__info['header'] = info['header'].copy()
-        self.__info['processing'] = info['processing'].copy()
+        allskyImage.allskyImage.__init__(self,dummy_image,filename,info)
    
     ###################################################################################      
-
+        
     def getImage(self):
         return self.convertToRGB().getImage()
     
@@ -185,19 +177,25 @@ class rawImage(allskyImage.allskyImage):
     
     def convertToRGB(self):
         
-        self.__load()
+        self.load()
         
-        mean_green = ImageOps.add(self.__channels[1],self.__channels[3])
+        mean_green = ImageChops.add(self.__channels[1],self.__channels[3],0.5)
+        
+        #rescale values (currently have 16bit data stored in 32bit integers)
+        scale = 4294967295.0 / 65535.0 
+
+        #offset = - min_intensity * scale     .point(lambda i: i * scale + 0)
+     
         
         
         #might need to convert each channel to mode "L" before trying to merge them to RGB
-        rgb_image = Image.merge("RGB",(self.__channels[0],mean_green,self.__channels[2]))
+        rgb_image = Image.merge("RGB",(self.__channels[0].point(lambda i: i * scale + 0),mean_green.point(lambda i: i * scale + 0),self.__channels[2].point(lambda i: i * scale + 0)))
         
         new_info = self.getInfo()
         
         new_info['header']['Wavelength'] = "RGB"
         
-        return allskyImage.allskyImage(rgb_image,self.__filename,new_info)
+        return allskyImage.allskyImage(rgb_image,self.getFilename,new_info)
             
     ###################################################################################
     
@@ -206,17 +204,18 @@ class rawImage(allskyImage.allskyImage):
         return self.__runMethod(allskyImage.allskyImage.addTimestamp, format, colour=colour,fontsize=fontsize)
            
     ###################################################################################
+    
     def __runMethod(self,method,*args,**kwargs):
-        self.__load()
+        self.load()
         new_channels = []
         
         info_bkup = str(self.getInfo())
         
-        for self.__image in self.__channels:
-            self.__info = eval(info_bkup)
+        for self._allskyImage__image in self.__channels:
+            self._allskyImage__info = eval(info_bkup)
             new_channels.append(method(self,*args,**kwargs).getImage())
         
-        return rawImage(self.__filename,self.__size,self.getInfo(),channels = new_channels)
+        return rawImage(self.getFilename(),self.getInfo(),channels = new_channels)
     
     ###################################################################################       
     def alignNorth(self,north="geographic"):
@@ -227,7 +226,7 @@ class rawImage(allskyImage.allskyImage):
     
     def binaryMask(self, fov_angle, inverted=False):
         
-        return self.__runMethod(allskyImage_class.binaryMask, fov_angle, inverted=inverted)
+        return self.__runMethod(allskyImage.allskyImage.binaryMask, fov_angle, inverted=inverted)
            
     ###################################################################################
     
@@ -279,9 +278,10 @@ class rawImage(allskyImage.allskyImage):
     
     ###################################################################################
                                        
-    def __load(self):
+    def load(self):
         if not self.__loaded:
-            images = getRawData(self.__filename)
+            
+            images = getRawData(self.getFilename())
             
             for image in images:
                 self.__channels.append(image.copy())
@@ -298,12 +298,12 @@ class rawImage(allskyImage.allskyImage):
         Returns an allskyImage object containing the image data of the specified raw channel.
         """    
         
-        self.__load()
+        self.load()
         
         if channel >= len(self.__channels) - 1:
             raise ValueError,"Selected channel does not exist."
         
-        new_info={'header':self.__info['header'].copy(),'camera':self.__info['camera'].copy(),'processing':self.__info['processing'].copy()}
+        new_info=self.getInfo()
         
         if channel == 0:
             new_info['header']['Wavelength']='Red'
@@ -317,7 +317,7 @@ class rawImage(allskyImage.allskyImage):
             raise ValueError, "Unknown channel selection"
         
         
-        return allskyImage.allskyImage(self.__channels[channel], self.__filename, new_info)
+        return allskyImage.allskyImage(self.__channels[channel], self.getFilename, new_info)
   
     ###################################################################################
                
@@ -331,7 +331,7 @@ class rawImage(allskyImage.allskyImage):
         considerably smaller files than is possible using other formats.       
         """
         
-        self.__load()
+        self.load()
             
         #add image size to info dict
         size=self.__channels[0].size
@@ -383,7 +383,7 @@ class sqdImage(rawImage):
        
      ###################################################################################       
        
-     def __load(self):
+     def load(self):
          
          if not self.__loaded:
              #create a mask image for the field of view
@@ -391,12 +391,12 @@ class sqdImage(rawImage):
         
              mask = allskyImage.allskyImage(white_image,"None",self.__info)
         
-             mask = mask.binaryMask(self.__info['camera']['fov_angle'])
+             mask = mask.binaryMask(float(self.__info['camera']['fov_angle']))
         
              mask_array = numpy.asarray(mask)
              
-             decoded_data = cSquish.decode(self.__filename)
-             
+             decoded_data = cSquish.decompress(self.__filename)
+             print "got here"
              im_array = numpy.zeros(shape=(4,self.__size[0],self.__size[1]),dtype='int')
              
              offset = self.__size[0]*self.__size[1]

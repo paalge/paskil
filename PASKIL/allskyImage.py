@@ -33,14 +33,12 @@ Example:
 """
 ################################################################################################################################################################
 
-from PIL import Image, ImageOps, ImageDraw, ImageFilter, ImageFont, ImageChops 
+import Image, ImageOps, ImageDraw, ImageFilter, ImageFont, ImageChops 
 import misc, allskyImagePlugins, allskyProj
 from extensions import cSquish
 import pyfits, numpy
 import sys, datetime, os, math
 import warnings
-
-
 ##Functions
 
 def new(image_filename, site_info_file="",force=False):
@@ -59,6 +57,7 @@ def new(image_filename, site_info_file="",force=False):
     else:
         info_filename = None
     
+    
     #Load correct image plugin to open image
     filetype=allskyImagePlugins.load(image_filename, info_filename,force)
     
@@ -76,7 +75,7 @@ class allskyImage:
     Holds both the image data and the image metadata associated with an all-sky image. Provides methods
     for manipulating both. Unless stated otherwise, all methods return a new allskyImage object.
     """
-    
+
     def __init__(self, image, image_file, info):
     #This function in run when the class is instanciated. It sets up the class attributes.
     
@@ -84,7 +83,6 @@ class allskyImage:
         self.__loaded = False #shows if the image data has been loaded yet.
         self.__image=image.copy()
         self.__image.__info={}
-        self.__size=self.__image.size
         self.__filename=image_file
         self.__info={}
         
@@ -94,14 +92,13 @@ class allskyImage:
         self.__info['processing']=info['processing'].copy()
     
     ###################################################################################
-
     
     #define getters 
     def getSize(self): 
         """
         Returns a tuple (width,height) containing the size in pixels of the image (equivalent to 
         self.getImage().size)"""
-        return self.__size
+        return self.__image.size
     
     def getFilename(self):
         """
@@ -260,7 +257,7 @@ class allskyImage:
         if new_image.getMode() != "I": #PIL doesn't support 16bit images, so need to use own routine if "I" mode image
             new_image.__image.putpalette(colour_table.getColourTable())
         else:
-            RGB_image=Image.new("RGB", new_image.__size, "Black")
+            RGB_image=Image.new("RGB", new_image.getSize(), "Black")
             image_pix=new_image.__image.load()
             RGB_pix=RGB_image.load()
             
@@ -326,7 +323,7 @@ class allskyImage:
         bb_bottom = int(new_image.__info['camera']['y_center'])+radius
         
         #create a black mask image
-        mask=Image.new(mode, new_image.__size, "Black")
+        mask=Image.new(mode, new_image.getSize(), "Black")
         
         #draw white circle
         draw=ImageDraw.Draw(mask)
@@ -442,16 +439,16 @@ class allskyImage:
         #create new allskyImage object
         new_image=allskyImage(self.__image, self.__filename, self.__info)
                 
-        #check mode of image
-        if new_image.__image.mode != "I":
-            raise ValueError, "Image has wrong mode"
-        
-        min_intensity, max_intensity = new_image.__image.getextrema()
-
-        scale = 255.0 / 65535.0 
-
-        offset = - min_intensity * scale
-        new_image.__image = new_image.__image.point(lambda i: i * scale + offset)
+#        #check mode of image
+#        if new_image.__image.mode != "I":
+#            raise ValueError, "Image has wrong mode:"+str(new_image.__image.mode)
+#        
+#        min_intensity, max_intensity = new_image.__image.getextrema()
+#
+#        scale = 255.0 / 65535.0 
+#
+#        offset = - min_intensity * scale
+#        new_image.__image = new_image.__image.point(lambda i: i * scale + offset)
         new_image.__image = new_image.__image.convert("L")
         
         #update processing history
@@ -489,8 +486,8 @@ class allskyImage:
             else:
                 raise ValueError, "Image mode not supported yet"
             
-            im=Image.new(quicklook.__image.mode, (quicklook.__size[0], quicklook.__size[1]+24), white) #create new image which is 24 pixels bigger
-            im.paste(quicklook.__image, (0, 0, quicklook.__size[0], quicklook.__size[1]))
+            im=Image.new(quicklook.__image.mode, (quicklook.getSize()[0], quicklook.getSize()[1]+24), white) #create new image which is 24 pixels bigger
+            im.paste(quicklook.__image, (0, 0, quicklook.getSize()[0], quicklook.getSize()[1]))
             
             quicklook=allskyImage(im, self.__filename, self.__info)
             
@@ -527,8 +524,8 @@ class allskyImage:
 
         image_pix=new_image.__image.load() #load pixel values
         
-        for x in range(new_image.__size[0]):#for x in range image width
-            for y in range(new_image.__size[1]):#for y in range image height
+        for x in range(new_image.getSize()[0]):#for x in range image width
+            for y in range(new_image.getSize()[1]):#for y in range image height
                 #for each x,y find the angle from the center
                 angle=misc.xy2angle(x, y, int(new_image.__info['camera']['x_center']), int(new_image.__info['camera']['y_center']), float(new_image.__info['camera']['fov_angle']), int(new_image.__info['camera']['Radius']))
                 
@@ -621,6 +618,13 @@ class allskyImage:
         return strip  
     
     ###################################################################################
+    
+    def load(self):
+        if not self.__loaded:
+            self.__image.load()
+            self.__loaded = True
+    
+    ###################################################################################    
     
     def medianFilter(self, n):
         """

@@ -125,8 +125,9 @@ Writing Your Own Plugin:
 """
 
 import allskyImage
-import pyfits, Image, ImageOps
-from PASKIL.extensions import cRaw,cSquish
+import pyfits
+from extensions import cRaw,cSquish
+import Image, ImageOps
 
 types = [] #list to hold all available plugins
 
@@ -138,11 +139,12 @@ def load(image_filename, info_filename, force):
     Returns the plugin object needed to open the image. Raises TypeError if no plugin is found. This should
     only be needed for debugging purposes.
     """
+    
     if force:
         i = 2 #skip the first two plugins in the list - these are the internal ones
     else:
         i = 0
-        
+    
     while i < len(types):
         if types[i].test(image_filename, info_filename):
             return types[i]
@@ -162,7 +164,7 @@ def register(plugin):
     
 ###################################################################################
 
-class PASKIL_Allsky_Image_PNG():
+class PASKIL_Allsky_Image_PNG:
     """
     Plugin class used to open PASKIL PNG files. These are png image files with the image metadata stored
     in the image header. The header data is stored as a string representation of a python dictionary and
@@ -226,7 +228,7 @@ class PASKIL_Allsky_Image_PNG():
     ###################################################################################            
 ###################################################################################    
 
-class PASKIL_Allsky_Image_FITS():
+class PASKIL_Allsky_Image_FITS:
     """
     Plugin class used to open PASKIL FITS files. These are FITS files with the image data stored in the 
     primary HDU and the metadata stored in three extension HDUs, one for 'header' one for 'camera' and one
@@ -332,7 +334,7 @@ class PASKIL_Allsky_Image_FITS():
     ###################################################################################            
 ###################################################################################    
 
-class PASKIL_Allsky_Image_SQD():
+class PASKIL_Allsky_Image_SQD:
     """
     Plugin class used to load the PASKIL sqd raw image format. This is a compressed format consisting
     of a header string compressed using the zlib module and four channel image data compressed using the
@@ -348,6 +350,9 @@ class PASKIL_Allsky_Image_SQD():
         """
         Returns True if the file is an sqd file, False otherwise.
         """
+        #return False
+        #cSquish.getHeader(image_filename)
+
         return cSquish.isSqd(image_filename)
     
     ###################################################################################                   
@@ -356,6 +361,7 @@ class PASKIL_Allsky_Image_SQD():
         """
         Returns a new allskyRaw.rawImage object containing the data contained in the sqd file.
         """
+        import allskyRaw 
         return allskyRaw.sqdImage(image_filename)
         
      ###################################################################################            

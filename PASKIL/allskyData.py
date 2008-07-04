@@ -159,7 +159,11 @@ def fromList(file_names,wavelength,filetype,site_info_file=""):
         if fov_angles.count(fov) ==0:
             fov_angles.append(fov)
         
-        time=datetime.datetime.strptime(current_image.getInfo()['header']['Creation Time'],"%d %b %Y %H:%M:%S %Z")#read creation time from header
+        try:
+            time=datetime.datetime.strptime(current_image.getInfo()['header']['Creation Time'],"%d %b %Y %H:%M:%S %Z")#read creation time from header
+        except ValueError:
+            time=datetime.datetime.strptime(current_image.getInfo()['header']['Creation Time']+"GMT","%d %b %Y %H:%M:%S %Z")#read creation time from header
+        
         data.append((time,filename,site_info_file)) #store filename and creation time as a tuple in the data list
     
     #check to make sure the dataset is not empty

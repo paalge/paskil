@@ -1,10 +1,10 @@
 """
 PASKIL plugin for opening PNG files created by the UiO allsky camera in Longyearbyen
 """
-
+from __future__ import with_statement
 #import required modules
-from PASKIL import allskyImage,allskyImagePlugins
-from PIL import Image
+from PASKIL import allskyImage, allskyImagePlugins
+import Image
 import sys
 
 #start plugin class definition
@@ -15,11 +15,16 @@ class UiO_Allsky_LYR_PNG:
     
     ###################################################################################
     
-    def test(self,image,info_file):
+    def test(self,image_filename, info_filename):
         #look in the image header data to see if this image is from the UiO camera
         
         #reject dark field images
-        if image.filename.count("DARK") != 0:
+        if image_filename.count("DARK") != 0:
+            return False
+        
+        try:
+            image = Image.open(image_filename)
+        except:
             return False
         
         try:
@@ -33,7 +38,9 @@ class UiO_Allsky_LYR_PNG:
             
     ###################################################################################    
         
-    def open(self,image,info_file):
+    def open(self,image_filename, info_filename):
+        image = Image.open(image_filename)
+        
         #read image header data
         info=image.info
 
@@ -42,16 +49,18 @@ class UiO_Allsky_LYR_PNG:
         processing={}
         header=image.info.copy() #copy header data stored in image
         
-        for line in info_file: #read file line by line
-            if line.isspace(): 
-                continue #ignore blank lines
-            words=line.split("=") #split the line at the = sign
-            
-            if len(words) != 2:
-                print "Error! allskyImagePlugins.UiO_Allsky_LYR.open(): Cannot read site info file, too many words per line"
-                sys.exit()
+        with open(info_filename,"r") as info_file:
+            for line in info_file: #read file line by line
+                if line.isspace(): 
+                    continue #ignore blank lines
+                words=line.split("=") #split the line at the = sign
                 
-            camera[words[0].lstrip().rstrip()] = words[1].lstrip().rstrip() #store the values (minus white space) in a dictionary
+                if len(words) != 2:
+                    print "Error! allskyImagePlugins.UiO_Allsky_LYR.open(): Cannot read site info file, too many words per line"
+                    sys.exit()
+                    
+                camera[words[0].lstrip().rstrip()] = words[1].lstrip().rstrip() #store the values (minus white space) in a dictionary
+        
         #create a dictionary containing all the metadata
         info={'header':header,'camera':camera,'processing':processing}
     

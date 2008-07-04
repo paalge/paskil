@@ -438,7 +438,7 @@ static PyObject * cSquish_getHeader(PyObject *self, PyObject *args){
 static PyObject * cSquish_isSqd(PyObject *self, PyObject *args){
 
 	FILE *ifp = openSqd(args);	
-		
+	
 	if (ifp == NULL)
 	{
 		Py_RETURN_FALSE;
@@ -488,30 +488,30 @@ static PyObject * cSquish_getSize(PyObject *self, PyObject *args){
 /************************************************************************/
 
 FILE * openSqd(PyObject *args){
+
 	char *filename;
 	FILE *ifp;
 	char id[4];
 	
+	
 	if(!PyArg_ParseTuple(args, "s", &filename))
 	{ 
-		PyErr_SetString(PyExc_ValueError,"Filename argument must be a string");
 		return NULL;
 	}
 	
-	ifp=fopen(filename,"rb");
+	ifp = fopen(filename,"rb");
+
 	
 	if (ifp == NULL)
 	{
-		PyErr_SetString(PyExc_IOError,"Cannot open file.");
 		return NULL;
 	}
 
 	/*check that file is an sqd file*/
 	fgets(id,4,ifp);
-	
+
 	if (strcmp(id,"sqd"))
 	{
-		PyErr_SetString(PyExc_IOError,"Unrecognised file format");
 		fclose(ifp);
 		return NULL;	
 	}
