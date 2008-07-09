@@ -39,6 +39,16 @@ from extensions import cSquish
 import pyfits, numpy
 import sys, datetime, os, math
 import warnings
+
+#attempt to import psyco to improve performance
+try:
+    import psyco
+    use_psyco = True
+except ImportError:
+    use_psyco = False
+    warnings.warn("Could not import psyco. This will reduce performance.")
+
+
 ##Functions
 
 def new(image_filename, site_info_file="",force=False):
@@ -435,25 +445,14 @@ class allskyImage:
         caused by this function is not a bug! It is due to the fact that 12bit image data (with a 
         maximum value of 4095) has been stored in a 16 bit image (with a possible maximum of 65535) 
         and therefore looked darker than it actually was."""
-
-        #create new allskyImage object
-        new_image=allskyImage(self.__image, self.__filename, self.__info)
-                
-#        #check mode of image
-#        if new_image.__image.mode != "I":
-#            raise ValueError, "Image has wrong mode:"+str(new_image.__image.mode)
-#        
-#        min_intensity, max_intensity = new_image.__image.getextrema()
-#
-#        scale = 255.0 / 65535.0 
-#
-#        offset = - min_intensity * scale
-#        new_image.__image = new_image.__image.point(lambda i: i * scale + offset)
-        new_image.__image = new_image.__image.convert("L")
         
         #update processing history
-        new_image.__info['processing']['convertTo8bit']=""
+        info = self.getInfo()
+        info['processing']['convertTo8bit']=""
         
+        #create new allskyImage object with an 8bit image
+        new_image=allskyImage(self.__image.convert("L"), self.__filename, info)
+     
         return new_image
         
     ###################################################################################    
@@ -860,6 +859,13 @@ class allskyImage:
         
     ###################################################################################        
 ###################################################################################                
-        
+
+#use psyco to pre-compile computationally intensive functions
+if use_psyco:
+    psyco.bind(allskyImage.applyColourTable)
+    psyco.bind(allskyImage.flatFieldCorrection)
+    psyco.bind(allskyImage.getStrip)
+    psyco.bind(allskyImage.medianFilter)
+    psyco.bind(allskyImage.projectToHeight)        
 
 

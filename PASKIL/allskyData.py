@@ -18,7 +18,15 @@ Concepts:
     For very large datasets, the indexing process can take some time. There is therefore the option to save
     the dataset object once it is created. This allows the same dataset to be loaded rapidly in the future. 
     However, no checks are made to ensure that the dataset object still matches the actual data. If the data
-    has been changed in any way, then this may lead to unexpected results.
+    has been changed in any way, then an exception will be raised when the dataset is loaded again.
+    
+    Dataset objects implement the iterator protocol and can therefore be used in for loops. The iterator
+    object uses a separate loading thread to load image data, whilst leaving the calling thread free to 
+    process the returned allskyImage objects. It is therefore recommended to use the iterator when processing
+    large datasets to cut down on time wasted waiting for image retrieval from disk. The iterator returns
+    allskyImage objects. However, if you are not planning to use the image data (e.g. if you just want to 
+    read the header) then you should NOT use the iterator, since it explicitly loads the image data, whereas
+    the allskyImage.new() method does not.
     
 
 Example:
@@ -43,12 +51,19 @@ Example:
         filenames=dataset.getFilenamesInRange(start_time,end_time) 
 
         print filenames
+        
+        #alternatively we can use the iterator to process the images
+        for im in dataset:
+            im.binaryMask(75)
+            im.save("masked-"+im.getFilename())
+        
 """
 
 ################################################################################################################################################################
 
 import allskyImage,misc #imports from PASKIL
 import glob,datetime,cPickle,os #imports from other python modules
+import threading
 
 #Functions:
 
@@ -127,6 +142,8 @@ def fromList(file_names,wavelength,filetype,site_info_file=""):
         
         except TypeError:
             continue
+        except IOError:
+            continue #skip file if PIL cannot decode the image
         
         #check if the image has the correct wavelength
         if current_image.getInfo()['header']['Wavelength'].find(wavelength) == -1:
@@ -183,9 +200,15 @@ def load(filename):
     """
     Loads a dataset object from a file. Dataset files can be produced using the save() method.
     """
-    f=open(filename,"r")
+    f=open(filename,"rb")
     dataset=cPickle.load(f)
     f.close()
+    
+    #check that the all the files stored in the dataset still exist.    
+    for image_filename,site_info in dataset.getAll():
+        if not os.path.exists(image_filename):
+            raise IOError, "allskyData.load(): The file \""+image_filename+"\" no longer exists. The dataset \""+filename+"\" is therefore not valid!"
+    
     return dataset
     
 ###################################################################################    
@@ -254,6 +277,13 @@ class dataset:
             self.__filenames.append(data[i][1])
             self.__site_info_files.append(data[i][2])
             
+    ###################################################################################    
+    #define iterator method to allow datasets to support the iterator protocol
+    
+    def __iter__(self):
+        
+        return datasetIterator(self.getAll())
+                    
     ###################################################################################    
     #define getters
     def getWavelength(self):
@@ -327,7 +357,8 @@ class dataset:
         copy=[]
         for element in self.__site_info_files:
             copy.append(element)
-        return copy    
+        return copy  
+      
     ###################################################################################    
     
     def crop(self,start_time,end_time):
@@ -474,7 +505,7 @@ class dataset:
         new dataset object using the new files.
         """
         #open file for writing
-        f=open(filename,"w")
+        f=open(filename,"wb")
         
         #pickle the dataset object and save it to the file
         cPickle.dump(self,f,cPickle.HIGHEST_PROTOCOL)
@@ -484,5 +515,80 @@ class dataset:
     
     ###################################################################################                
 ###################################################################################    
+
+class datasetIterator:
+    """
+    Iterator class for the dataset class. The iterator uses a separate loading thread to load image data
+    leaving the main execution thread free to process the current image. This should improve performance
+    especially for images which take a long time to load (e.g. sqd files and raw images).
+    """
     
+    def __init__(self,filenames):
+        self.__filenames = filenames
+        self.__currently_loaded_images = []
+        self.__current_index = 0
+        self.__largest_index = len(filenames)
+        
+        #create the loading thread for the first element
+        if self.__current_index < self.__largest_index:
+            self.__loading_thread = threading.Thread(target=self.__load,args = (self.__filenames[self.__current_index][0],self.__filenames[self.__current_index][1]))
+            self.__loading_thread.start()
+        else:
+           self.__loading_thread = None
+           
+    ################################################################################### 
+                        
+    def __iter__(self):
+        """
+        Method required by iterator protocol. Allows iterator to be used in for loops.
+        """
+        return self
+    
+    ################################################################################### 
+                
+    def __load(self,filename,site_info_filename):
+        """
+        Creates a new allskyImage object and loads it's associated image data (normally allskyImage object
+        creation is a lazy operation). Stores the object in a list of loaded objects ready to be returned to
+        the iterating process.
+        """
+        image = allskyImage.new(filename,site_info_file = site_info_filename)
+        image.load()
+        self.__currently_loaded_images.append(image)
+        
+    ###################################################################################  
+                   
+    def next(self):
+        """
+        Required for the iterator protocol. Returns the next allskyImage in the dataset, with the image
+        data already loaded. 
+        """
+        #wait for loading thread to finish
+        if self.__loading_thread != None:
+            self.__loading_thread.join()
+        
+        #create the loading thread for the next element
+        if self.__current_index < self.__largest_index:
+            self.__loading_thread = threading.Thread(target=self.__load,args = (self.__filenames[self.__current_index][0],self.__filenames[self.__current_index][1]))
+            self.__loading_thread.start()
+       
+            self.__current_index += 1
             
+            #return loaded image
+            return  self.__currently_loaded_images.pop(0)
+        
+        elif self.__current_index == self.__largest_index:
+            #this is then the final image in the dataset
+            self.__loading_thread = None
+            self.__current_index += 1
+            
+            #return loaded image
+            return  self.__currently_loaded_images.pop(0)
+        
+        else:
+            #all images have been returned, raise an exception from now on.
+            self.__loading_thread = None
+            raise StopIteration
+        
+    ###################################################################################                 
+###################################################################################                 

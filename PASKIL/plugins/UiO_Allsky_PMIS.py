@@ -5,7 +5,7 @@ from __future__ import with_statement
 from PASKIL.allskyImage import allskyImage
 from PASKIL.allskyImagePlugins import register
 import PmisImagePlugin
-import sys,datetime
+import datetime
 import Image
 
 class UiO_Allsky_PMIS:
@@ -62,8 +62,7 @@ class UiO_Allsky_PMIS:
                     words=line.split("=") #split the line at the = sign
                     
                     if len(words) != 2:
-                        print "Error! allskyImagePlugins.DSLR_LYR.open(): Cannot read site info file, too many words per line"
-                        sys.exit()
+                        raise ValueError, "Error! allskyImagePlugins.UiO_Allsky_PMIS.open(): Cannot read site info file, too many words per line"
                         
                     camera[words[0].lstrip().rstrip()] = words[1].lstrip().rstrip() #store the values (minus white space) in a dictionary
                 

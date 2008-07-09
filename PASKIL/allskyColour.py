@@ -204,6 +204,7 @@ def loadHistogram(filename):
             
         histogram.append(int(words[1]))
         index.append(int(words[0]))
+        
     if index != range(256) and index != range(65536):
         raise ValueError, "Incorrect number of data entries in file: "+filename
 

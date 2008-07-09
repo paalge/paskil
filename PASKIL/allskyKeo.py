@@ -63,7 +63,7 @@ import Image,ImageChops,ImageFilter,ImageOps
 import datetime,calendar,time,math
 import threading,Queue
 from pylab import figure,imshow,title,MinuteLocator,NullLocator,DateFormatter,twinx,twiny,date2num,num2date,savefig,clf
-
+from matplotlib import cm
 
 
 #Functions
@@ -912,7 +912,7 @@ class keogram:
         if self.__image.mode == 'RGB' or self.__image.mode == 'L':
             image=imshow(self.__image,origin="top",aspect="auto")
         else:
-            image=imshow(self.__image.convert('L'),origin="top",aspect="auto")
+            image=imshow(self.__image.convert('L'),origin="top",aspect="auto",cmap=cm.gray)
             
         #define formatting for axes
         x_tick_positions=MinuteLocator(minutes) #find the positions of the x tick marks

@@ -40,8 +40,9 @@ Example:
 """
 
 import math, numpy
-from PIL import Image, ImageOps
+import Image, ImageOps
 from mpl_toolkits.basemap import Basemap
+from matplotlib import cm
 
 #define private dictionary for converting between lens projection descriptions and matplotlib.basemap projection descriptions
 __proj_codes={'equidistant':'aeqd','equisolidangle':'laea','gnomonic':'gnom'}
@@ -71,22 +72,29 @@ class projection:
         #get image mode
         self.__mode=im.getMode()
         
+        #Temporary fix! Due to problems with PIL and Matplotlib not really supporting 16bit images properly
+        #here we just convert the image to 8bit - hopefully this won't be necessary in the future
+        if self.__mode == "I":
+            im = im.convertTo8bit()
+            self.__mode = 'L'
+        
+        
         #ensure that the image is aligned with geographic north
         if image_info['processing'].has_key('alignNorth'):
             if image_info['processing']['alignNorth'] != 'geographic':
-                im=im.alignNorth(north='geographic')
+                im = im.alignNorth(north = 'geographic')
             
         else:
             if not image_info['processing'].has_key('binaryMask'):
-                im=im.binaryMask(float(image_info['camera']['fov_angle']))
+                im = im.binaryMask(float(image_info['camera']['fov_angle']))
         
             if not image_info['processing'].has_key('centerImage'):
-                im=im.centerImage()
+                im = im.centerImage()
             
-            im=im.alignNorth(north='geographic')
+            im = im.alignNorth(north = 'geographic')
         
         #center the image (regardless of whether this has been done before)
-        im=im.centerImage()
+        im = im.centerImage()
         
         #if the background is white, then apply an inverted binary mask, this reduces the field of view by 1 degree
         if self.__background == 'white':
@@ -211,9 +219,9 @@ class projection:
             blue_transformed_data=numpy.array(observatory_map.transform_scalar(self.__image_data[:,:,2], self.__image_lons, self.__image_lats, ny, nx), dtype=globals()['__data_types'][self.__mode])
             
             #convert the array back into an image
-            red_image=Image.fromstring('L', (red_transformed_data.shape[1], red_transformed_data.shape[0]), red_transformed_data.tostring())
-            green_image=Image.fromstring('L', (green_transformed_data.shape[1], green_transformed_data.shape[0]), green_transformed_data.tostring())
-            blue_image=Image.fromstring('L', (blue_transformed_data.shape[1], blue_transformed_data.shape[0]), blue_transformed_data.tostring())
+            red_image=Image.fromarray(red_transformed_data)
+            green_image=Image.fromarray(green_transformed_data)
+            blue_image=Image.fromarray(blue_transformed_data)
         
             #combine RGB channels into a single image
             image=Image.merge('RGB',[red_image,green_image,blue_image])
@@ -223,7 +231,7 @@ class projection:
             transformed_data=numpy.array(observatory_map.transform_scalar(self.__image_data[:,:,0], self.__image_lons, self.__image_lats, ny, nx), dtype=globals()['__data_types'][self.__mode])
         
             #convert the array back into an image
-            image=Image.fromstring(self.__mode, (transformed_data.shape[1], transformed_data.shape[0]), transformed_data.tostring())
+            image=Image.fromarray(transformed_data)
         
         #need to flip image when converting back from an array
         image=ImageOps.flip(image)
@@ -231,7 +239,7 @@ class projection:
         #plot the image. Matplotlib doesn't support 16bit images, so need to convert to 8bit before plotting
         if self.__mode == 'I':
             image=image.convert('L')
-        observatory_map.imshow(image)
+        observatory_map.imshow(image,cmap=cm.gray) #plot the image, setting cmap to gray to prevent matplotlib applying its own colour table
         
         return observatory_map
     
