@@ -1,0 +1,218 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module PASKIL.allskyKeo</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="PASKIL.html"><font color="#ffffff">PASKIL</font></a>.allskyKeo</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/nialp/allsky/PASKIL/Docs/PASKIL/allskyKeo.py">/home/nialp/allsky/PASKIL/Docs/PASKIL/allskyKeo.py</a></font></td></tr></table>
+    <p><tt>Introduction:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;allskyKeo&nbsp;module&nbsp;provides&nbsp;a&nbsp;<a href="#keogram">keogram</a>&nbsp;class&nbsp;used&nbsp;to&nbsp;represent&nbsp;a&nbsp;<a href="#keogram">keogram</a>.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+Concepts:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Keograms&nbsp;are&nbsp;created&nbsp;by&nbsp;taking&nbsp;strips&nbsp;of&nbsp;pixel&nbsp;values&nbsp;out&nbsp;of&nbsp;all-sky&nbsp;images&nbsp;and&nbsp;stacking&nbsp;them&nbsp;together.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;width&nbsp;of&nbsp;the&nbsp;strip&nbsp;of&nbsp;pixels&nbsp;can&nbsp;be&nbsp;set&nbsp;using&nbsp;the&nbsp;strip_width&nbsp;argument.&nbsp;A&nbsp;value&nbsp;of&nbsp;about&nbsp;5&nbsp;gives&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;reasonable&nbsp;results.&nbsp;Gaps&nbsp;in&nbsp;the&nbsp;data&nbsp;are&nbsp;interpolated&nbsp;using&nbsp;a&nbsp;linear&nbsp;interpolation.&nbsp;However,&nbsp;large&nbsp;gaps<br>
+&nbsp;&nbsp;&nbsp;&nbsp;due&nbsp;to&nbsp;lack&nbsp;of&nbsp;data&nbsp;are&nbsp;not&nbsp;interpolated&nbsp;across&nbsp;and&nbsp;will&nbsp;result&nbsp;in&nbsp;blank&nbsp;spaces&nbsp;in&nbsp;the&nbsp;<a href="#keogram">keogram</a>.&nbsp;The&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;angle&nbsp;(from&nbsp;geographic&nbsp;North)&nbsp;that&nbsp;the&nbsp;strips&nbsp;are&nbsp;taken&nbsp;from&nbsp;the&nbsp;images&nbsp;at,&nbsp;can&nbsp;be&nbsp;set&nbsp;using&nbsp;the&nbsp;angle&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;argument.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Note:&nbsp;The&nbsp;Open&nbsp;Closed&nbsp;Boundary&nbsp;(OCB)&nbsp;that&nbsp;is&nbsp;discussed&nbsp;in&nbsp;this&nbsp;section&nbsp;is&nbsp;not&nbsp;really&nbsp;the&nbsp;OCB.&nbsp;In&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;original&nbsp;version&nbsp;of&nbsp;PASKIL,&nbsp;Blanchard's&nbsp;criteria&nbsp;were&nbsp;used&nbsp;to&nbsp;determine&nbsp;if&nbsp;the&nbsp;OCB&nbsp;had&nbsp;indeed&nbsp;been&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;located.&nbsp;However,&nbsp;in&nbsp;keograms&nbsp;with&nbsp;a&nbsp;high&nbsp;mean&nbsp;intensity,&nbsp;this&nbsp;led&nbsp;to&nbsp;large&nbsp;sections&nbsp;of&nbsp;the&nbsp;OCB&nbsp;not&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;being&nbsp;found.&nbsp;This&nbsp;caused&nbsp;problems&nbsp;with&nbsp;patch&nbsp;location&nbsp;using&nbsp;PPCPL&nbsp;(Python&nbsp;Polar&nbsp;Cap&nbsp;Patch&nbsp;Library)&nbsp;and<br>
+&nbsp;&nbsp;&nbsp;&nbsp;so&nbsp;I&nbsp;abandoned&nbsp;Blanchard's&nbsp;criteria.&nbsp;As&nbsp;a&nbsp;result,&nbsp;there&nbsp;is&nbsp;no&nbsp;scientific&nbsp;basis&nbsp;for&nbsp;my&nbsp;positioning&nbsp;of&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;OCB,&nbsp;it&nbsp;is&nbsp;simply&nbsp;the&nbsp;point&nbsp;at&nbsp;which&nbsp;a&nbsp;high&nbsp;intensity&nbsp;region&nbsp;begins.<br>
+&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Example:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;following&nbsp;example&nbsp;creates&nbsp;a&nbsp;<a href="#keogram">keogram</a>&nbsp;of&nbsp;the&nbsp;630nm&nbsp;wavelength&nbsp;between&nbsp;18:30&nbsp;and&nbsp;19:30&nbsp;on&nbsp;the&nbsp;4/2/2003<br>
+&nbsp;&nbsp;&nbsp;&nbsp;using&nbsp;the&nbsp;allsky&nbsp;images&nbsp;of&nbsp;type&nbsp;"png"&nbsp;stored&nbsp;in&nbsp;the&nbsp;directory&nbsp;"Allsky&nbsp;Images".&nbsp;The&nbsp;recursive&nbsp;option&nbsp;is&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;used&nbsp;to&nbsp;traverse&nbsp;the&nbsp;entire&nbsp;directory&nbsp;structure&nbsp;contained&nbsp;within&nbsp;"Allsky&nbsp;Images"&nbsp;looking&nbsp;for&nbsp;images.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;<a href="#keogram">keogram</a>&nbsp;then&nbsp;has&nbsp;the&nbsp;OCB&nbsp;drawn&nbsp;on&nbsp;it&nbsp;and&nbsp;is&nbsp;plotted&nbsp;and&nbsp;viewed&nbsp;in&nbsp;an&nbsp;interactive&nbsp;plotting&nbsp;window.<br>
+&nbsp;<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;from&nbsp;PASKIL&nbsp;import&nbsp;allskyKeo,allskyData<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;import&nbsp;datetime<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;from&nbsp;pylab&nbsp;import&nbsp;*<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#create&nbsp;datetime&nbsp;object&nbsp;defining&nbsp;start&nbsp;time&nbsp;for&nbsp;<a href="#keogram">keogram</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;start_time=datetime.datetime.strptime("04&nbsp;Feb&nbsp;2003&nbsp;18:30:00&nbsp;GMT","%d&nbsp;%b&nbsp;%Y&nbsp;%H:%M:%S&nbsp;%Z")<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#create&nbsp;datetime&nbsp;object&nbsp;defining&nbsp;end&nbsp;time&nbsp;for&nbsp;<a href="#keogram">keogram</a>&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end_time=datetime.datetime.strptime("04&nbsp;Feb&nbsp;2003&nbsp;19:30:00&nbsp;GMT","%d&nbsp;%b&nbsp;%Y&nbsp;%H:%M:%S&nbsp;%Z")&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#create&nbsp;a&nbsp;new&nbsp;dataset&nbsp;object<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dataset=allskyData.<a href="#-new">new</a>("Allsky&nbsp;Images","630","png",site_info_file="site_info.txt",recursive="r")&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#create&nbsp;a&nbsp;new&nbsp;<a href="#keogram">keogram</a>&nbsp;with&nbsp;a&nbsp;sweep&nbsp;angle&nbsp;of&nbsp;33&nbsp;degrees&nbsp;and&nbsp;using&nbsp;a&nbsp;strip&nbsp;width&nbsp;of&nbsp;3&nbsp;pixels&nbsp;and&nbsp;a&nbsp;data&nbsp;spacing&nbsp;of&nbsp;60&nbsp;seconds<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;keo=allskyKeo.<a href="#-new">new</a>(dataset,start_time,end_time,33,3,60)&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;keo2=keo.plotOCB()&nbsp;#draw&nbsp;the&nbsp;OCB&nbsp;onto&nbsp;the&nbsp;<a href="#keogram">keogram</a>&nbsp;image<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;plot=keo2.plot()&nbsp;#plot&nbsp;the&nbsp;<a href="#keogram">keogram</a><br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;plot&nbsp;#identify&nbsp;which&nbsp;figure&nbsp;we&nbsp;want&nbsp;to&nbsp;show<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;show()&nbsp;#open&nbsp;the&nbsp;figure&nbsp;in&nbsp;an&nbsp;interactive&nbsp;plotting&nbsp;window</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="Image.html">Image</a><br>
+<a href="ImageChops.html">ImageChops</a><br>
+<a href="ImageFilter.html">ImageFilter</a><br>
+<a href="ImageOps.html">ImageOps</a><br>
+</td><td width="25%" valign=top><a href="Queue.html">Queue</a><br>
+<a href="PASKIL.allskyColour.html">PASKIL.allskyColour</a><br>
+<a href="PASKIL.allskyImage.html">PASKIL.allskyImage</a><br>
+<a href="calendar.html">calendar</a><br>
+</td><td width="25%" valign=top><a href="matplotlib.cm.html">matplotlib.cm</a><br>
+<a href="datetime.html">datetime</a><br>
+<a href="math.html">math</a><br>
+<a href="PASKIL.misc.html">PASKIL.misc</a><br>
+</td><td width="25%" valign=top><a href="PASKIL.stats.html">PASKIL.stats</a><br>
+<a href="threading.html">threading</a><br>
+<a href="time.html">time</a><br>
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="PASKIL.allskyKeo.html#keogram">keogram</a>
+</font></dt></dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="keogram">class <strong>keogram</strong></a></font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Class&nbsp;to&nbsp;hold&nbsp;<a href="#keogram">keogram</a>&nbsp;data.&nbsp;Unless&nbsp;otherwise&nbsp;stated,&nbsp;all&nbsp;method&nbsp;return&nbsp;a&nbsp;new&nbsp;<a href="#keogram">keogram</a>&nbsp;object.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="keogram-__init__"><strong>__init__</strong></a>(self, image, mode, colour_table, start_time, end_time, angle, fov_angle, OCB, strip_width, intensities)</dt></dl>
+
+<dl><dt><a name="keogram-angle2pix"><strong>angle2pix</strong></a>(self, angle)</dt><dd><tt>Converts&nbsp;an&nbsp;angle&nbsp;in&nbsp;degrees&nbsp;in&nbsp;the&nbsp;range&nbsp;(90-fov_angle)-(90+fov_angle)&nbsp;to&nbsp;a&nbsp;vertical&nbsp;pixel&nbsp;coordinate&nbsp;in&nbsp;the&nbsp;<a href="#keogram">keogram</a>.&nbsp;<br>
+Note&nbsp;that&nbsp;the&nbsp;angle&nbsp;IS&nbsp;NOT&nbsp;the&nbsp;angle&nbsp;from&nbsp;North&nbsp;unless&nbsp;the&nbsp;<a href="#keogram">keogram</a>&nbsp;has&nbsp;been&nbsp;created&nbsp;to&nbsp;run&nbsp;in&nbsp;the&nbsp;north-south&nbsp;direction.&nbsp;<br>
+If&nbsp;the&nbsp;angle&nbsp;is&nbsp;outside&nbsp;of&nbsp;the&nbsp;range&nbsp;of&nbsp;the&nbsp;<a href="#keogram">keogram</a>&nbsp;None&nbsp;is&nbsp;returned.&nbsp;This&nbsp;is&nbsp;the&nbsp;inverse&nbsp;operation&nbsp;of&nbsp;<a href="#keogram-pix2angle">pix2angle</a>()</tt></dd></dl>
+
+<dl><dt><a name="keogram-applyColourTable"><strong>applyColourTable</strong></a>(self, colour_table)</dt><dd><tt>Returns&nbsp;a&nbsp;new&nbsp;<a href="#keogram">keogram</a>&nbsp;object&nbsp;with&nbsp;a&nbsp;colour&nbsp;table&nbsp;applied.&nbsp;The&nbsp;new&nbsp;<a href="#keogram">keogram</a>&nbsp;image&nbsp;will&nbsp;be&nbsp;"RGB".&nbsp;The&nbsp;colour&nbsp;table&nbsp;argument&nbsp;<br>
+should&nbsp;be&nbsp;a&nbsp;colourTable&nbsp;object&nbsp;as&nbsp;defined&nbsp;in&nbsp;allskyColour.</tt></dd></dl>
+
+<dl><dt><a name="keogram-calculateOCB"><strong>calculateOCB</strong></a>(self)</dt><dd><tt>Returns&nbsp;a&nbsp;list&nbsp;of&nbsp;length&nbsp;len(width)&nbsp;containing&nbsp;the&nbsp;vertical&nbsp;position&nbsp;(in&nbsp;pixels)&nbsp;of&nbsp;the&nbsp;Open&nbsp;Closed&nbsp;Boundary&nbsp;for&nbsp;the&nbsp;<br>
+corresponding&nbsp;horizontal&nbsp;pixel&nbsp;coordinate.&nbsp;It&nbsp;also&nbsp;saves&nbsp;this&nbsp;data&nbsp;in&nbsp;the&nbsp;OCB&nbsp;attribute,&nbsp;so&nbsp;further&nbsp;calls&nbsp;to&nbsp;<a href="#keogram-calculateOCB">calculateOCB</a>(),<br>
+<a href="#keogram-findOCB">findOCB</a>()&nbsp;and&nbsp;<a href="#keogram-plotOCB">plotOCB</a>()&nbsp;will&nbsp;not&nbsp;require&nbsp;the&nbsp;OCB&nbsp;to&nbsp;be&nbsp;located&nbsp;again.&nbsp;The&nbsp;OCB&nbsp;is&nbsp;calculated&nbsp;at&nbsp;a&nbsp;resolution&nbsp;equal&nbsp;to&nbsp;the&nbsp;<br>
+strip&nbsp;width&nbsp;used&nbsp;to&nbsp;create&nbsp;the&nbsp;<a href="#keogram">keogram</a>.</tt></dd></dl>
+
+<dl><dt><a name="keogram-findOCB"><strong>findOCB</strong></a>(self, time, previous_position)</dt><dd><tt>Returns&nbsp;the&nbsp;vertical&nbsp;position&nbsp;(in&nbsp;pixels)&nbsp;of&nbsp;the&nbsp;Open&nbsp;Closed&nbsp;Boundary&nbsp;at&nbsp;the&nbsp;specified&nbsp;time.&nbsp;If&nbsp;the&nbsp;time&nbsp;is&nbsp;outside&nbsp;the&nbsp;<br>
+range&nbsp;of&nbsp;the&nbsp;<a href="#keogram">keogram</a>&nbsp;then&nbsp;ValueError&nbsp;will&nbsp;be&nbsp;raised.</tt></dd></dl>
+
+<dl><dt><a name="keogram-getAngle"><strong>getAngle</strong></a>(self)</dt><dd><tt>Returns&nbsp;the&nbsp;angle&nbsp;from&nbsp;geographic&nbsp;North&nbsp;at&nbsp;which&nbsp;the&nbsp;<a href="#keogram">keogram</a>&nbsp;was&nbsp;made.&nbsp;This&nbsp;is&nbsp;the&nbsp;angle&nbsp;from&nbsp;geographic&nbsp;North&nbsp;that&nbsp;the&nbsp;strips<br>
+were&nbsp;taken&nbsp;out&nbsp;of&nbsp;the&nbsp;images.</tt></dd></dl>
+
+<dl><dt><a name="keogram-getColour_table"><strong>getColour_table</strong></a>(self)</dt><dd><tt>Returns&nbsp;a&nbsp;list&nbsp;of&nbsp;RGB&nbsp;tuples&nbsp;containing&nbsp;the&nbsp;colour&nbsp;table&nbsp;which&nbsp;has&nbsp;been&nbsp;applied&nbsp;to&nbsp;the&nbsp;<a href="#keogram">keogram</a>.&nbsp;The&nbsp;<a href="#keogram">keogram</a>&nbsp;will&nbsp;inherit&nbsp;its<br>
+colour&nbsp;table&nbsp;from&nbsp;its&nbsp;source&nbsp;images&nbsp;(or&nbsp;a&nbsp;colour&nbsp;table&nbsp;can&nbsp;be&nbsp;applied&nbsp;using&nbsp;the&nbsp;<a href="#keogram-applyColourTable">applyColourTable</a>()&nbsp;method).&nbsp;If&nbsp;the&nbsp;<a href="#keogram">keogram</a>&nbsp;has<br>
+no&nbsp;colour&nbsp;table&nbsp;then&nbsp;None&nbsp;is&nbsp;returned.</tt></dd></dl>
+
+<dl><dt><a name="keogram-getEnd_time"><strong>getEnd_time</strong></a>(self)</dt><dd><tt>Returns&nbsp;a&nbsp;datetime&nbsp;object&nbsp;containing&nbsp;the&nbsp;latest&nbsp;time&nbsp;shown&nbsp;in&nbsp;the&nbsp;<a href="#keogram">keogram</a>.</tt></dd></dl>
+
+<dl><dt><a name="keogram-getFov_angle"><strong>getFov_angle</strong></a>(self)</dt><dd><tt>Returns&nbsp;the&nbsp;field&nbsp;of&nbsp;view&nbsp;angle&nbsp;of&nbsp;the&nbsp;<a href="#keogram">keogram</a>.&nbsp;This&nbsp;is&nbsp;inherited&nbsp;from&nbsp;the&nbsp;source&nbsp;images.</tt></dd></dl>
+
+<dl><dt><a name="keogram-getHeight"><strong>getHeight</strong></a>(self)</dt><dd><tt>Returns&nbsp;an&nbsp;integer&nbsp;containing&nbsp;the&nbsp;height&nbsp;of&nbsp;the&nbsp;<a href="#keogram">keogram</a>&nbsp;image&nbsp;in&nbsp;pixels.</tt></dd></dl>
+
+<dl><dt><a name="keogram-getImage"><strong>getImage</strong></a>(self)</dt><dd><tt>Returns&nbsp;a&nbsp;PIL&nbsp;image&nbsp;object&nbsp;containing&nbsp;a&nbsp;copy&nbsp;of&nbsp;the&nbsp;<a href="#keogram">keogram</a>&nbsp;image&nbsp;data</tt></dd></dl>
+
+<dl><dt><a name="keogram-getIntensities"><strong>getIntensities</strong></a>(self, time, strip_width)</dt><dd><tt>Returns&nbsp;a&nbsp;tuple&nbsp;of&nbsp;lists&nbsp;(angles,&nbsp;intensities)&nbsp;which&nbsp;correspond&nbsp;to&nbsp;a&nbsp;vertical&nbsp;slice&nbsp;through&nbsp;the&nbsp;<a href="#keogram">keogram</a>&nbsp;at&nbsp;the&nbsp;specified&nbsp;<br>
+time.&nbsp;The&nbsp;strip&nbsp;width&nbsp;argument&nbsp;controls&nbsp;the&nbsp;width&nbsp;in&nbsp;pixels&nbsp;of&nbsp;the&nbsp;strip&nbsp;that&nbsp;the&nbsp;intensities&nbsp;are&nbsp;averaged&nbsp;over.&nbsp;For&nbsp;example<br>
+a&nbsp;strip&nbsp;width&nbsp;of&nbsp;3&nbsp;will&nbsp;mean&nbsp;that&nbsp;each&nbsp;intensity&nbsp;returned&nbsp;is&nbsp;the&nbsp;mean&nbsp;of&nbsp;the&nbsp;pixel&nbsp;intensity&nbsp;at&nbsp;time=time,&nbsp;and&nbsp;the&nbsp;<br>
+neighbouring&nbsp;pixels&nbsp;on&nbsp;each&nbsp;side.&nbsp;Intensities&nbsp;of&nbsp;zero&nbsp;are&nbsp;excluded&nbsp;from&nbsp;the&nbsp;mean&nbsp;calculation&nbsp;(since&nbsp;they&nbsp;correspond&nbsp;to&nbsp;times<br>
+with&nbsp;no&nbsp;available&nbsp;data).&nbsp;For&nbsp;times&nbsp;within&nbsp;regions&nbsp;of&nbsp;missing&nbsp;data,&nbsp;getIntensities&nbsp;will&nbsp;return&nbsp;0.</tt></dd></dl>
+
+<dl><dt><a name="keogram-getMode"><strong>getMode</strong></a>(self)</dt><dd><tt>Returns&nbsp;a&nbsp;string&nbsp;containing&nbsp;the&nbsp;mode&nbsp;of&nbsp;the&nbsp;<a href="#keogram">keogram</a>&nbsp;image,&nbsp;e.g.&nbsp;"RGB".&nbsp;See&nbsp;the&nbsp;PIL&nbsp;handbook&nbsp;for&nbsp;details&nbsp;of&nbsp;image&nbsp;modes.</tt></dd></dl>
+
+<dl><dt><a name="keogram-getStart_time"><strong>getStart_time</strong></a>(self)</dt><dd><tt>Returns&nbsp;a&nbsp;datetime&nbsp;object&nbsp;containing&nbsp;the&nbsp;earliest&nbsp;time&nbsp;shown&nbsp;in&nbsp;the&nbsp;<a href="#keogram">keogram</a>.</tt></dd></dl>
+
+<dl><dt><a name="keogram-getStrip_width"><strong>getStrip_width</strong></a>(self)</dt><dd><tt>Returns&nbsp;the&nbsp;width&nbsp;of&nbsp;the&nbsp;strips&nbsp;(in&nbsp;pixels)&nbsp;that&nbsp;were&nbsp;taken&nbsp;from&nbsp;the&nbsp;source&nbsp;images&nbsp;to&nbsp;create&nbsp;the&nbsp;<a href="#keogram">keogram</a>.</tt></dd></dl>
+
+<dl><dt><a name="keogram-getWidth"><strong>getWidth</strong></a>(self)</dt><dd><tt>Returns&nbsp;an&nbsp;integer&nbsp;containing&nbsp;the&nbsp;width&nbsp;of&nbsp;the&nbsp;<a href="#keogram">keogram</a>&nbsp;image&nbsp;in&nbsp;pixels.</tt></dd></dl>
+
+<dl><dt><a name="keogram-medianFilter"><strong>medianFilter</strong></a>(self, n)</dt><dd><tt>This&nbsp;is&nbsp;a&nbsp;thin&nbsp;wrapper&nbsp;function&nbsp;for&nbsp;the&nbsp;median&nbsp;filter&nbsp;provided&nbsp;by&nbsp;PIL.&nbsp;It&nbsp;replaces&nbsp;each&nbsp;<br>
+pixel&nbsp;in&nbsp;the&nbsp;<a href="#keogram">keogram</a>&nbsp;image&nbsp;by&nbsp;the&nbsp;median&nbsp;value&nbsp;of&nbsp;the&nbsp;pixels&nbsp;in&nbsp;an&nbsp;nxn&nbsp;square&nbsp;around&nbsp;it&nbsp;<br>
+(where&nbsp;n&nbsp;is&nbsp;an&nbsp;integer).</tt></dd></dl>
+
+<dl><dt><a name="keogram-pix2angle"><strong>pix2angle</strong></a>(self, pixel)</dt><dd><tt>Converts&nbsp;a&nbsp;vertical&nbsp;pixel&nbsp;coordinate&nbsp;into&nbsp;an&nbsp;angle&nbsp;in&nbsp;degrees.&nbsp;If&nbsp;the&nbsp;pixel&nbsp;coordinate&nbsp;is&nbsp;outside&nbsp;of&nbsp;the&nbsp;range&nbsp;of&nbsp;the&nbsp;<br>
+<a href="#keogram">keogram</a>&nbsp;None&nbsp;is&nbsp;returned.&nbsp;This&nbsp;is&nbsp;the&nbsp;inverse&nbsp;operation&nbsp;of&nbsp;<a href="#keogram-angle2pix">angle2pix</a>().</tt></dd></dl>
+
+<dl><dt><a name="keogram-pix2time"><strong>pix2time</strong></a>(self, pixel)</dt><dd><tt>Converts&nbsp;a&nbsp;horizontal&nbsp;pixel&nbsp;coordinate&nbsp;into&nbsp;a&nbsp;datetime&nbsp;object.&nbsp;If&nbsp;the&nbsp;pixel&nbsp;coordinate&nbsp;is&nbsp;outside&nbsp;of&nbsp;the&nbsp;range&nbsp;of&nbsp;the&nbsp;<a href="#keogram">keogram</a><br>
+None&nbsp;is&nbsp;returned.&nbsp;This&nbsp;is&nbsp;the&nbsp;inverse&nbsp;operation&nbsp;of&nbsp;<a href="#keogram-time2pix">time2pix</a>().</tt></dd></dl>
+
+<dl><dt><a name="keogram-plot"><strong>plot</strong></a>(self, keo_title<font color="#909090">='DEFAULT'</font>, x_label<font color="#909090">='Time (UT)'</font>, y_label<font color="#909090">='Scan angle (degrees)'</font>, size<font color="#909090">=None</font>)</dt><dd><tt>Returns&nbsp;a&nbsp;matplotlib&nbsp;figure&nbsp;object&nbsp;containing&nbsp;a&nbsp;plot&nbsp;of&nbsp;the&nbsp;<a href="#keogram">keogram</a>.&nbsp;The&nbsp;keo_title&nbsp;option&nbsp;should&nbsp;be&nbsp;a&nbsp;string&nbsp;that&nbsp;you&nbsp;want&nbsp;to<br>
+appear&nbsp;as&nbsp;the&nbsp;title&nbsp;for&nbsp;the&nbsp;plot.&nbsp;The&nbsp;default&nbsp;is&nbsp;the&nbsp;time&nbsp;range&nbsp;of&nbsp;the&nbsp;<a href="#keogram">keogram</a>.&nbsp;Setting&nbsp;keo_title&nbsp;to&nbsp;None&nbsp;will&nbsp;result&nbsp;in&nbsp;no&nbsp;title<br>
+on&nbsp;the&nbsp;plot.&nbsp;The&nbsp;x_label&nbsp;and&nbsp;y_label&nbsp;options&nbsp;should&nbsp;be&nbsp;strings&nbsp;that&nbsp;you&nbsp;want&nbsp;to&nbsp;appear&nbsp;as&nbsp;axis&nbsp;titles&nbsp;on&nbsp;the&nbsp;plot.&nbsp;The&nbsp;defaults&nbsp;are<br>
+"Time&nbsp;(UT)"&nbsp;and&nbsp;"Scan&nbsp;angle&nbsp;(degrees)"&nbsp;respectively.&nbsp;Setting&nbsp;them&nbsp;to&nbsp;None&nbsp;will&nbsp;result&nbsp;in&nbsp;no&nbsp;axis&nbsp;titles.&nbsp;The&nbsp;size&nbsp;option&nbsp;should&nbsp;be<br>
+a&nbsp;tuple&nbsp;(width,height)&nbsp;in&nbsp;inches.&nbsp;The&nbsp;default&nbsp;value&nbsp;is&nbsp;None.&nbsp;In&nbsp;this&nbsp;case&nbsp;the&nbsp;size&nbsp;for&nbsp;the&nbsp;plot&nbsp;is&nbsp;determined&nbsp;automatically&nbsp;based&nbsp;on<br>
+the&nbsp;size&nbsp;of&nbsp;the&nbsp;<a href="#keogram">keogram</a>&nbsp;image.&nbsp;<br>
+&nbsp;<br>
+Use&nbsp;show()&nbsp;to&nbsp;view&nbsp;the&nbsp;plot&nbsp;in&nbsp;an&nbsp;interactive&nbsp;viewing&nbsp;window.&nbsp;E.g.:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;from&nbsp;pylab&nbsp;import&nbsp;show<br>
+&nbsp;&nbsp;&nbsp;&nbsp;plot=keo.<a href="#keogram-plot">plot</a>()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;plot<br>
+&nbsp;&nbsp;&nbsp;&nbsp;show()</tt></dd></dl>
+
+<dl><dt><a name="keogram-plotOCB"><strong>plotOCB</strong></a>(self)</dt><dd><tt>Returns&nbsp;a&nbsp;new&nbsp;<a href="#keogram">keogram</a>&nbsp;object&nbsp;with&nbsp;the&nbsp;position&nbsp;of&nbsp;the&nbsp;OCB&nbsp;drawn&nbsp;onto&nbsp;the&nbsp;<a href="#keogram">keogram</a>&nbsp;image.&nbsp;If&nbsp;the&nbsp;OCB&nbsp;has&nbsp;not&nbsp;been&nbsp;calculated&nbsp;<br>
+already,&nbsp;then&nbsp;it&nbsp;will&nbsp;be&nbsp;calculated&nbsp;first&nbsp;and&nbsp;stored&nbsp;in&nbsp;both&nbsp;the&nbsp;original&nbsp;<a href="#keogram">keogram</a>&nbsp;object&nbsp;and&nbsp;the&nbsp;new&nbsp;one.</tt></dd></dl>
+
+<dl><dt><a name="keogram-roll"><strong>roll</strong></a>(self, file_list)</dt><dd><tt>This&nbsp;method&nbsp;is&nbsp;designed&nbsp;to&nbsp;be&nbsp;used&nbsp;for&nbsp;producing&nbsp;real-time&nbsp;keograms.&nbsp;The&nbsp;file_list&nbsp;argument&nbsp;should&nbsp;be&nbsp;a&nbsp;list&nbsp;of&nbsp;tuples&nbsp;<br>
+(filename,site_info_file)&nbsp;of&nbsp;images&nbsp;and&nbsp;their&nbsp;corresponding&nbsp;site_info_files&nbsp;which&nbsp;you&nbsp;want&nbsp;to&nbsp;be&nbsp;included&nbsp;in&nbsp;the&nbsp;<br>
+current&nbsp;<a href="#keogram">keogram</a>.&nbsp;The&nbsp;total&nbsp;time&nbsp;span&nbsp;of&nbsp;the&nbsp;<a href="#keogram">keogram</a>&nbsp;will&nbsp;remain&nbsp;unchanged,&nbsp;but&nbsp;the&nbsp;<a href="#keogram">keogram</a>&nbsp;will&nbsp;be&nbsp;shifted&nbsp;to&nbsp;include&nbsp;the&nbsp;<br>
+new&nbsp;images.&nbsp;For&nbsp;example,&nbsp;if&nbsp;you&nbsp;have&nbsp;created&nbsp;a&nbsp;<a href="#keogram">keogram</a>&nbsp;which&nbsp;spans&nbsp;from&nbsp;11:00&nbsp;to&nbsp;12:00&nbsp;and&nbsp;you&nbsp;then&nbsp;use&nbsp;<a href="#keogram-roll">roll</a>()&nbsp;with&nbsp;the&nbsp;<br>
+filename&nbsp;of&nbsp;an&nbsp;image&nbsp;that&nbsp;was&nbsp;captured&nbsp;at&nbsp;12:01,&nbsp;then&nbsp;the&nbsp;<a href="#keogram">keogram</a>&nbsp;that&nbsp;is&nbsp;returned&nbsp;will&nbsp;span&nbsp;from&nbsp;11:01&nbsp;to&nbsp;12:01&nbsp;and&nbsp;will&nbsp;<br>
+include&nbsp;the&nbsp;data&nbsp;from&nbsp;the&nbsp;new&nbsp;image.</tt></dd></dl>
+
+<dl><dt><a name="keogram-save"><strong>save</strong></a>(self, filename)</dt><dd><tt>Saves&nbsp;<a href="#keogram">keogram</a>&nbsp;object&nbsp;in&nbsp;specified&nbsp;file.&nbsp;It&nbsp;can&nbsp;be&nbsp;retrieved&nbsp;later&nbsp;using&nbsp;the&nbsp;<a href="#-load">load</a>()&nbsp;function.</tt></dd></dl>
+
+<dl><dt><a name="keogram-savePlot"><strong>savePlot</strong></a>(self, filename, remove_space<font color="#909090">=True</font>, keo_title<font color="#909090">='DEFAULT'</font>, x_label<font color="#909090">='Time (UT)'</font>, y_label<font color="#909090">='Scan angle (degrees)'</font>, size<font color="#909090">=None</font>)</dt><dd><tt>Saves&nbsp;a&nbsp;plot&nbsp;of&nbsp;the&nbsp;<a href="#keogram">keogram</a>&nbsp;data&nbsp;as&nbsp;a&nbsp;png&nbsp;file&nbsp;specified&nbsp;by&nbsp;the&nbsp;filename&nbsp;argument.&nbsp;This&nbsp;is&nbsp;a&nbsp;convenience&nbsp;<br>
+function&nbsp;which&nbsp;essentially&nbsp;does&nbsp;keo.<a href="#keogram-plot">plot</a>()&nbsp;and&nbsp;then&nbsp;pylab.savefig().&nbsp;However,&nbsp;it&nbsp;also&nbsp;removes&nbsp;the&nbsp;white&nbsp;<br>
+borders&nbsp;in&nbsp;the&nbsp;matplotlib&nbsp;plots&nbsp;(this&nbsp;can&nbsp;be&nbsp;disabled&nbsp;by&nbsp;setting&nbsp;remove_space&nbsp;to&nbsp;False).&nbsp;The&nbsp;other&nbsp;<br>
+arguments&nbsp;are&nbsp;the&nbsp;same&nbsp;as&nbsp;for&nbsp;<a href="#keogram-plot">plot</a>().</tt></dd></dl>
+
+<dl><dt><a name="keogram-time2pix"><strong>time2pix</strong></a>(self, time)</dt><dd><tt>Converts&nbsp;a&nbsp;datetime&nbsp;object&nbsp;into&nbsp;a&nbsp;horizontal&nbsp;pixel&nbsp;coordinate.&nbsp;If&nbsp;the&nbsp;time&nbsp;is&nbsp;outside&nbsp;of&nbsp;the&nbsp;range&nbsp;of&nbsp;the&nbsp;<a href="#keogram">keogram</a>&nbsp;None&nbsp;is&nbsp;<br>
+returned.&nbsp;This&nbsp;is&nbsp;the&nbsp;inverse&nbsp;operation&nbsp;of&nbsp;<a href="#keogram-pix2time">pix2time</a>().</tt></dd></dl>
+
+<dl><dt><a name="keogram-zoom"><strong>zoom</strong></a>(self, start_time, end_time)</dt><dd><tt>Returns&nbsp;a&nbsp;<a href="#keogram">keogram</a>&nbsp;object&nbsp;spanning&nbsp;the&nbsp;time&nbsp;between&nbsp;start_time&nbsp;and&nbsp;end_time.&nbsp;Both&nbsp;arguments&nbsp;should&nbsp;be&nbsp;datetime&nbsp;objects.&nbsp;If&nbsp;both<br>
+start_time&nbsp;and&nbsp;end_time&nbsp;are&nbsp;outside&nbsp;the&nbsp;range&nbsp;of&nbsp;the&nbsp;current&nbsp;<a href="#keogram">keogram</a>&nbsp;then&nbsp;ValueError&nbsp;is&nbsp;raised.&nbsp;If&nbsp;just&nbsp;one&nbsp;is&nbsp;outside&nbsp;of&nbsp;the<br>
+time&nbsp;range&nbsp;then&nbsp;this&nbsp;part&nbsp;of&nbsp;the&nbsp;new&nbsp;<a href="#keogram">keogram</a>&nbsp;will&nbsp;be&nbsp;blank.</tt></dd></dl>
+
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-load"><strong>load</strong></a>(filename)</dt><dd><tt>Loads&nbsp;a&nbsp;<a href="#keogram">keogram</a>&nbsp;object&nbsp;from&nbsp;the&nbsp;specified&nbsp;file.&nbsp;Keogram&nbsp;files&nbsp;can&nbsp;be&nbsp;created&nbsp;using&nbsp;the&nbsp;save()&nbsp;method.</tt></dd></dl>
+ <dl><dt><a name="-new"><strong>new</strong></a>(dataset, angle, start_time<font color="#909090">=None</font>, end_time<font color="#909090">=None</font>, strip_width<font color="#909090">=5</font>, data_spacing<font color="#909090">='AUTO'</font>)</dt><dd><tt>Returns&nbsp;a&nbsp;<a href="#keogram">keogram</a>&nbsp;object.&nbsp;The&nbsp;dataset&nbsp;argument&nbsp;should&nbsp;be&nbsp;an&nbsp;allskyData.dataset&nbsp;object&nbsp;which&nbsp;contains&nbsp;<br>
+the&nbsp;images&nbsp;from&nbsp;which&nbsp;the&nbsp;<a href="#keogram">keogram</a>&nbsp;will&nbsp;be&nbsp;produced.&nbsp;&nbsp;The&nbsp;angle&nbsp;argument&nbsp;is&nbsp;the&nbsp;angle&nbsp;from&nbsp;geographic&nbsp;<br>
+North&nbsp;that&nbsp;the&nbsp;slices&nbsp;from&nbsp;the&nbsp;images&nbsp;will&nbsp;be&nbsp;taken.&nbsp;The&nbsp;strip&nbsp;width&nbsp;option&nbsp;controls&nbsp;the&nbsp;width&nbsp;(in&nbsp;pixels)&nbsp;<br>
+of&nbsp;the&nbsp;slice&nbsp;taken&nbsp;from&nbsp;the&nbsp;image.&nbsp;The&nbsp;start&nbsp;and&nbsp;end&nbsp;time&nbsp;options&nbsp;should&nbsp;be&nbsp;datetime&nbsp;objects&nbsp;specifying&nbsp;<br>
+the&nbsp;time&nbsp;range&nbsp;of&nbsp;the&nbsp;<a href="#keogram">keogram</a>&nbsp;(the&nbsp;<a href="#keogram">keogram</a>&nbsp;will&nbsp;be&nbsp;inclusive&nbsp;of&nbsp;these&nbsp;times).&nbsp;The&nbsp;default&nbsp;value&nbsp;is&nbsp;None,&nbsp;<br>
+in&nbsp;which&nbsp;case&nbsp;all&nbsp;images&nbsp;in&nbsp;the&nbsp;dataset&nbsp;will&nbsp;be&nbsp;included.The&nbsp;data_spacing&nbsp;option&nbsp;should&nbsp;be&nbsp;the&nbsp;amount&nbsp;of&nbsp;<br>
+time&nbsp;(in&nbsp;seconds)&nbsp;between&nbsp;the&nbsp;source&nbsp;images&nbsp;for&nbsp;the&nbsp;<a href="#keogram">keogram</a>.&nbsp;The&nbsp;default&nbsp;value&nbsp;is"AUTO",&nbsp;in&nbsp;which&nbsp;case&nbsp;the&nbsp;<br>
+minimum&nbsp;gap&nbsp;between&nbsp;consecutive&nbsp;images&nbsp;in&nbsp;the&nbsp;dataset&nbsp;is&nbsp;used.&nbsp;However,&nbsp;under&nbsp;some&nbsp;circumstances,&nbsp;this&nbsp;may&nbsp;<br>
+lead&nbsp;to&nbsp;a&nbsp;stripy,&nbsp;uninterpolated&nbsp;<a href="#keogram">keogram</a>,&nbsp;in&nbsp;which&nbsp;case&nbsp;you&nbsp;should&nbsp;increase&nbsp;the&nbsp;data_spacing&nbsp;value.</tt></dd></dl>
+</td></tr></table>
+</body></html>

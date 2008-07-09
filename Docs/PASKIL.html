@@ -1,0 +1,150 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: package PASKIL</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>PASKIL</strong></big></big> (version 3.1.2)</font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/nialp/allsky/PASKIL/Docs/PASKIL/__init__.py">/home/nialp/allsky/PASKIL/Docs/PASKIL/__init__.py</a></font></td></tr></table>
+    <p><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Python&nbsp;All-Sky&nbsp;Image&nbsp;Library<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Nial&nbsp;Peters<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;March&nbsp;&nbsp;2008<br>
+&nbsp;<br>
+&nbsp;<br>
+Introduction:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;Python&nbsp;All-Sky&nbsp;Image&nbsp;Library&nbsp;(PASKIL)&nbsp;is&nbsp;a&nbsp;collection&nbsp;of&nbsp;Python&nbsp;modules&nbsp;designed&nbsp;to&nbsp;manipulate&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;and&nbsp;process&nbsp;all-sky&nbsp;images.&nbsp;&nbsp;Its&nbsp;plug-in&nbsp;architecture&nbsp;enables&nbsp;it&nbsp;to&nbsp;process&nbsp;images&nbsp;and&nbsp;image&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;meta-data&nbsp;of&nbsp;any&nbsp;format.<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;PASKIL&nbsp;is&nbsp;largely&nbsp;built&nbsp;on&nbsp;top&nbsp;of&nbsp;the&nbsp;powerful&nbsp;Python&nbsp;Image&nbsp;Library&nbsp;(PIL)&nbsp;and&nbsp;it&nbsp;is&nbsp;advised&nbsp;that&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;users&nbsp;familirise&nbsp;themselves&nbsp;with&nbsp;the&nbsp;concepts&nbsp;behind&nbsp;PIL&nbsp;before&nbsp;trying&nbsp;to&nbsp;use&nbsp;PASKIL.<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;If&nbsp;you&nbsp;have&nbsp;never&nbsp;used&nbsp;Python&nbsp;before,&nbsp;then&nbsp;don't&nbsp;despair!&nbsp;It&nbsp;is&nbsp;a&nbsp;very&nbsp;easy&nbsp;language&nbsp;to&nbsp;learn&nbsp;and&nbsp;use,&nbsp;and&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;there&nbsp;is&nbsp;lots&nbsp;of&nbsp;help&nbsp;available&nbsp;on&nbsp;the&nbsp;Internet.&nbsp;There&nbsp;is&nbsp;also&nbsp;lots&nbsp;of&nbsp;example&nbsp;code&nbsp;throughout&nbsp;this&nbsp;document&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;which&nbsp;shows&nbsp;how&nbsp;to&nbsp;use&nbsp;PASKIL&nbsp;in&nbsp;your&nbsp;own&nbsp;programs.<br>
+&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Installation:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Prerequisites:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Before&nbsp;installing&nbsp;and&nbsp;using&nbsp;PASKIL&nbsp;you&nbsp;will&nbsp;need&nbsp;to&nbsp;ensure&nbsp;that&nbsp;you&nbsp;have&nbsp;installed&nbsp;the&nbsp;following&nbsp;on&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;your&nbsp;computer:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Python:&nbsp;<a href="http://www.python.org/">http://www.python.org/</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;A&nbsp;C&nbsp;compiler&nbsp;e.g.&nbsp;GCC:&nbsp;<a href="http://gcc.gnu.org/">http://gcc.gnu.org/</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;The&nbsp;Python&nbsp;Image&nbsp;Library&nbsp;(PIL):&nbsp;<a href="http://www.pythonware.com/products/pil/">http://www.pythonware.com/products/pil/</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Matplotlib:&nbsp;<a href="http://matplotlib.sourceforge.net/">http://matplotlib.sourceforge.net/</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Matplotlib&nbsp;basemap&nbsp;toolbox:&nbsp;<a href="http://matplotlib.sourceforge.net/toolkits.html">http://matplotlib.sourceforge.net/toolkits.html</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;NumPy:&nbsp;<a href="http://numpy.scipy.org/">http://numpy.scipy.org/</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;PyFits:&nbsp;<a href="http://www.stsci.edu/resources/software_hardware/pyfits">http://www.stsci.edu/resources/software_hardware/pyfits</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Linux&nbsp;users&nbsp;will&nbsp;probably&nbsp;find&nbsp;all&nbsp;of&nbsp;this&nbsp;software&nbsp;in&nbsp;the&nbsp;software&nbsp;repository&nbsp;for&nbsp;their&nbsp;particular&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;distribution.&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Step&nbsp;By&nbsp;Step&nbsp;Guide:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1)&nbsp;Copy&nbsp;the&nbsp;PASKIL&nbsp;tar&nbsp;archive&nbsp;file&nbsp;into&nbsp;your&nbsp;home&nbsp;directory.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2)&nbsp;Unpack&nbsp;the&nbsp;archive.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3)&nbsp;Move&nbsp;to&nbsp;the&nbsp;unpacked&nbsp;directory.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;4)&nbsp;Run&nbsp;the&nbsp;command&nbsp;"python&nbsp;setup.py&nbsp;install".&nbsp;You&nbsp;will&nbsp;need&nbsp;root&nbsp;privileges&nbsp;to&nbsp;run&nbsp;this&nbsp;command.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Windows&nbsp;users&nbsp;may&nbsp;need&nbsp;to&nbsp;use&nbsp;the&nbsp;command&nbsp;"setup.py&nbsp;install"<br>
+&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Using&nbsp;PASKIL:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;PASKIL&nbsp;is&nbsp;split&nbsp;into&nbsp;several&nbsp;modules,&nbsp;each&nbsp;of&nbsp;which&nbsp;deals&nbsp;with&nbsp;a&nbsp;specific&nbsp;aspect&nbsp;of&nbsp;all-sky&nbsp;image&nbsp;processing.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;details&nbsp;of&nbsp;the&nbsp;functionality&nbsp;that&nbsp;each&nbsp;module&nbsp;provides&nbsp;can&nbsp;be&nbsp;found&nbsp;on&nbsp;its&nbsp;respective&nbsp;manual&nbsp;page.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;However,&nbsp;as&nbsp;an&nbsp;overview:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allskyCalib&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;&nbsp;Deals&nbsp;with&nbsp;producing&nbsp;flat&nbsp;field&nbsp;correction&nbsp;curves.&nbsp;These&nbsp;are&nbsp;needed&nbsp;to&nbsp;calibrate&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for&nbsp;the&nbsp;angular&nbsp;dependence&nbsp;of&nbsp;the&nbsp;CCD's&nbsp;sensitivity.<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allskyColour&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;&nbsp;Creates&nbsp;colour&nbsp;tables&nbsp;for&nbsp;mapping&nbsp;grey-scale&nbsp;images&nbsp;to&nbsp;RGB&nbsp;images.&nbsp;The&nbsp;colour&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tables&nbsp;are&nbsp;intelligently&nbsp;stretched&nbsp;to&nbsp;pick&nbsp;out&nbsp;the&nbsp;most&nbsp;detail&nbsp;in&nbsp;the&nbsp;image.<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allskyData&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;&nbsp;This&nbsp;module&nbsp;is&nbsp;designed&nbsp;to&nbsp;ease&nbsp;the&nbsp;use&nbsp;of&nbsp;large&nbsp;data&nbsp;sets.&nbsp;It&nbsp;provides&nbsp;an&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;abstraction&nbsp;layer&nbsp;between&nbsp;the&nbsp;user&nbsp;and&nbsp;the&nbsp;directory&nbsp;structure&nbsp;of&nbsp;the&nbsp;data&nbsp;set.<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allskyImage&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;&nbsp;This&nbsp;is&nbsp;the&nbsp;main&nbsp;PASKIL&nbsp;module.&nbsp;It&nbsp;provides&nbsp;all&nbsp;the&nbsp;functionality&nbsp;needed&nbsp;for&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;loading&nbsp;and&nbsp;manipulating&nbsp;all-sky&nbsp;images.<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;allskyImagePlugins&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;&nbsp;Provides&nbsp;the&nbsp;plugin&nbsp;architecture&nbsp;that&nbsp;PASKIL&nbsp;requires&nbsp;to&nbsp;open&nbsp;different&nbsp;formats&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;of&nbsp;all-sky&nbsp;image.&nbsp;See&nbsp;the&nbsp;documentation&nbsp;for&nbsp;this&nbsp;module&nbsp;for&nbsp;details&nbsp;on&nbsp;what&nbsp;image<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;metadata&nbsp;is&nbsp;required&nbsp;by&nbsp;PASKIL,&nbsp;how&nbsp;to&nbsp;input&nbsp;it&nbsp;and&nbsp;how&nbsp;to&nbsp;write&nbsp;your&nbsp;own&nbsp;plugins.<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allskyKeo&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;&nbsp;This&nbsp;module&nbsp;is&nbsp;used&nbsp;to&nbsp;create&nbsp;keograms&nbsp;from&nbsp;sets&nbsp;of&nbsp;all-sky&nbsp;images.<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allskyProj&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;&nbsp;Deals&nbsp;with&nbsp;projecting&nbsp;all-sky&nbsp;images&nbsp;onto&nbsp;maps.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allskyRaw&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;&nbsp;Provides&nbsp;functions&nbsp;for&nbsp;reading&nbsp;raw&nbsp;image&nbsp;formats&nbsp;such&nbsp;as&nbsp;Nikon's&nbsp;NEF&nbsp;format.<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;misc&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;&nbsp;Provides&nbsp;a&nbsp;few&nbsp;miscellaneous&nbsp;functions&nbsp;that&nbsp;are&nbsp;used&nbsp;internally&nbsp;by&nbsp;PASKIL.<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;stats&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;&nbsp;Provides&nbsp;some&nbsp;statistical&nbsp;functions&nbsp;that&nbsp;are&nbsp;used&nbsp;internally&nbsp;by&nbsp;PASKIL.<br>
+&nbsp;<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;You&nbsp;may&nbsp;have&nbsp;noticed&nbsp;that&nbsp;PASKIL&nbsp;also&nbsp;contains&nbsp;a&nbsp;module&nbsp;called&nbsp;__init__.&nbsp;This&nbsp;contains&nbsp;a&nbsp;list&nbsp;of&nbsp;all&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;other&nbsp;modules,&nbsp;and&nbsp;is&nbsp;used&nbsp;by&nbsp;Python&nbsp;on&nbsp;encountering&nbsp;a&nbsp;'from&nbsp;PASKIL&nbsp;import&nbsp;*'&nbsp;command&nbsp;to&nbsp;ensure&nbsp;that&nbsp;all&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;modules&nbsp;were&nbsp;imported.&nbsp;If&nbsp;you&nbsp;add&nbsp;a&nbsp;new&nbsp;module&nbsp;to&nbsp;PASKIL&nbsp;then&nbsp;it&nbsp;is&nbsp;important&nbsp;that&nbsp;you&nbsp;update&nbsp;this&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;list.<br>
+&nbsp;<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+Useful&nbsp;Links:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="http://docs.python.org/tut/tut.html">http://docs.python.org/tut/tut.html</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;good&nbsp;introductory&nbsp;Python&nbsp;tutorial.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="http://www.pythonware.com/library/pil/handbook/index.htm">http://www.pythonware.com/library/pil/handbook/index.htm</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;Python&nbsp;Image&nbsp;Library&nbsp;(PIL)&nbsp;handbook.&nbsp;This&nbsp;is&nbsp;an&nbsp;excellent&nbsp;resource!&nbsp;It&nbsp;is&nbsp;very&nbsp;easy&nbsp;to&nbsp;understand&nbsp;and&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;I&nbsp;recommend&nbsp;that&nbsp;you&nbsp;read&nbsp;it&nbsp;before&nbsp;trying&nbsp;to&nbsp;use&nbsp;PASKIL&nbsp;as&nbsp;many&nbsp;of&nbsp;the&nbsp;concepts&nbsp;are&nbsp;the&nbsp;same.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="http://docs.python.org/lib/lib.html">http://docs.python.org/lib/lib.html</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;Python&nbsp;library&nbsp;reference.&nbsp;This&nbsp;covers&nbsp;all&nbsp;the&nbsp;other&nbsp;library&nbsp;functions&nbsp;used&nbsp;in&nbsp;PASKIL.<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="http://matplotlib.sourceforge.net/">http://matplotlib.sourceforge.net/</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;webpage&nbsp;for&nbsp;the&nbsp;matplotlib&nbsp;package,&nbsp;which&nbsp;is&nbsp;used&nbsp;for&nbsp;all&nbsp;the&nbsp;plotting&nbsp;routines&nbsp;in&nbsp;PASKIL.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+Bugs&nbsp;and&nbsp;comments:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;nonbiostudent@hotmail.com</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Package Contents</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="PASKIL.allskyCalib.html">allskyCalib</a><br>
+<a href="PASKIL.allskyColour.html">allskyColour</a><br>
+<a href="PASKIL.allskyData.html">allskyData</a><br>
+<a href="PASKIL.allskyImage.html">allskyImage</a><br>
+</td><td width="25%" valign=top><a href="PASKIL.allskyImagePlugins.html">allskyImagePlugins</a><br>
+<a href="PASKIL.allskyKeo.html">allskyKeo</a><br>
+<a href="PASKIL.allskyPatch.html">allskyPatch</a><br>
+<a href="PASKIL.allskyProj.html">allskyProj</a><br>
+</td><td width="25%" valign=top><a href="PASKIL.allskyRaw.html">allskyRaw</a><br>
+<a href="PASKIL.extensions.html"><strong>extensions</strong>&nbsp;(package)</a><br>
+<a href="PASKIL.misc.html">misc</a><br>
+<a href="PASKIL.plugins.html"><strong>plugins</strong>&nbsp;(package)</a><br>
+</td><td width="25%" valign=top><a href="PASKIL.stats.html">stats</a><br>
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#55aa55">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><strong>__all__</strong> = ['allskyCalib', 'allskyColour', 'allskyData', 'allskyImage', 'allskyImagePlugins', 'allskyProj', 'allskyKeo', 'allskyRaw', 'misc', 'stats', 'plugins']<br>
+<strong>__version__</strong> = '3.1.2'</td></tr></table>
+</body></html>

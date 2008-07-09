@@ -1,0 +1,144 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module PASKIL.allskyPatch</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="PASKIL.html"><font color="#ffffff">PASKIL</font></a>.allskyPatch</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/nialp/allsky/PASKIL/Docs/PASKIL/allskyPatch.py">/home/nialp/allsky/PASKIL/Docs/PASKIL/allskyPatch.py</a></font></td></tr></table>
+    <p></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="PASKIL.allskyKeo.html">PASKIL.allskyKeo</a><br>
+</td><td width="25%" valign=top><a href="calendar.html">calendar</a><br>
+</td><td width="25%" valign=top><a href="PASKIL.stats.html">PASKIL.stats</a><br>
+</td><td width="25%" valign=top><a href="sys.html">sys</a><br>
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="PASKIL.allskyPatch.html#gapFinder">gapFinder</a>
+</font></dt><dt><font face="helvetica, arial"><a href="PASKIL.allskyPatch.html#horizontalStrip">horizontalStrip</a>
+</font></dt><dt><font face="helvetica, arial"><a href="PASKIL.allskyPatch.html#patchFinder">patchFinder</a>
+</font></dt><dt><font face="helvetica, arial"><a href="PASKIL.allskyPatch.html#patchLine">patchLine</a>
+</font></dt><dt><font face="helvetica, arial"><a href="PASKIL.allskyPatch.html#path">path</a>
+</font></dt><dt><font face="helvetica, arial"><a href="PASKIL.allskyPatch.html#pathGroup">pathGroup</a>
+</font></dt></dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="gapFinder">class <strong>gapFinder</strong></a></font></td></tr>
+    
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="gapFinder-__init__"><strong>__init__</strong></a>(self, path_group)</dt></dl>
+
+<dl><dt><a name="gapFinder-calculatePaths"><strong>calculatePaths</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="gapFinder-closeGaps"><strong>closeGaps</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="gapFinder-removeLonelyPatchLines"><strong>removeLonelyPatchLines</strong></a>(self)</dt></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="horizontalStrip">class <strong>horizontalStrip</strong></a></font></td></tr>
+    
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="horizontalStrip-__init__"><strong>__init__</strong></a>(self, patch_lines, y_pixel)</dt></dl>
+
+<dl><dt><a name="horizontalStrip-addPatchline"><strong>addPatchline</strong></a>(self, patch_line)</dt></dl>
+
+<dl><dt><a name="horizontalStrip-findOccupiedPix"><strong>findOccupiedPix</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="horizontalStrip-removePatchline"><strong>removePatchline</strong></a>(self, patch_line)</dt></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="patchFinder">class <strong>patchFinder</strong></a></font></td></tr>
+    
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="patchFinder-__init__"><strong>__init__</strong></a>(self, horizontal_strips)</dt></dl>
+
+<dl><dt><a name="patchFinder-calculatePaths"><strong>calculatePaths</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="patchFinder-closeGaps"><strong>closeGaps</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="patchFinder-removeLonelyPatchLines"><strong>removeLonelyPatchLines</strong></a>(self)</dt></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="patchLine">class <strong>patchLine</strong></a></font></td></tr>
+    
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="patchLine-__init__"><strong>__init__</strong></a>(self, start, end, y_pixel)</dt></dl>
+
+<dl><dt><a name="patchLine-addNeighbour"><strong>addNeighbour</strong></a>(self, patchLine)</dt></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="path">class <strong>path</strong></a></font></td></tr>
+    
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="path-__init__"><strong>__init__</strong></a>(self, patch_lines, path_list)</dt></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="pathGroup">class <strong>pathGroup</strong></a></font></td></tr>
+    
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="pathGroup-__calculateHorizontalStrips__"><strong>__calculateHorizontalStrips__</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="pathGroup-__init__"><strong>__init__</strong></a>(self, path)</dt></dl>
+
+<dl><dt><a name="pathGroup-addPath"><strong>addPath</strong></a>(self, path)</dt></dl>
+
+<dl><dt><a name="pathGroup-belongsInGroup"><strong>belongsInGroup</strong></a>(self, path)</dt></dl>
+
+<dl><dt><a name="pathGroup-getStrips"><strong>getStrips</strong></a>(self)</dt></dl>
+
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-PatchlineCompare"><strong>PatchlineCompare</strong></a>(first, second)</dt></dl>
+ <dl><dt><a name="-groupPaths"><strong>groupPaths</strong></a>(path_list)</dt></dl>
+ <dl><dt><a name="-horizontalStripCompare"><strong>horizontalStripCompare</strong></a>(first, second)</dt></dl>
+ <dl><dt><a name="-locatePatchlinesInKeogram"><strong>locatePatchlinesInKeogram</strong></a>(keo, time_res, angle_res)</dt></dl>
+ <dl><dt><a name="-newPath"><strong>newPath</strong></a>(patch_lines, path_list)</dt></dl>
+ <dl><dt><a name="-patchLineXPosCompare"><strong>patchLineXPosCompare</strong></a>(first, second)</dt></dl>
+ <dl><dt><a name="-plotPatchLines"><strong>plotPatchLines</strong></a>(keo, horizontal_strips)</dt></dl>
+ <dl><dt><a name="-plotPaths"><strong>plotPaths</strong></a>(keo, path_list)</dt></dl>
+ <dl><dt><a name="-removeSmallGroups"><strong>removeSmallGroups</strong></a>(path_groups, threshold_length)</dt></dl>
+</td></tr></table>
+</body></html>
