@@ -64,6 +64,7 @@ Example:
 import allskyImage,misc #imports from PASKIL
 import glob,datetime,cPickle,os #imports from other python modules
 import threading
+import os.path
 
 #Functions:
 
@@ -126,6 +127,7 @@ def fromList(file_names,wavelength,filetype,site_info_file=""):
     mode=None
     radii=[]
     fov_angles=[]
+    found_wavelengths = set([]) #set of wavelengths that were found during the search 
     
     #check that filetypes argument is a list - this is a common user error!
     if type(filetype) != type(list()):
@@ -146,7 +148,9 @@ def fromList(file_names,wavelength,filetype,site_info_file=""):
             continue #skip file if PIL cannot decode the image
         
         #check if the image has the correct wavelength
-        if current_image.getInfo()['header']['Wavelength'].find(wavelength) == -1:
+        current_image_wavelength = current_image.getInfo()['header']['Wavelength']
+        if current_image_wavelength.find(wavelength) == -1:
+            found_wavelengths.add(current_image_wavelength)
             continue #if image has wrong wavelength then skip it
         
         #check the image has the correct mode and colour table
@@ -185,7 +189,7 @@ def fromList(file_names,wavelength,filetype,site_info_file=""):
     
     #check to make sure the dataset is not empty
     if len(data) ==0:
-        raise ValueError,"No images were compatible with the dataset format, ensure you have imported the required plugins,that the wavelength string matches that in the image header, and that you have specified any relevant site info files."
+        raise ValueError,"No images were compatible with the dataset format, ensure you have imported the required plugins,that the wavelength string matches that in the image header, and that you have specified any relevant site info files. Images with the following wavelengths were found ",found_wavelengths
     
     #sort the list into chronological order
     data.sort(misc.tupleCompare)
@@ -236,6 +240,19 @@ def new(directory,wavelength,filetype,site_info_file="",recursive=""):
     if type(filetype) != type(list()):
         raise TypeError,"Incorrect type for filetype argument. Expecting list."
     
+    #expand the paths of the directory and site info file
+    directory = os.path.normpath(directory)
+    site_info_file = os.path.normpath(site_info_file)
+    
+    #check that the site info file exists
+    if site_info_file != "":
+        if not os.path.exists(site_info_file):
+            raise IOError, "Cannot find site information file "+site_info_file
+    
+    #check that the search directory exists
+    if not os.path.isdir(directory):
+        raise IOError, "No directory called "+directory
+    
     for i in range(len(filetype)):
         if recursive == "r":
             #sweep the directory structure recursively
@@ -244,6 +261,10 @@ def new(directory,wavelength,filetype,site_info_file="",recursive=""):
         else:
             #only look in current directory
             search_list=search_list+glob.glob(directory+os.sep+"*."+filetype[i])
+    
+    #check that some files with the specified extensions were found
+    if len(search_list) == 0:
+        raise ValueError, "Unable to locate any files with extensions: ",filetype
     
     return fromList(search_list,wavelength,filetype,site_info_file)
         
