@@ -61,10 +61,48 @@ Example:
 
 from PIL import Image #imports from PIL
 import warnings
+import matplotlib
 
 
 #Functions
 
+###################################################################################
+
+def convertToMplColormap(colour_table):
+    """
+    Converts a PASKIL colourTable object into a matplotlib color map object. This is used internally by PASKIL
+    to produce colour bars on plots.
+    """
+    
+    segment_data = {'red':[],'green':[],'blue':[]}
+    N = len(colour_table.colour_table)
+    
+    for intensity in range(N):
+        
+        #convert intensity into range 0-1
+        x = double(intensity)/double(N-1)
+        
+        #set transformation rules
+        red_transform = double(colour_table.colour_table[intensity][0]) / double(255)
+        green_transform = double(colour_table.colour_table[intensity][1]) / double(255)
+        blue_transform = double(colour_table.colour_table[intensity][2]) / double(255)
+        
+        #populate segment data with (x,y0,y1) tuples describing transformation
+        #Each tuple represents how a value with values between 0 and 1
+        #(inclusive) represented by x is mapped to a corresponding value
+        #between 0 and 1 (inclusive). The two values of y are to allow
+        #for discontinuous mapping functions (say as might be found in a
+        #sawtooth) where y0 represents the value of y for values of x
+        #<= to that given, and y1 is the value to be used for x > than
+        #that given). 
+        
+        segment_data['red'].append((x,red_transform,red_transform))
+        segment_data['green'].append((x,green_transform,green_transform))
+        segment_data['blue'].append((x,blue_transform,blue_transform))
+    
+    #create matplotlib color map object
+    return matplotlib.colors.LinearSegmentedColormap('PASKIL-custom',segment_data,N=N)
+    
 ###################################################################################
 
 def createSegment(length,start_RGB,end_RGB):
@@ -386,4 +424,5 @@ class segment:
         
     ###################################################################################    
 ###################################################################################
+
     

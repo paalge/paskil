@@ -2,7 +2,7 @@ import Image,ImageChops
 import allskyImage
 import datetime,numpy,zlib
 import warnings
-from extensions import cRaw,cSquish
+from PASKIL.extensions import cRaw,cSquish
 
 ###################################################################################
 

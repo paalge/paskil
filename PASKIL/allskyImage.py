@@ -35,7 +35,7 @@ Example:
 
 import Image, ImageOps, ImageDraw, ImageFilter, ImageFont, ImageChops 
 import misc, allskyImagePlugins, allskyProj
-from extensions import cSquish
+from PASKIL.extensions import cSquish
 import pyfits, numpy
 import sys, datetime, os, math
 import warnings

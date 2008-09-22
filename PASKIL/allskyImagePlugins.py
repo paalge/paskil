@@ -126,7 +126,7 @@ Writing Your Own Plugin:
 
 import allskyImage
 import pyfits
-from extensions import cRaw,cSquish
+from PASKIL.extensions import cRaw,cSquish
 import Image, ImageOps
 
 types = [] #list to hold all available plugins

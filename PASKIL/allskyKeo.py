@@ -62,9 +62,13 @@ import allskyImage,allskyColour,misc,stats
 import Image,ImageChops,ImageFilter,ImageOps
 import datetime,calendar,time,math
 import threading,Queue
-from pylab import figure,imshow,title,MinuteLocator,NullLocator,DateFormatter,twinx,twiny,date2num,num2date,savefig,clf
+from pylab import figure,imshow,title,MinuteLocator,NullLocator,DateFormatter,twinx,twiny,date2num,num2date,savefig,clf,FixedLocator,FuncFormatter
 from matplotlib import cm
+import matplotlib
 
+
+def rev(x,pos):
+    return str(int(math.fabs(x-180)))
 
 #Functions
 
@@ -136,9 +140,11 @@ def new(dataset,angle,start_time=None,end_time=None,strip_width=5,data_spacing="
     minimum gap between consecutive images in the dataset is used. However, under some circumstances, this may 
     lead to a stripy, uninterpolated keogram, in which case you should increase the data_spacing value.
     """    
+    times=dataset.getTimes() #need to convert this list to a set just incase there are two images from the same time (would result in zero as separation)
+    
     #if data_spacing is set to auto, then determine the data spacing in the data set
     if data_spacing=="AUTO":
-        times=dataset.getTimes() #need to convert this list to a set just incase there are two images from the same time (would result in zero as separation)
+        
         spacings=[]
         i=1
         while i < len(times):
@@ -150,8 +156,10 @@ def new(dataset,angle,start_time=None,end_time=None,strip_width=5,data_spacing="
         #use smallest time spacing - otherwise some of the strips will overlap
         data_spacing=min(spacings)
     
-    #find mean data_spacing. This is used to determine the maximum extent of interpolation (large gaps in the data are not filled in)
-    mean_data_spacing_secs=stats.mean(spacings)
+        #find mean data_spacing. This is used to determine the maximum extent of interpolation (large gaps in the data are not filled in)
+        mean_data_spacing_secs=stats.mean(spacings)
+    else:
+       mean_data_spacing_secs = data_spacing 
     
     #if start and end times are set to None, then get them from the dataset
     if start_time == None:
@@ -188,6 +196,49 @@ def new(dataset,angle,start_time=None,end_time=None,strip_width=5,data_spacing="
     keo_obj = keogram(keo_image,mode,dataset.getColour_table(),start_time,end_time,angle,keo_fov_angle,OCB,strip_width,None)
         
     return keo_obj
+        
+###################################################################################    
+
+def plotKeograms(keograms,columns=1,size = None):
+    """
+    Returns a matplotlib figure object containing plots of all the specified keograms. The keograms 
+    argument should be a sequence of keogram objects. Keograms will be plotted in the order they 
+    appear in the keograms list, left to right, top to bottom. By default, the keograms will be 
+    plotted below each other in a single column. This behaivior can be modified using the 
+    columns option. The titles of the individual keograms can be set using the keo.setTitle() method.
+    """
+      
+    #create a new matplotlib figure object.
+    figure = matplotlib.pyplot.figure()
+    
+    if size != None:
+        figure.set_size_inches(size[0],size[1])
+    
+    number_of_subplots = len(keograms)
+    rows = math.ceil(float(number_of_subplots)/float(columns))
+    
+    subplots = []
+    
+    current_row = 1
+    current_column = 1
+    
+    #create subplots for figure
+    for keo in keograms:
+        
+        subplots.append(keo.plot(figure,number_of_subplots,current_column,current_row))
+        
+        #update row and column numbers - left to right, top to bottom
+        if current_column < columns:
+            current_column += 1
+        elif current_column == columns:
+            current_column = 1
+            current_row += 1
+    
+    #add subplots to figure
+    for s in subplots:
+        figure.add_subplot(s)
+    
+    return figure
         
 ###################################################################################    
 
@@ -446,6 +497,11 @@ class keogram:
         self.__strip_width = strip_width
         self.__intensities = intensities
         
+        #set attributes which control plotting
+        self.title = "DEFAULT"
+        self.x_label = "Time (UT)"
+        self.y_label = "Scan Angle (degrees)"
+        
     ###################################################################################                            
     #define getters
     
@@ -527,7 +583,7 @@ class keogram:
         Note that the angle IS NOT the angle from North unless the keogram has been created to run in the north-south direction. 
         If the angle is outside of the range of the keogram None is returned. This is the inverse operation of pix2angle()
         """
-        if angle < (90-self.__fov_angle) or angle > (90+self.__fov_angle):
+        if angle < (90-self.__fov_angle) or angle >= (90+self.__fov_angle):
             return None
         
         return int((angle-(90-self.__fov_angle))*float(self.__image.size[1]/float(2*self.__fov_angle))+0.5)    
@@ -818,7 +874,7 @@ class keogram:
         Converts a vertical pixel coordinate into an angle in degrees. If the pixel coordinate is outside of the range of the 
         keogram None is returned. This is the inverse operation of angle2pix().
         """
-        if pixel <0 or pixel>=self.__height:
+        if pixel < 0 or pixel >= self.__height:
             return None
         return float((90-self.__fov_angle)+((2*self.__fov_angle)/self.__height)*pixel)
     
@@ -837,7 +893,7 @@ class keogram:
         
     ###################################################################################                            
     
-    def plot(self,keo_title="DEFAULT",x_label="Time (UT)",y_label="Scan angle (degrees)",size=None):
+    def plot(self,figure,num,col,row):
         """
         Returns a matplotlib figure object containing a plot of the keogram. The keo_title option should be a string that you want to
         appear as the title for the plot. The default is the time range of the keogram. Setting keo_title to None will result in no title
@@ -852,22 +908,7 @@ class keogram:
             plot
             show()
         """
-        ####### IMPORTANT NOTE! ############
-        #the order of the code in this function is important! If you have to edit it, then check out the matplotlib documentation.
-        #Good luck!
-        ####################################
         
-        #check the arguments to the function are of the correct type
-        if keo_title != None and type(keo_title) != str:
-            raise TypeError, "allskyKeo.plot(): Invalid type "+str(type(keo_title))+" for keo_title argument, expecting str or None"
-        
-        if x_label != None and type(x_label) != str:
-            raise TypeError, "allskyKeo.plot(): Invalid type "+str(type(x_label))+" for x_label argument, expecting str or None"
-            
-        if y_label != None and type(y_label) != str:
-            raise TypeError, "allskyKeo.plot(): Invalid type "+str(type(y_label))+" for y_label argument, expecting str or None"
-
-
         #calculate number of minutes between tick marks
         time_range_days=date2num(self.__end_time)-date2num(self.__start_time)
         time_range_mins=time_range_days*24.0*60.0
@@ -882,69 +923,71 @@ class keogram:
             minutes=[0,30] #else have hour and half hour marks
         
         
-        if size == None:
-        #if no size argument was set then set up the default values
-            figure_width=0.08*time_range_mins
-            figure_height=((float(self.__height)/float(self.__width))*10)+4 #the spurious numbers added in are to stop the axis titles being cut off
-        
-        elif type(size) != tuple:
-            raise TypeError, "allskyKeo.plot(): Invalid type "+str(type(size))+" for size argument, expecting tuple or None"
-        
-        else:
-        #set up size values
-            figure_width=size[0]
-            figure_height=size[1]
-        
-        
-        if keo_title == "DEFAULT":    
+        if self.title == "DEFAULT":    
         #create title string for keogram
             start_time_string= self.__start_time.ctime()
             end_time_string=self.__end_time.ctime()
             keo_title=start_time_string+" - "+end_time_string
+        else:
+            keo_title = self.title
         
-        #open new figure and set title
-        figure(1,figsize=(figure_width,figure_height))
-
+        #create a new subplot object to hold this keogram
+        subplot = matplotlib.axes.Subplot(figure,num,col,row)
+        
+        #add title
         if keo_title != None:
-            title( keo_title )
+            subplot.set_title(keo_title)
+    
         
         #plot keogram image in figure,matplotlib doesn't support 16bit images, so if the image is not RGB, then need to check that it is 8bit
         if self.__image.mode == 'RGB' or self.__image.mode == 'L':
-            image=imshow(self.__image,origin="top",aspect="auto")
+            image=subplot.imshow(self.__image,origin="top",aspect="auto")
         else:
-            image=imshow(self.__image.convert('L'),origin="top",aspect="auto",cmap=cm.gray)
+            image=subplot.imshow(self.__image.convert('L'),origin="top",aspect="auto",cmap=cm.gray)
             
         #define formatting for axes
         x_tick_positions=MinuteLocator(minutes) #find the positions of the x tick marks
         time_format= DateFormatter("%H:%M") #define the format of the times displayed on the x_axis
         
         #y axis
-        yaxis=twinx() #create another set of axes (which will become the y axis)
-        yaxis.yaxis.tick_left() #set the position of the tick marks for the y axis of the new set
-        yaxis.xaxis.set_major_locator(NullLocator()) #turn off the x axis of the new set
+        subplot.yaxis=subplot.axes.twinx() #create another set of axes (which will become the y axis)
+        subplot.yaxis.set_xbound(0,self.__width)
+        subplot.yaxis.set_ybound(90+self.__fov_angle,90-self.__fov_angle)
+        subplot.yaxis.yaxis.tick_left() #set the position of the tick marks for the y axis of the new set
+        subplot.yaxis.xaxis.set_major_locator(NullLocator()) #turn off the x axis of the new set
+      
+        subplot.yaxis = subplot.yaxis.yaxis
+        
         
         #x axis
-        xaxis=twiny() #create another set of axes (which will become the x axis)
-        xaxis.xaxis.tick_bottom() #set the position of the tick marks for the x axis of the new set
-        xaxis.xaxis.set_major_locator(x_tick_positions) #set the tick mark positions for the x axis of the new set
-        xaxis.xaxis.set_major_formatter(time_format) #set the tick mark format for the x axis of the new set
-        #note that you don't need to turn off the tick marks on the y axis of this set (in fact you shouldn't), don't ask me why!
-        
-        xaxis.axis([date2num(self.__start_time),date2num(self.__end_time),0,self.__height]) #set the range for the x axis, it is important to keep the y range the same as the pixel count of the keogram
-        yaxis.axis([0,self.__width,90+self.__fov_angle,90-self.__fov_angle]) #set the range for the y axis, it is important to keep the x range the same as the pixel count of the keogram
+        subplot.xaxis=subplot.axes.twiny() #create another set of axes (which will become the x axis)
+        subplot.xaxis.set_xbound(date2num(self.__start_time),date2num(self.__end_time))
+        subplot.xaxis.set_ybound(0,self.__height)
+        subplot.xaxis.xaxis.tick_bottom() #set the position of the tick marks for the x axis of the new set
+        subplot.xaxis.yaxis.tick_right()
+        subplot.xaxis.yaxis.set_visible(False)
+        subplot.xaxis.xaxis.set_major_locator(x_tick_positions) #set the tick mark positions for the x axis of the new set
+        subplot.xaxis.xaxis.set_major_formatter(time_format) #set the tick mark format for the x axis of the new set
+       
+
+        subplot.set_ybound(90+self.__fov_angle,90-self.__fov_angle)
+
+        subplot.yaxis.set_major_formatter(FuncFormatter(rev))
+        subplot.xaxis = subplot.xaxis.xaxis
+       
         image.axes.axis('off') #remove pixel count axes from plotted image
             
         #set axis titles
-        if y_label != None:
-            yaxis.set_ylabel(y_label)
-            yaxis.yaxis.set_label_position("left")
+        if self.y_label != None:
+            subplot.yaxis.set_label(self.y_label)
+            subplot.yaxis.set_label_position("left")
             
-        if x_label != None:
-            xaxis.set_xlabel(x_label)
-            xaxis.xaxis.set_label_position("bottom")
+        if self.x_label != None:
+            subplot.xaxis.set_label(self.x_label)
+            subplot.xaxis.set_label_position("bottom")
         
-        #return a figure object
-        return figure(1)
+        #return a subplot object
+        return subplot
     
     ###################################################################################
     
