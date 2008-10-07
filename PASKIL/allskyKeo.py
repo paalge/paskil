@@ -467,7 +467,7 @@ def __interpolateData(data_list,image,mode,colour_table,strip_width,max_gap):
 
 class keogram:
     """
-    Class to hold keogram data. Unless otherwise stated, all method return a new keogram object.
+    Class to hold keogram data. Unless otherwise stated, all methods return a new keogram object.
     """    
     def __init__(self,image,mode,colour_table,start_time,end_time,angle,fov_angle,OCB,strip_width,intensities):
         
@@ -1075,7 +1075,7 @@ class keogram:
             if capture_time > latest_time:
                 latest_time=capture_time
                 
-            #if it is earlier than the earliest time then update latest time
+            #if it is earlier than the earliest time then update earliest time
             if capture_time < earliest_time:
                 earliest_time=capture_time
             

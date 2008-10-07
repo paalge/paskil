@@ -714,10 +714,6 @@ class allskyImage:
         elif filename.endswith((".fits", ".FITS")):
             format = "fits"
         
-        else:
-            raise ValueError, "Unknown format"
-        
-        
         if format == "png": #save as png image
         
             if not filename.endswith((".png", ".PNG")):
