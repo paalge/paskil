@@ -94,6 +94,44 @@ def __imagePreProcess(image):
         
 ###################################################################################            
 
+def blankKeogram(image,angle,start_time,end_time,strip_width,data_spacing):
+    """
+    Returns a blank keogram spanning the specified time range. This is useful in conjunction
+    with the roll() method for producing realtime keograms.
+    """ 
+        
+    #convert start and end times into seconds since the epoch
+    start_secs=calendar.timegm(start_time.timetuple())
+    end_secs=calendar.timegm(end_time.timetuple())
+    
+    #work out a good width for the keogram - this is a bit arbitrary but gives reasonable results
+    keo_width=int(float(((end_secs-start_secs)*strip_width))/(data_spacing/2.0))
+
+    keo_height=int(2*int(image.getInfo()['camera']['Radius'])) #height (in pixels) of the keogram to be created. This is set to 2* the max Radius in the dataset. Note that this radius might relate to a smaller fov than the max fov, in which case all the images will have to be resized before being put into the keogram -too bad
+    
+    #work out the mean data spacing in pixels
+    mean_data_spacing_pix=(float(keo_width)/float(end_secs-start_secs))*data_spacing
+    
+    mode=image.getMode() #image mode for the keogram
+    keo_fov_angle=float(image.getInfo()['camera']['fov_angle'])
+    
+    #create new image to hold keogram
+    keo_image=Image.new(mode,(keo_width,keo_height),"Black")
+    
+    #put data into keogram
+    #data=__putData(dataset.getFilenamesInRange(start_time,end_time),keo_image,keo_width,keo_height,strip_width,angle,keo_fov_angle,start_time,end_time)
+    
+    #interpolate the data
+    #__interpolateData(data,keo_image,mode,dataset.getColour_table(),strip_width,mean_data_spacing_pix)
+    
+    #create keogram object
+    OCB=[]
+    keo_obj = keogram(keo_image,mode,None,start_time,end_time,angle,keo_fov_angle,OCB,strip_width,None)
+        
+    return keo_obj
+    
+    
+################################################################################### 
 def load(filename):
     """
     Loads a keogram object from the specified file. Keogram files can be created using the save() method.
@@ -144,7 +182,9 @@ def new(dataset,angle,start_time=None,end_time=None,strip_width=5,data_spacing="
     
     #if data_spacing is set to auto, then determine the data spacing in the data set
     if data_spacing=="AUTO":
-        
+        #if there is only one image in the dataset, then the spacing cannot be found!
+        if len(times)< 2:
+            raise RuntimeError, "Not enough images in dataset to allow automatic data spacing calculation"
         spacings=[]
         i=1
         while i < len(times):
@@ -199,7 +239,7 @@ def new(dataset,angle,start_time=None,end_time=None,strip_width=5,data_spacing="
         
 ###################################################################################    
 
-def plotKeograms(keograms,columns=1,size = None):
+def plotKeograms(keograms, columns=1, size=None):
     """
     Returns a matplotlib figure object containing plots of all the specified keograms. The keograms 
     argument should be a sequence of keogram objects. Keograms will be plotted in the order they 
@@ -1044,8 +1084,8 @@ class keogram:
     
     def roll(self,file_list):
         """
-        This method is designed to be used for producing real-time keograms. The file_list argument should be a list of tuples 
-        (filename,site_info_file) of images and their corresponding site_info_files which you want to be included in the 
+        This method is designed to be used for producing real-time keograms. The file_list argument should be either a list of tuples 
+        (filename,site_info_file) of images and their corresponding site_info_files, or a list of allskyImage objects, which you want to be included in the 
         current keogram. The total time span of the keogram will remain unchanged, but the keogram will be shifted to include the 
         new images. For example, if you have created a keogram which spans from 11:00 to 12:00 and you then use roll() with the 
         filename of an image that was captured at 12:01, then the keogram that is returned will span from 11:01 to 12:01 and will 
@@ -1061,9 +1101,16 @@ class keogram:
         
         capture_times=[]
         
+        #if the list is of file names then load the allskyImages
+        images = []
+        for item in file_list:
+            if isinstance(item,allskyImage.allskyImage):
+                images.append(item)
+            else:
+                images.append(allskyImage.new(item[0],item[1]))
+               
         #find latest and earliest creation times in file list
-        for filename in file_list:
-            im=allskyImage.new(filename[0],filename[1])
+        for im in images:
             
             #read time data from image
             try:

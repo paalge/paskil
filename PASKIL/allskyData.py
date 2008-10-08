@@ -189,7 +189,7 @@ def fromList(file_names,wavelength,filetype,site_info_file=""):
     
     #check to make sure the dataset is not empty
     if len(data) ==0:
-        raise ValueError,"No images were compatible with the dataset format, ensure you have imported the required plugins,that the wavelength string matches that in the image header, and that you have specified any relevant site info files. Images with the following wavelengths were found ",found_wavelengths
+        raise ValueError,"No images were compatible with the dataset format, ensure you have imported the required plugins,that the wavelength string matches that in the image header, and that you have specified any relevant site info files. Images with the following wavelengths were found "+str(found_wavelengths)
     
     #sort the list into chronological order
     data.sort(misc.tupleCompare)
