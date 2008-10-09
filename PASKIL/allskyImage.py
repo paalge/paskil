@@ -34,7 +34,7 @@ Example:
 ################################################################################################################################################################
 
 import Image, ImageOps, ImageDraw, ImageFilter, ImageFont, ImageChops 
-import misc, allskyImagePlugins, allskyProj
+from PASKIL import misc, allskyImagePlugins, allskyProj
 from PASKIL.extensions import cSquish
 import pyfits, numpy
 import sys, datetime, os, math
@@ -47,7 +47,7 @@ try:
 except ImportError:
     use_psyco = False
     warnings.warn("Could not import psyco. This will reduce performance.")
-
+ 
 
 ##Functions
 

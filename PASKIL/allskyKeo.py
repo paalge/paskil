@@ -58,28 +58,31 @@ Example:
 ################################################################################################################################################################
 
 
-import allskyImage,allskyColour,misc,stats
+from PASKIL import allskyImage,allskyColour,misc,stats
 import Image,ImageChops,ImageFilter,ImageOps
 import datetime,calendar,time,math
 import threading,Queue
 from pylab import figure,imshow,title,MinuteLocator,NullLocator,DateFormatter,twinx,twiny,date2num,num2date,savefig,clf,FixedLocator,FuncFormatter
 from matplotlib import cm
 import matplotlib
-
-
-def rev(x,pos):
-    return str(int(math.fabs(x-180)))
+import warnings
 
 #Functions
 
 ###################################################################################    
+
+def rev(x,pos):
+    """
+    This function is used in formatting the axes of a keogram plot.
+    """
+    return str(int(math.fabs(x-180)))
 
 def __imagePreProcess(image):
     """
     Checks that the image has had all the requisit preprocessing needed before it is put into a keogram. 
     Returns an allskyImage object which has been processed, if no processing was required then it returns 
     the original object.
-    """    
+    """   
         
     if image.getInfo()['processing'].keys().count('binaryMask') == 0:
         image=image.binaryMask(float(image.getInfo()['camera']['fov_angle']))
@@ -94,44 +97,45 @@ def __imagePreProcess(image):
         
 ###################################################################################            
 
-def blankKeogram(image,angle,start_time,end_time,strip_width,data_spacing):
+def __checkImages(images,mode=None,wavelength=None,colour_table=None):
     """
-    Returns a blank keogram spanning the specified time range. This is useful in conjunction
-    with the roll() method for producing realtime keograms.
-    """ 
-        
-    #convert start and end times into seconds since the epoch
-    start_secs=calendar.timegm(start_time.timetuple())
-    end_secs=calendar.timegm(end_time.timetuple())
+    Checks that all allskyImages in the images list have the same mode, wavelength and 
+    colour table either as each other or as those specified by the optional arguments.
+    These are essentially the same checks that are done when a dataset is created.
+    """
+    if len(images) == 0:
+        raise ValueError, "Cannot perform checks on an empty list!"
     
-    #work out a good width for the keogram - this is a bit arbitrary but gives reasonable results
-    keo_width=int(float(((end_secs-start_secs)*strip_width))/(data_spacing/2.0))
-
-    keo_height=int(2*int(image.getInfo()['camera']['Radius'])) #height (in pixels) of the keogram to be created. This is set to 2* the max Radius in the dataset. Note that this radius might relate to a smaller fov than the max fov, in which case all the images will have to be resized before being put into the keogram -too bad
+    #if no optional arguments are specified, then take the values from the first image in the list
+    if mode == None:
+        mode = images[0].getMode()
     
-    #work out the mean data spacing in pixels
-    mean_data_spacing_pix=(float(keo_width)/float(end_secs-start_secs))*data_spacing
+    if wavelength == None:
+        wavelength = images[0].getInfo()['header']['Wavelength']
     
-    mode=image.getMode() #image mode for the keogram
-    keo_fov_angle=float(image.getInfo()['camera']['fov_angle'])
+    if colour_table == None:
+        try:
+            colour_table = images[0].getInfo()['processing']['applyColourTable']
+        except KeyError:
+            colour_table = None
     
-    #create new image to hold keogram
-    keo_image=Image.new(mode,(keo_width,keo_height),"Black")
-    
-    #put data into keogram
-    #data=__putData(dataset.getFilenamesInRange(start_time,end_time),keo_image,keo_width,keo_height,strip_width,angle,keo_fov_angle,start_time,end_time)
-    
-    #interpolate the data
-    #__interpolateData(data,keo_image,mode,dataset.getColour_table(),strip_width,mean_data_spacing_pix)
-    
-    #create keogram object
-    OCB=[]
-    keo_obj = keogram(keo_image,mode,None,start_time,end_time,angle,keo_fov_angle,OCB,strip_width,None)
-        
-    return keo_obj
-    
-    
-################################################################################### 
+    #compare these values to all the other images in the list
+    for im in images:
+        if im.getMode() != mode:
+            raise ValueError, "Image has incorrect mode, expecting mode: "+str(mode)
+        if im.getInfo()['header']['Wavelength'] != wavelength:
+            raise ValueError, "Image has incorrect wavelength, expecting: "+str(wavelength)
+        try:
+            if im.getInfo()['processing']['applyColourTable'] != colour_table:
+                raise ValueError, "Image has incorrect colour table"
+        except KeyError:
+            if colour_table == None:
+                pass
+            else:
+                raise ValueError, "Image has incorrect colour table"
+      
+###################################################################################
+ 
 def load(filename):
     """
     Loads a keogram object from the specified file. Keogram files can be created using the save() method.
@@ -150,12 +154,15 @@ def load(filename):
     OCB=list(eval(image.info['OCB']))
     fov_angle=float(image.info['fov_angle'])
     strip_width=float(image.info['strip_width'])
+    keo_type = image.info['keo_type']
+    data_points = eval(image.info['data_points'])
+    data_spacing = int(image.info['data_spacing'])
     
     #clear image header data
     image.info={}
     
     #create new keogram object
-    new_keogram=keogram(image,image.mode,None,start_time,end_time,angle,fov_angle,OCB,strip_width,None)
+    new_keogram=keogram(image,None,start_time,end_time,angle,fov_angle,OCB,strip_width,None,keo_type,data_points,data_spacing)
     
     #if it should have a colour table then apply it
     if colour_table != None:
@@ -166,7 +173,7 @@ def load(filename):
     
 ###################################################################################                
             
-def new(dataset,angle,start_time=None,end_time=None,strip_width=5,data_spacing="AUTO"):
+def new(data,angle,start_time=None, end_time=None, strip_width=5, data_spacing="AUTO", keo_type="CopyPaste"):
     """
     Returns a keogram object. The dataset argument should be an allskyData.dataset object which contains 
     the images from which the keogram will be produced.  The angle argument is the angle from geographic 
@@ -176,10 +183,56 @@ def new(dataset,angle,start_time=None,end_time=None,strip_width=5,data_spacing="
     in which case all images in the dataset will be included.The data_spacing option should be the amount of 
     time (in seconds) between the source images for the keogram. The default value is"AUTO", in which case the 
     minimum gap between consecutive images in the dataset is used. However, under some circumstances, this may 
-    lead to a stripy, uninterpolated keogram, in which case you should increase the data_spacing value.
+    lead to a stripy, uninterpolated keogram, in which case you should increase the data_spacing value. The keo_type
+    argument controls how the keogram is produced. If it is set to "Average" then the keogram will be made up of a 
+    series of strips one pixel wide, which are the averaged pixel values of the slice taken from the image. These one
+    pixel wide strips will then be interpolated between. Effective use of this type, requires a much larger strip width
+    and is computationally more expensive. It is also not particularly sucessful for RGB keograms. "CopyPaste" type keograms
+    are made up of finite width slices of the image (specified by strip_width), which are then interpolated between.
+    This is not a keogram in the strictest sense of the word, since the finite width of the slices is plotted in the 
+    time domain, which doesn't really make sense. However, for RGB keograms it often produces a more attractive plot
+    with less interpolation effects. 
     """    
-    times=dataset.getTimes() #need to convert this list to a set just incase there are two images from the same time (would result in zero as separation)
+    #the strip width has to be odd otherwise life is too difficult
+    if strip_width%2 == 0:
+        strip_width += 1
+        warnings.warn("strip_width must be an odd number. Changing to "+str(strip_width))
+            
+    #read the keogram parameters either from the dataset or the list of images
+    if type(data) == type(list()):
+        #data is list of allskyImage objects
+        __checkImages(data) #check for consistancy of image properties
+        
+        times = []
+        fov_angles = []
+        radii =[]
+        mode = data[0].getMode()
+        try:
+            colour_table = data[0].getInfo()['processing']['applyColourTable']
+        except KeyError:
+            colour_table = None
+        
+        for im in data:
+            try:
+                time=datetime.datetime.strptime(im.getInfo()['header']['Creation Time'],"%d %b %Y %H:%M:%S %Z")#read creation time from header
+            except ValueError:
+                time=datetime.datetime.strptime(im.getInfo()['header']['Creation Time']+"GMT","%d %b %Y %H:%M:%S %Z")#read creation time from header
+            times.append(time)
+            fov_angles.append(im.getInfo()['camera']['fov_angle'])
+            radii.append(int(im.getInfo()['camera']['Radius']))
+        times = list(set(times)) #remove duplicate entries from times list
+        keo_fov_angle = float(max(fov_angles))
+        
+    else:
+        #the data argument is a dataset object
+        times=list(set(data.getTimes())) #need to convert this list to a set just incase there are two images from the same time (would result in zero as separation)
+        mode = data.getMode()
+        keo_fov_angle = float(max(data.getFov_angles()))
+        colour_table = data.getColourTable()
+        radii = data.getRadii()
     
+    times.sort()
+        
     #if data_spacing is set to auto, then determine the data spacing in the data set
     if data_spacing=="AUTO":
         #if there is only one image in the dataset, then the spacing cannot be found!
@@ -197,11 +250,11 @@ def new(dataset,angle,start_time=None,end_time=None,strip_width=5,data_spacing="
         data_spacing=min(spacings)
     
         #find mean data_spacing. This is used to determine the maximum extent of interpolation (large gaps in the data are not filled in)
-        mean_data_spacing_secs=stats.mean(spacings)
+        mean_data_spacing_secs = stats.median(spacings) #changed to median for V3.2 since it gives better results
     else:
-       mean_data_spacing_secs = data_spacing 
+        mean_data_spacing_secs = data_spacing 
     
-    #if start and end times are set to None, then get them from the dataset
+    #if start and end times are set to None, then get them from the list of times
     if start_time == None:
         start_time=min(times)
     if end_time == None:
@@ -212,28 +265,35 @@ def new(dataset,angle,start_time=None,end_time=None,strip_width=5,data_spacing="
     end_secs=calendar.timegm(end_time.timetuple())
     
     #work out a good width for the keogram - this is a bit arbitrary but gives reasonable results
-    keo_width=int(float(((end_secs-start_secs)*strip_width))/(data_spacing/2.0))
-
-    keo_height=int(2*max(dataset.getRadii())) #height (in pixels) of the keogram to be created. This is set to 2* the max Radius in the dataset. Note that this radius might relate to a smaller fov than the max fov, in which case all the images will have to be resized before being put into the keogram -too bad
+    if keo_type == "CopyPaste":
+        keo_width=int(float(((end_secs-start_secs)*strip_width))/(data_spacing/2.0))
+    else:
+        keo_width=int(float(((end_secs-start_secs)*5))/(data_spacing/2.0))
+    
+    
+    keo_height=int(2*max(radii)) #height (in pixels) of the keogram to be created. This is set to 2* the max Radius in the dataset. Note that this radius might relate to a smaller fov than the max fov, in which case all the images will have to be resized before being put into the keogram -too bad
     
     #work out the mean data spacing in pixels
     mean_data_spacing_pix=(float(keo_width)/float(end_secs-start_secs))*mean_data_spacing_secs
     
-    mode=dataset.getMode() #image mode for the keogram
-    keo_fov_angle=float(max(dataset.getFov_angles()))
-    
     #create new image to hold keogram
     keo_image=Image.new(mode,(keo_width,keo_height),"Black")
+    keo_pix = keo_image.load() #get pixel access object for keogram image
     
     #put data into keogram
-    data=__putData(dataset.getFilenamesInRange(start_time,end_time),keo_image,keo_width,keo_height,strip_width,angle,keo_fov_angle,start_time,end_time)
+    data_points = []
+    for image in data:
+        data_points.append(_putData(image,keo_pix,keo_width,keo_height,strip_width,angle,keo_fov_angle,start_secs,end_secs,keo_type=keo_type))
     
     #interpolate the data
-    __interpolateData(data,keo_image,mode,dataset.getColour_table(),strip_width,mean_data_spacing_pix)
+    if keo_type == "CopyPaste":
+        _interpolateData(data_points,keo_image,mode,colour_table,strip_width,mean_data_spacing_pix)
+    elif keo_type == "Average":
+        _interpolateData(data_points,keo_image,mode,colour_table,1,mean_data_spacing_pix+5) #+5 is effective strip width - used in calculating the width of the keogram
     
     #create keogram object
     OCB=[]
-    keo_obj = keogram(keo_image,mode,dataset.getColour_table(),start_time,end_time,angle,keo_fov_angle,OCB,strip_width,None)
+    keo_obj = keogram(keo_image,colour_table,start_time,end_time,angle,keo_fov_angle,OCB,strip_width,None,keo_type,data_points,mean_data_spacing_pix)
         
     return keo_obj
         
@@ -245,7 +305,7 @@ def plotKeograms(keograms, columns=1, size=None):
     argument should be a sequence of keogram objects. Keograms will be plotted in the order they 
     appear in the keograms list, left to right, top to bottom. By default, the keograms will be 
     plotted below each other in a single column. This behaivior can be modified using the 
-    columns option. The titles of the individual keograms can be set using the keo.setTitle() method.
+    columns option. The titles of the individual keograms can be set using their title attribute.
     """
       
     #create a new matplotlib figure object.
@@ -278,161 +338,115 @@ def plotKeograms(keograms, columns=1, size=None):
     for s in subplots:
         figure.add_subplot(s)
     
-    return figure
+    return figure  
         
 ###################################################################################    
 
-def __putData(file_list,image,width,height,strip_width,angle,keo_fov_angle,start_time,end_time):
-    """
-    Function queues all the images that need to be processed and starts multiple threads to take strips 
-    out of the images and store them in the keogram image.
-    """
-    if file_list==None:
-        return
+def _putData(image,keo_pix,width,height,strip_width,angle,keo_fov_angle,start_secs,end_secs,keo_type="CopyPaste"):
     
-    data_list=[]
-    keo_pix=image.load()
+    current_image=__imagePreProcess(image)
     
-    #create locks
-    data_list_lock=threading.Lock()
-    keo_pix_lock=threading.Lock()
+    #read time data from image and convert to seconds
+    try:
+        capture_time=datetime.datetime.strptime(current_image.getInfo()['header'] ['Creation Time'],"%d %b %Y %H:%M:%S %Z")
+        capture_time_secs=calendar.timegm(capture_time.timetuple()) #convert to seconds since epoch
+    except KeyError:
+        raise IOError,"Cannot read creation time from image "+filename
     
-    #create queue
-    to_be_processed=Queue.Queue()
+    #calculate x pixel coordinate in keogram of where strip from current image should go
+    x_coordinate=int(((float(width)-strip_width)/float((end_secs-start_secs)))*float((capture_time_secs-start_secs))+strip_width/2)
     
-    #populate queue
-    for filename in file_list:
-        to_be_processed.put(filename)
-
-    flag=True #flag to show if at least one thread was started (otherwise have to wait forever for the queue to be emptied!)
-    #create worker threads
-    for i in range(4): #four threads is probably enough, but if you really want more then just change this number
-        try:
-            t=threading.Thread(target=__threadPutData,args=(data_list,data_list_lock,to_be_processed,keo_pix,keo_pix_lock,width,height,strip_width,angle,keo_fov_angle,start_time,end_time))
-            t.start()
-            flag=False
-        except threading.ThreadError:
-            continue
-    if flag:
-        raise threading.ThreadError,"Failed to create/start any worker threads - possible memory overflow"
+    #get strip from image
+    strip=current_image.getStrip(angle,strip_width)
     
-    #wait for threads to finish
-    to_be_processed.join()
+    #if the image has a different Radius or field of view angle, or both then life is more difficult
+    im_fov_angle=float(current_image.getInfo()['camera']['fov_angle'])
+    im_radius=float(current_image.getInfo()['camera']['Radius'])
+    mode=current_image.getMode()
+    if im_fov_angle != keo_fov_angle:
+       
+        #change image fov by appending black pixels to it (the image fov will always be <= keo fov)
+        difference=((2*im_radius)*float(float(keo_fov_angle)/float(im_fov_angle)))-(2*im_radius)
         
-    #return data_list
-    return data_list
+        if difference <=0:
+            raise RuntimeError, "Strip is longer than diameter of field of view - this shouldn't be possible, check the value you have used for 'Radius'"
         
-###################################################################################    
-
-def __threadPutData(data_list,data_list_lock,to_be_processed,keo_pix,keo_pix_lock,width,height,strip_width,angle,keo_fov_angle,start_time,end_time):
-    """
-    Function executed by each of the worker threads. Pre-processes the images and then takes a strip out of
-    them and stores it in the keogram image. 
-    """
-    #convert start and end times into seconds since the epoch
-    start_secs=calendar.timegm(start_time.timetuple())
-    end_secs=calendar.timegm(end_time.timetuple())
-    
-    while True:
-        #get filename from queue
-        try:
-            filename=to_be_processed.get(False)
-        except:
-            return #return if queue is empty
-        
-        current_image=allskyImage.new(filename[0],filename[1])
-        current_image=__imagePreProcess(current_image)
-        
-        #read time data from image and convert to seconds
-        try:
-            capture_time=datetime.datetime.strptime(current_image.getInfo()['header'] ['Creation Time'],"%d %b %Y %H:%M:%S %Z")
-            capture_time_secs=calendar.timegm(capture_time.timetuple()) #convert to seconds since epoch
-        except KeyError:
-            to_be_processed.task_done()
-            raise IOError,"Cannot read creation time from image "+filename
-        
-        #calculate x pixel coordinate of current strip
-        x_coordinate=int(((float(width)-strip_width)/float((end_secs-start_secs)))*float((capture_time_secs-start_secs))+strip_width/2)
-        
-        #get data list lock
-        data_list_lock.acquire()
-        
-        #add center of strip coordinates to data list
-        data_list.append(x_coordinate)
-    
-        #release lock
-        data_list_lock.release()
-        
-        #get strip from image
-        strip=current_image.getStrip(angle,strip_width)
-        
-        #if the image has a different Radius or field of view angle, or both then life is more difficult
-        im_fov_angle=float(current_image.getInfo()['camera']['fov_angle'])
-        im_radius=float(current_image.getInfo()['camera']['Radius'])
-        mode=current_image.getMode()
-        if im_fov_angle != keo_fov_angle:
-           
-            #change image fov by appending black pixels to it (the image fov will always be <= keo fov)
-            difference=((2*im_radius)*float(float(keo_fov_angle)/float(im_fov_angle)))-(2*im_radius)
+        #define black for different image modes
+        if mode in ("L","I"):
+            black=0
+        elif mode == "RGB":
+            black =(0,0,0)
+        else:
+            raise ValueError, "Unknown image mode"
             
-            if difference <=0:
-                raise RuntimeError, "Strip is longer than diameter of field of view - this shouldn't be possible, check the value you have used for 'Radius'"
+        for i in range(len(strip)):
+            #create lists of black pixel values to prepend and append to the strip taken from the image
+            prepend=[black]*int(difference/2)
             
-            #define black for different image modes
-            if mode in ("L","I"):
-                black=0
-            elif mode == "RGB":
-                black =(0,0,0)
+            if difference%2 !=0: #diffence is odd
+                append=[black]*(int(difference/2)+1)
             else:
-                raise ValueError, "Unknown image mode"
-                
-            for i in range(len(strip)):
-                #create lists of black pixel values to prepend and append to the strip taken from the image
-                prepend=[black]*int(difference/2)
-                
-                if difference%2 !=0: #diffence is odd
-                    append=[black]*(int(difference/2)+1)
-                else:
-                    append=prepend
-                
-                strip[i].extend(append)
-                prepend.extend(strip[i])
-                    
-                strip[i]=prepend
+                append=prepend
             
-        if len(strip[0]) != height:
-            #if strip taken from image is a different size to the keogram, then resize it. This is done by creating an image of the strip and then resizing the image - a slightly odd way of doing it, but saves me having to worry about the interpolation problems
-            strip_image=Image.new(mode,(len(strip),len(strip[0])))
-            strip_pix=strip_image.load()
-            for i in range(len(strip)):
-                for j in range(len(strip[0])):
-                    strip_pix[i,j]=strip[i][j]
-            strip_image=strip_image.resize((len(strip),height))
-            strip_pix=strip_image.load()
-            strip=([[]]*strip_image.size[0])
-            for i in range(strip_image.size[0]):
-                for j in range(height):
-                    strip[i].append(strip_pix[i,j])
-
-        #get pixel access lock
-        keo_pix_lock.acquire()
+            strip[i].extend(append)
+            prepend.extend(strip[i])
+                
+            strip[i]=prepend
         
-        #store data in keogram
-        try:
-            for i in range(height):
-                for j in range(-strip_width/2+1,strip_width/2+1):
+    if len(strip[0]) != height:
+        #if strip taken from image is a different size to the keogram, then resize it. This is done by creating an image of the strip and then resizing the image - a slightly odd way of doing it, but saves me having to worry about the interpolation problems
+        strip_image=Image.new(mode,(len(strip),len(strip[0])))
+        strip_pix=strip_image.load()
+        for i in range(len(strip)):
+            for j in range(len(strip[0])):
+                strip_pix[i,j]=strip[i][j]
+        strip_image=strip_image.resize((len(strip),height))
+        strip_pix=strip_image.load()
+        strip=([[]]*strip_image.size[0])
+        for i in range(strip_image.size[0]):
+            for j in range(height):
+                strip[i].append(strip_pix[i,j])
+    
+    #store data in keogram
+    if keo_type == "CopyPaste":
+        #just copy the pixel data from the image into the keogram
+        for i in range(height):
+            for j in range(-strip_width/2+1,strip_width/2+1):
+                try:
                     keo_pix[x_coordinate+j,i]=strip[strip_width/2+j][i]
+                except Exception,ex:
+                    print "image coordinates = ",x_coordinate+j,i
+                    print "image size = ",width,height
+                    print "j = ",j
+                    raise ex
+    elif keo_type == "Average":
+        #average the strip in the x direction and copy the mean values into the keogram
+        if mode != "RGB":
+            for i in range(height):
+                pix_sum = 0
+                for j in range(strip_width):
+                    pix_sum += strip[j][i]
+                mean_value = int((pix_sum / float(strip_width)) + 0.5)
+                keo_pix[x_coordinate,i] = mean_value
+        else:
+            for i in range(height):
+                pix_sum = [0,0,0]
+                for j in range(strip_width):
+                    pix_sum[0] += strip[j][i][0] #Red value
+                    pix_sum[1] += strip[j][i][1] #green value
+                    pix_sum[2] += strip[j][i][2] #blue value
+                    
+                mean_value = (int((pix_sum[0] / float(strip_width)) + 0.5), int((pix_sum[1] / float(strip_width)) + 0.5), int((pix_sum[2] / float(strip_width)) + 0.5))
+                keo_pix[x_coordinate,i] = mean_value
+    else:
+        raise ValueError, "Unknown keogram type. Expecting \"CopyPaste\" or \"Average\", got "+type
 
-        finally: #this will be run regardless of what happens when the data is put into the keogram, to prevent the application hanging
-            #release pixel lock
-            keo_pix_lock.release()
-            
-            #register task done with queue
-            to_be_processed.task_done()
+    #return the x-coordinate of where we just put the data
+    return x_coordinate
         
 ###################################################################################
         
-def __interpolateData(data_list,image,mode,colour_table,strip_width,max_gap):
+def _interpolateData(data_list,image,mode,colour_table,strip_width,max_gap):
     """
     Interpolates between the strips in the keogram image. Large gaps (probably due to missing data) are not
     interpolated across and will be left as black strips in the final keogram.
@@ -509,11 +523,14 @@ class keogram:
     """
     Class to hold keogram data. Unless otherwise stated, all methods return a new keogram object.
     """    
-    def __init__(self,image,mode,colour_table,start_time,end_time,angle,fov_angle,OCB,strip_width,intensities):
+    def __init__(self,image,colour_table,start_time,end_time,angle,fov_angle,OCB,strip_width,intensities,keo_type,data_points,data_spacing):
         
         #set class attributes
         self.__image=image.copy()
-        self.__mode=mode
+        self.__mode=image.mode
+        self.__keo_type = keo_type
+        self.__data_points = data_points #pixel coordinates of where the image slices have been placed
+        self.__data_spacing = data_spacing #median distance (in pixels) between data entries in keogram
         
         if colour_table != None:
             self.__colour_table=range(len(colour_table))
@@ -571,6 +588,12 @@ class keogram:
             
         else:
             return None
+    def getDataPoints(self):
+        """
+        Returns a list of x-coordinates of the centers of the images slices in the keogram
+        image.
+        """
+        return self.__data_points
     
     def getWidth(self):
         """
@@ -614,6 +637,12 @@ class keogram:
         Returns the width of the strips (in pixels) that were taken from the source images to create the keogram.
         """
         return self.__strip_width
+    
+    def getType(self):
+        """
+        Returns a string describing the type of the keogram. Either "CopyPaste" or "Average"
+        """
+        return self.__keo_type
     
     ###################################################################################                                
         
@@ -660,7 +689,7 @@ class keogram:
         new_mode="RGB"
         
         #create new keogram object
-        new_keogram=keogram(new_image,new_mode,new_colour_table,self.__start_time,self.__end_time,self.__angle,self.__fov_angle,self.__OCB,self.__strip_width,new_intensities)
+        new_keogram=keogram(new_image,new_colour_table,self.__start_time,self.__end_time,self.__angle,self.__fov_angle,self.__OCB,self.__strip_width,new_intensities,self.__keo_type,self.__data_points, self.__data_spacing)
 
         return new_keogram
         
@@ -903,7 +932,7 @@ class keogram:
             intensities=None
             
         #create new keogram object
-        new_keogram=keogram(image,self.__mode,self.__colour_table,self.__start_time,self.__end_time,self.__angle,self.__fov_angle,self.__OCB,self.__strip_width,intensities)
+        new_keogram=keogram(image,self.__colour_table,self.__start_time,self.__end_time,self.__angle,self.__fov_angle,self.__OCB,self.__strip_width,intensities,self.__keo_type,self.__data_points, self.__data_spacing)
         
         return new_keogram    
             
@@ -1075,7 +1104,7 @@ class keogram:
                 keo_pix[pixel,self.__OCB[pixel]+i]=black
         
         #create new keogram object
-        new_keogram=keogram(image,self.__mode,self.__colour_table,self.__start_time,self.__end_time,self.__angle,self.__fov_angle,self.__OCB,self.__strip_width,self.__intensities)
+        new_keogram=keogram(image,self.__colour_table,self.__start_time,self.__end_time,self.__angle,self.__fov_angle,self.__OCB,self.__strip_width,self.__intensities,self.__keo_type,self.__data_points, self.__data_spacing)
         
                 
         return new_keogram
@@ -1096,8 +1125,8 @@ class keogram:
         if file_list==None or len(file_list) == 0 :
             return self
         
-        latest_time=num2date(0.0)
-        earliest_time=datetime.datetime.now()
+        latest_time=datetime.datetime.fromordinal(1)
+        earliest_time=datetime.datetime.utcnow()
         
         capture_times=[]
         
@@ -1116,7 +1145,7 @@ class keogram:
             try:
                 capture_time=datetime.datetime.strptime(im.getInfo()['header'] ['Creation Time'],"%d %b %Y %H:%M:%S %Z")
             except KeyError:
-                raise IOError,"Cannot read creation time from image "+filename
+                raise IOError,"Cannot read creation time from image "+im.getFilename()
             
             #if it is later than the latest time then update latest time
             if capture_time > latest_time:
@@ -1126,47 +1155,53 @@ class keogram:
             if capture_time < earliest_time:
                 earliest_time=capture_time
             
-            #add the image filename and capture time to the capture times list
-            capture_times.append((filename,capture_time))
-            
         #if earliest_time<start_time and latest_time>end_time then give up, which direction should the keogram be moved in?
         if latest_time > self.__end_time and earliest_time < self.__start_time:
             raise ValueError, "File list time range exceeds keogram time range, which way should the keogram be rolled?"
         
-        #if all the capture times are within the existing range of the keogram, then just return self
-        if latest_time < self.__end_time and earliest_time > self.__start_time:
-            return self
+        #if all the capture times are within the existing range of the keogram, then no roll is needed
+        if latest_time <= self.__end_time and earliest_time >= self.__start_time:
+            time_roll = datetime.timedelta(seconds=0)
+            pix_roll = 0
         
-        if latest_time > self.__end_time: #keogram needs to be rolled forwards in time    
-            
-            #remove any images from the list that overlap with the existing keogram
-            for filename,time in capture_times:
-                if time < self.__end_time:
-                    file_list.remove(filename)
-        
+        if latest_time > self.__end_time: #keogram needs to be rolled forwards in time            
             #work out time roll
             time_roll=latest_time-self.__end_time
 
             #find out how many pixels to roll keogram by
-            pix_roll=self.time2pix(self.__start_time+time_roll)-self.__strip_width
+            time_part = self.time2pix(self.__start_time + time_roll)
+            
+            if time_part == None:
+                #if pix_roll is bigger than the keogram itself, then just blank the whole keogram
+                pix_roll = self.getWidth()
+            else:  
+                pix_roll = time_part - self.__strip_width
         
         if earliest_time < self.__start_time: #keogram needs to be rolled backwards in time    
-            
-            #remove any images from the list that overlap with the existing keogram
-            for filename,time in capture_times:
-                if time > self.__start_time:
-                    file_list.remove(filename)
         
             #work out time roll
             time_roll=self.__start_time-earliest_time
 
             #find out how many pixels to roll keogram by
-            pix_roll=self.time2pix(self.__start_time+time_roll)+self.__strip_width
+            time_part = self.time2pix(self.__start_time + time_roll)
+            if time_part == None:
+                #if pix_roll is bigger than the keogram itself, then just blank the whole keogram
+                pix_roll = self.getWidth()
+            else:  
+                pix_roll = time_part + self.__strip_width
         
         #modify start and end times
         end_time=time_roll+self.__end_time
         start_time=time_roll+self.__start_time
         
+        #update entries in data_points. Remove any points which are no longer in the keogram
+        new_data_points = []
+        for point in self.__data_points:
+            if ((point + pix_roll < 0) or (point + pix_roll > self.getWidth())):
+                continue
+            else:
+                new_data_points.append(point + pix_roll)           
+            
         #if the keogram has a colour table applied then use the intensity data, otherwise use the image
         if self.__intensities == None:
             image=self.__image
@@ -1195,20 +1230,22 @@ class keogram:
             for i in range(pix_roll):
                 keo_pix[self.__width-1-i,y]=black
         
-        #put new data into keogram
-        data=__putData(file_list,image,self.__width,self.__height,self.__strip_width,self.__angle,self.__start_time,self.__end_time)
+        #convert start and end times into seconds
+        start_secs=calendar.timegm(start_time.timetuple())
+        end_secs=calendar.timegm(end_time.timetuple())
         
-        #interpolate data - this includes interpolating backwards to merge the new data with the existing data. To do this we add an extra 'fake' entry into the data list, which corresponds to the end of the existing data (if we can find it, there may be a gap there)
-        
-        #calculate end of existing data
-        interp_start=(self.__width-1)-pix_roll
-        data.append(interp_start-(self.__strip_width/2))
-        
-        #interpolate data    
-        __interpolateData(data,image,self.__mode,self.__colour_table,self.__strip_width)
+        #put data into keogram
+        for im in images:
+            new_data_points.append(_putData(im,keo_pix,self.getWidth(),self.getHeight(),self.__strip_width,self.__angle,self.__fov_angle,start_secs,end_secs,keo_type=self.__keo_type))
+               
+        #interpolate the data
+        if self.__keo_type == "CopyPaste":
+            _interpolateData(new_data_points,image,self.__mode,self.__colour_table,self.__strip_width,self.__data_spacing)
+        elif self.__keo_type == "Average":
+            _interpolateData(new_data_points,image,self.__mode,self.__colour_table,1,self.__data_spacing+5) #+5 is effective strip width used when calculating keogram width
         
         #create new keogram object
-        new_keogram=keogram(image,self.__mode,None,start_time,end_time,self.__angle,self.__fov_angle,[],self.__strip_width,self.__intensities)
+        new_keogram=keogram(image,None,start_time,end_time,self.__angle,self.__fov_angle,[],self.__strip_width,self.__intensities,self.__keo_type,self.__data_points,self.__data_spacing)
         
         #if the original keogram had a colour table applied, then re-apply it now
         if self.__colour_table != None:
@@ -1234,6 +1271,9 @@ class keogram:
         header['strip_width']=str(self.__strip_width)
         header['colour_table']=str(self.__colour_table)
         header['fov_angle']=str(self.__fov_angle)
+        header['keo_type'] = self.__keo_type
+        header['data_points'] = str(self.__data_points)
+        header['data_spacing'] = str(self.__data_spacing)
         
         #if no colour table has been applied then save the image, otherwise save the intensities
         if self.__colour_table==None:
@@ -1317,7 +1357,15 @@ class keogram:
         if start_pix==None:
             start_pix=0
             start_time=self.__start_time
-            
+        
+        #update entries in data_points. Remove any points which are no longer in the keogram
+        new_data_points = []
+        for point in self.__data_points:
+            if ((point < start_pix) or (point > end_pix)):
+                continue
+            else:
+                new_data_points.append(point)
+             
         #get section of keogram image
         image_sec=self.__image.crop((start_pix,0,end_pix,self.__height))
         
@@ -1331,7 +1379,7 @@ class keogram:
         OCB_sec=self.__OCB[start_pix:end_pix]
         
         #return zoomed in keogram
-        return keogram(image_sec,self.__mode,self.__colour_table,start_time,end_time,self.__angle,self.__fov_angle,OCB_sec,self.__strip_width,intensities_sec)
+        return keogram(image_sec,self.__colour_table,start_time,end_time,self.__angle,self.__fov_angle,OCB_sec,self.__strip_width,intensities_sec,self.__keo_type,new_data_points, self.__data_spacing)
                         
 ###################################################################################                                
                                 

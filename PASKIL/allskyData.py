@@ -20,13 +20,7 @@ Concepts:
     However, no checks are made to ensure that the dataset object still matches the actual data. If the data
     has been changed in any way, then an exception will be raised when the dataset is loaded again.
     
-    Dataset objects implement the iterator protocol and can therefore be used in for loops. The iterator
-    object uses a separate loading thread to load image data, whilst leaving the calling thread free to 
-    process the returned allskyImage objects. It is therefore recommended to use the iterator when processing
-    large datasets to cut down on time wasted waiting for image retrieval from disk. The iterator returns
-    allskyImage objects. However, if you are not planning to use the image data (e.g. if you just want to 
-    read the header) then you should NOT use the iterator, since it explicitly loads the image data, whereas
-    the allskyImage.new() method does not.
+    Dataset objects implement the iterator protocol and can therefore be used in for loops. 
     
 
 Example:
@@ -61,7 +55,7 @@ Example:
 
 ################################################################################################################################################################
 
-import allskyImage,misc #imports from PASKIL
+from PASKIL import allskyImage,misc 
 import glob,datetime,cPickle,os #imports from other python modules
 import threading
 import os.path
@@ -143,7 +137,7 @@ def fromList(file_names,wavelength,filetype,site_info_file=""):
             current_image=allskyImage.new(filename,site_info_file) #create an allskyImage
         
         except TypeError:
-            continue
+            continue #skip file if PASKIL cannot open it
         except IOError:
             continue #skip file if PIL cannot decode the image
         
@@ -314,7 +308,7 @@ class dataset:
         """
         return self.__wavelength
         
-    def getColour_table(self):
+    def getColourTable(self):
         """
         Returns the colour table that has been applied to the images in the dataset, or None.
         """
@@ -539,23 +533,14 @@ class dataset:
 
 class datasetIterator:
     """
-    Iterator class for the dataset class. The iterator uses a separate loading thread to load image data
-    leaving the main execution thread free to process the current image. This should improve performance
-    especially for images which take a long time to load (e.g. sqd files and raw images).
+    Iterator class for the dataset class. Allows you to use "for image in dataset:"
+    constructs for iterating over all images in a dataset.
     """
     
     def __init__(self,filenames):
         self.__filenames = filenames
-        self.__currently_loaded_images = []
         self.__current_index = 0
         self.__largest_index = len(filenames)
-        
-        #create the loading thread for the first element
-        if self.__current_index < self.__largest_index:
-            self.__loading_thread = threading.Thread(target=self.__load,args = (self.__filenames[self.__current_index][0],self.__filenames[self.__current_index][1]))
-            self.__loading_thread.start()
-        else:
-           self.__loading_thread = None
            
     ################################################################################### 
                         
@@ -564,18 +549,6 @@ class datasetIterator:
         Method required by iterator protocol. Allows iterator to be used in for loops.
         """
         return self
-    
-    ################################################################################### 
-                
-    def __load(self,filename,site_info_filename):
-        """
-        Creates a new allskyImage object and loads it's associated image data (normally allskyImage object
-        creation is a lazy operation). Stores the object in a list of loaded objects ready to be returned to
-        the iterating process.
-        """
-        image = allskyImage.new(filename,site_info_file = site_info_filename)
-        image.load()
-        self.__currently_loaded_images.append(image)
         
     ###################################################################################  
                    
@@ -584,31 +557,18 @@ class datasetIterator:
         Required for the iterator protocol. Returns the next allskyImage in the dataset, with the image
         data already loaded. 
         """
-        #wait for loading thread to finish
-        if self.__loading_thread != None:
-            self.__loading_thread.join()
         
         #create the loading thread for the next element
-        if self.__current_index < self.__largest_index:
-            self.__loading_thread = threading.Thread(target=self.__load,args = (self.__filenames[self.__current_index][0],self.__filenames[self.__current_index][1]))
-            self.__loading_thread.start()
-       
-            self.__current_index += 1
+        if self.__current_index < self.__largest_index:      
             
-            #return loaded image
-            return  self.__currently_loaded_images.pop(0)
-        
-        elif self.__current_index == self.__largest_index:
-            #this is then the final image in the dataset
-            self.__loading_thread = None
+            im = allskyImage.new(self.__filenames[self.__current_index][0],site_info_file=self.__filenames[self.__current_index][1])
             self.__current_index += 1
-            
-            #return loaded image
-            return  self.__currently_loaded_images.pop(0)
+                        
+            #return image
+            return  im
         
         else:
             #all images have been returned, raise an exception from now on.
-            self.__loading_thread = None
             raise StopIteration
         
     ###################################################################################                 
