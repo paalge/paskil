@@ -370,4 +370,4 @@ class PASKIL_Allsky_Image_SQD:
 #register plugins
 register(PASKIL_Allsky_Image_PNG())
 register(PASKIL_Allsky_Image_FITS())
-register(PASKIL_Allsky_Image_SQD())
+

@@ -18,6 +18,10 @@ class UiO_Allsky_LYR_PNG:
     def test(self,image_filename, info_filename):
         #look in the image header data to see if this image is from the UiO camera
         
+        #this type of image requires a site info file
+        if info_filename == None:
+            return False
+        
         #reject dark field images
         if image_filename.count("DARK") != 0:
             return False

@@ -206,9 +206,9 @@ class allskyImage:
         #create new allskyImage object
         new_image=allskyImage(self.__image, self.__filename, self.__info)
                 
-        #check that image has already been centred
+        #check that image has already been centered
         if new_image.__info['processing'].keys().count('centerImage') == 0:
-            raise RuntimeError, "Image "+new_image.__filename+" must be centred before it can be aligned with north."
+            raise RuntimeError, "Image "+new_image.__filename+" must be centered before it can be aligned with north."
             
         #check if the image has already been aligned with north
         if new_image.__info['processing'].keys().count('alignNorth') != 0:
@@ -396,7 +396,7 @@ class allskyImage:
             
         #check that binary mask has been applied
         if self.__info['processing'].keys().count('binaryMask') == 0:
-            raise RuntimeError, "Image must have binary mask applied before it can be centred"
+            raise RuntimeError, "Image must have binary mask applied before it can be centered"
         
         #check if image has already been centered
         if self.__info['processing'].keys().count('centerImage') != 0:
@@ -554,7 +554,7 @@ class allskyImage:
         length equal to the 'Radius' of the field of view of the image.
         """
         
-        #check that image has been aligned with north (if so then it must have been centred)
+        #check that image has been aligned with north (if so then it must have been centered)
         if self.__info['processing'].keys().count('alignNorth') == 0:
             raise RuntimeError, "Image must be aligned with North."
                 
