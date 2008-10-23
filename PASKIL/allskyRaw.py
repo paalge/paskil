@@ -136,12 +136,16 @@ class rawImage(allskyImage.allskyImage):
     Holds the separate channels of a raw image file.
     """
     
-    def __init__(self, filename, info, channels=[]):
+    def __init__(self, filename, info, channels=None):
         
         #set private class attributes
-        self.__channels = channels
+        self.__channels = []
         
-        if channels == []:
+        if channels is not None:
+            for ch in channels:
+                self.__channels.append(ch)
+        
+        if channels is None:
             self.__loaded = False
         else:
             self.__loaded = True

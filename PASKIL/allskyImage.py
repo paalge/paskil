@@ -51,7 +51,7 @@ except ImportError:
 
 ##Functions
 
-def new(image_filename, site_info_file="",force=False):
+def new(image_filename, site_info_file="", force=False):
     """
     Creates a new allskyImage object. The image_filename argument specifies the image to be read. The site_info_file 
     option should be the filename of the site information file (if one is required). This is an optional file 
@@ -69,7 +69,7 @@ def new(image_filename, site_info_file="",force=False):
     
     
     #Load correct image plugin to open image
-    filetype=allskyImagePlugins.load(image_filename, info_filename,force)
+    filetype=allskyImagePlugins.load(image_filename, info_filename, force)
     
     #Return allskyImage object
     allsky_image = filetype.open(image_filename, info_filename)
@@ -194,51 +194,65 @@ class allskyImage:
         
     ###################################################################################    
     
-    def alignNorth(self, north="geographic"):
+    def alignNorth(self, north="geographic", orientation='NESW'):
         """
         Aligns the top of the image with either geographic or geomagnetic north depending on the value of 
         the north argument. Default is "geographic", can also be set to "geomagnetic". The right hand edge 
         of the image will be aligned with East. The returned all-sky image will be in a NESW orientation. 
         The image must be centered before it can be aligned with North. It is expected that the images are
-        in a NWSE orientation before they are processed by PASKIL.
-        """
-
-        #create new allskyImage object
-        new_image=allskyImage(self.__image, self.__filename, self.__info)
-                
+        in a NWSE orientation before they are processed by PASKIL (i.e. looking upwards).
+        """               
         #check that image has already been centered
-        if new_image.__info['processing'].keys().count('centerImage') == 0:
-            raise RuntimeError, "Image "+new_image.__filename+" must be centered before it can be aligned with north."
-            
-        #check if the image has already been aligned with north
-        if new_image.__info['processing'].keys().count('alignNorth') != 0:
-            if new_image.__info['processing']['alignNorth'] == north:
-                warnings.warn("Image "+new_image.__filename+" has already been aligned with "+north+" north.")
+        if self.__info['processing'].keys().count('centerImage') == 0:
+            raise RuntimeError, "Image " + self.__filename + " must be centred before it can be aligned with north."
         
-        else:
-            #align the image with geographic north, the rotation is done anti-clockwise since the image is in a NWSE orientation 
-            new_image.__image=new_image.__image.rotate(float(new_image.__info['camera']['cam_rot']))
-            new_image.__info['camera']['cam_rot']="0.0"
+        #copy the info dict, ready to create a new allskyImage
+        new_info = self.getInfo()    
+        
+        #align the image with geographic north
+        try:
+            if new_info['processing']['alignNorth'].count('NESW') != 0:
+                #rotate clockwise since the Image is in a NESW orientation
+                new_image = self.__image.rotate(-float(new_info['camera']['cam_rot']))
+            elif new_info['processing']['alignNorth'].count('NWSE') != 0:
+                #rotate anti-clockwise since the Image is in a NWSE orientation
+                new_image = self.__image.rotate(float(new_info['camera']['cam_rot']))
+            else:
+                #this image was alignedNorth using an old version of PASKIL and
+                #is therefore in a NESW orientation
+                #rotate clockwise since the Image is in a NESW orientation
+                new_image = self.__image.rotate(-float(new_info['camera']['cam_rot']))
+                new_info['processing']['alignNorth'] = new_info['processing']['alignNorth'] + "(NESW)"
             
-            #flip image east west (aligns image in NESW orientation), don't need to do this if the image has been previously aligned with north
-            new_image.__image=ImageOps.mirror(new_image.__image)
+        except KeyError:
+            #the image hasn't been aligned North before, we assume it is in NWSE orientation and change the info to reflect this
+            new_info['processing']['alignNorth'] = "(NWSE)"
+            new_image = self.__image.rotate(float(new_info['camera']['cam_rot']))
+        new_info['camera']['cam_rot'] = "0.0"
+        
+        #if the image does not already have the correct orientation then
+        #flip it east west 
+        if new_info['processing']['alignNorth'].count(orientation) == 0:
+            new_image = ImageOps.mirror(new_image)
+                        
+        if north=="geomagnetic":
+            if orientation == 'NESW':
+                new_image = new_image.rotate(float(new_info['camera']['Magn. Bearing']))
+            elif orientation == 'NWSE':
+                new_image = new_image.rotate(-float(new_info['camera']['Magn. Bearing']))
+            else:
+                raise(ValueError,"Unknown value for orientation. Expecting \"NESW\" or \"NWSE\"")
             
-        #rotate by negative camera rotation anti-clockwise (equivalent to rotating by cam_rot clockwise)
-        if north=="geographic":
-            new_image.__image=new_image.__image.rotate(0.0 - float(new_image.__info['camera']['cam_rot']))
-            new_image.__info['camera']['cam_rot']="0.0"
+            new_info['camera']['cam_rot'] = new_info['camera']['Magn. Bearing']
             
-        elif north=="geomagnetic":
-            new_image.__image=new_image.__image.rotate(float(new_image.__info['camera']['Magn. Bearing']) - float(new_image.__info['camera']['cam_rot']))
-            new_image.__info['camera']['cam_rot']=new_image.__info['camera']['Magn. Bearing']
-            
-        else:
-            raise ValueError, "Unknown value for north"
+        elif north != "geographic":
+            raise(ValueError, "Unknown value for north. Expecting \"geomagnetic\" or \"geographic\"")
         
         #update processing history
-        new_image.__info['processing']['alignNorth']=north
+        new_info['processing']['alignNorth'] = north+" ("+orientation+")"
         
-        return new_image
+        #return a new allskyImage instance
+        return allskyImage(new_image, self.__filename, new_info)
         
     ###################################################################################    
         
@@ -338,48 +352,47 @@ class allskyImage:
         #draw white circle
         draw=ImageDraw.Draw(mask)
         draw.ellipse((bb_left, bb_top, bb_right, bb_bottom), fill=white)
-
         
         #apply the mask to the image
         if mode == "L" or mode == "RGB":
             if inverted:
-                mask=ImageChops.invert(mask)
-                new_image.__image=ImageChops.lighter(new_image.__image, mask)
+                mask = ImageChops.invert(mask)
+                new_image.__image = ImageChops.lighter(new_image.__image, mask)
             else:
-                new_image.__image=ImageChops.multiply(new_image.__image, mask)
+                new_image.__image = ImageChops.multiply(new_image.__image, mask)
         
         elif mode == "I":
             #if the image is 16bit then cannot use the ImageChops module, so use own multiplication routine
             if inverted:
-                im_pix=new_image.__image.load()
-                mask_pix=mask.load()
+                im_pix = new_image.__image.load()
+                mask_pix = mask.load()
             
-                width, height=new_image.getSize()
+                width, height = new_image.getSize()
             
                 for x in range(width):
                     for y in range(height):
-                        im_pix[x, y]=int(max(im_pix[x, y], 65535-mask_pix[x, y]))
+                        im_pix[x, y] = int(max(im_pix[x, y], 65535-mask_pix[x, y]))
             
             else:
-                im_pix=new_image.__image.load()
-                mask_pix=mask.load()
+                im_pix = new_image.__image.load()
+                mask_pix = mask.load()
                 
-                width, height=new_image.getSize()
+                width, height = new_image.getSize()
             
                 for x in range(width):
                     for y in range(height):
-                        im_pix[x, y]=int((float(im_pix[x, y])*float(mask_pix[x, y]))/65535.0)
+                        im_pix[x, y] = int((float(im_pix[x, y])*float(mask_pix[x, y]))/65535.0)
         else:
             raise ValueError, "Unsupported image mode"
         
         #update radius value
-        new_image.__info['camera']['Radius']=radius
+        new_image.__info['camera']['Radius'] = radius
         
         #update fov_angle value
-        new_image.__info['camera']['fov_angle']=fov_angle
+        new_image.__info['camera']['fov_angle'] = fov_angle
         
         #update the processing history
-        new_image.__info['processing']['binaryMask']=""
+        new_image.__info['processing']['binaryMask'] = str(fov_angle)
         
         return new_image
     
@@ -396,7 +409,7 @@ class allskyImage:
             
         #check that binary mask has been applied
         if self.__info['processing'].keys().count('binaryMask') == 0:
-            raise RuntimeError, "Image must have binary mask applied before it can be centered"
+            raise RuntimeError, "Image must have binary mask applied before it can be centred"
         
         #check if image has already been centered
         if self.__info['processing'].keys().count('centerImage') != 0:
@@ -415,11 +428,11 @@ class allskyImage:
         #the image is now pasted into a new image which encompasses the entire (theoretical) circular field of view. This is done to allow PASKIL to cope with images taken with non-circular fields of view.
         
         #create new square image with dimensions RadiusxRadius
-        square_image=Image.new(self.__image.mode,(2*self.__info['camera']['Radius'],2*self.__info['camera']['Radius']),color='black')
+        square_image=Image.new(self.__image.mode, (2*self.__info['camera']['Radius'], 2*self.__info['camera']['Radius']), color='black')
         
         #paste image into correct position in square image.
-        width,height=new_image.size
-        square_image.paste(new_image,(self.__info['camera']['Radius']-int(width/2),self.__info['camera']['Radius']-int(height/2),self.__info['camera']['Radius']-int(width/2)+width,self.__info['camera']['Radius']-int(height/2)+height))     
+        width, height=new_image.size
+        square_image.paste(new_image, (self.__info['camera']['Radius']-int(width/2), self.__info['camera']['Radius']-int(height/2), self.__info['camera']['Radius']-int(width/2)+width, self.__info['camera']['Radius']-int(height/2)+height))     
         
         #create a new info dictionary
         new_info=self.getInfo()
@@ -432,7 +445,7 @@ class allskyImage:
         new_info['processing']['centerImage']=""
         
         #create new allskyImage object
-        new_asimage=allskyImage(square_image,self.__filename,new_info)
+        new_asimage=allskyImage(square_image, self.__filename, new_info)
         
         return new_asimage
     
@@ -554,12 +567,18 @@ class allskyImage:
         length equal to the 'Radius' of the field of view of the image.
         """
         
-        #check that image has been aligned with north (if so then it must have been centered)
+        #check that image has been aligned with north (if so then it must have been centred)
         if self.__info['processing'].keys().count('alignNorth') == 0:
             raise RuntimeError, "Image must be aligned with North."
                 
         #rotate image so that the slice runs from top to bottom
-        im=self.__image.rotate(angle-float(self.__info['camera']['cam_rot']))
+        #the rotation direction depends on the orientation of the image
+        if self.__info['processing']['alignNorth'].count('NESW') != 0:
+            im = self.__image.rotate(angle - float(self.__info['camera']['cam_rot']))
+        elif self.__info['processing']['alignNorth'].count('NWSE') != 0:
+            im = self.__image.rotate(float(self.__info['camera']['cam_rot']) - angle)
+        else:
+            raise(ValueError,"getStrip(): Cannot read orientation data from info dict. Try re-aligning the image with North")
         
         #load pixel values into an array 
         pixels = im.load()
@@ -637,13 +656,13 @@ class allskyImage:
         new_image.__image = new_image.__image.filter(ImageFilter.MedianFilter(n))
         
         #update processing history
-        new_image.__info['processing']['medianFilter']=n
+        new_image.__info['processing']['medianFilter'] = n
         
         return new_image
         
     ###################################################################################
         
-    def projectToHeight(self, height, grid_size=300,background='black'):
+    def projectToHeight(self, height, grid_size=300, background='black'):
         """
         Returns a projection object which can be used to create map projections of the allsky image.
         See the allskyProj module for details. The height argument should be the altitude in meters
@@ -655,7 +674,7 @@ class allskyImage:
         sky images. The background option controls the background colour of the map projection,
         default is black.
         """        
-        return allskyProj.projection(self, height, grid_size,background=background)
+        return allskyProj.projection(self, height, grid_size, background=background)
         
     ###################################################################################
     

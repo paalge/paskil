@@ -1,4 +1,6 @@
 
+
+
 //define a structure to hold all the global variables
 
 struct glob_var {
@@ -51,6 +53,9 @@ struct {
 } ph1;
 	
 };
+
+//prototype free globals function
+void free_globals(struct glob_var *globals);
 
 #define timestamp globals->timestamp
 #define ifp globals->ifp

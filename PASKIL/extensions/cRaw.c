@@ -8219,6 +8219,14 @@ struct glob_var createGlobals(void){
 	//that used to be global variables in the original dcraw.
 	struct glob_var global_variables;
 	struct glob_var *globals = &global_variables;
+	//int i; //counter
+	/*for(i=0;i<4;i++)
+	{
+		image[i] = NULL; //pre-set the image pointers to NULL so that we know whether or not to free them later
+	}*/
+	meta_data = NULL; //as above
+	ifname = NULL; //and again!
+	
 	shot_select=0; 
 	multi_out=0;
 	aber[0]=1;
@@ -8282,6 +8290,7 @@ static PyObject * cRaw_getTimestamp(PyObject *self, PyObject *args){
 	//parse the arguments passed to the function
 	if(!PyArg_ParseTuple(args, "O", &indata)){ //no increase to the object's reference count
 		PyErr_SetString(PyExc_ValueError,"Invalid parameters");
+		free_globals(globals);
 		return NULL;
 	}
 	
@@ -8294,10 +8303,12 @@ static PyObject * cRaw_getTimestamp(PyObject *self, PyObject *args){
 
     if ((status = !timestamp)){
 		PyErr_SetString(PyExc_ValueError,"Image has no timestamp."); //raise exception if no timestamp was read
+		free_globals(globals);
 		return NULL;
 		
     }else{
     	//convert timestamp to a python int and return it
+    	free_globals(globals);
     	return PyInt_FromLong((long) timestamp);
     }
 }
@@ -8318,6 +8329,7 @@ static PyObject * cRaw_getRawData(PyObject *self, PyObject *args){
 	//parse the arguments passed to the function by Python
 	if(!PyArg_ParseTuple(args, "O", &indata)){ //no increase to the object's reference count
 		PyErr_SetString(PyExc_ValueError,"Invalid parameters");
+		free_globals(globals);
 		return NULL;
 	}
 
@@ -8343,6 +8355,7 @@ static PyObject * cRaw_getRawData(PyObject *self, PyObject *args){
     if (!is_raw)
     {
     	PyErr_SetString(PyExc_IOError,"Cannot decode file");
+    	free_globals(globals);
     	return NULL;   
     }
    
@@ -8368,6 +8381,7 @@ static PyObject * cRaw_getRawData(PyObject *self, PyObject *args){
     if (shot_select >= is_raw)
     {
       	PyErr_SetString(PyExc_ValueError,"Requested non-existant image");
+    	free_globals(globals);
     	return NULL;
     }
     fseeko (ifp, data_offset, SEEK_SET);
@@ -8388,18 +8402,22 @@ static PyObject * cRaw_getRawData(PyObject *self, PyObject *args){
   	//check that object was built ok
   	if(image_data == NULL){
   		PyErr_SetString(PyExc_MemoryError,"Unable to create Numpy array object");
+		free_globals(globals);
 		return NULL;
   	}
   	
   	//build a python tuple object containing the image data and the size of the image
   	PyObject *return_data = PyTuple_Pack(3, image_data,PyInt_FromLong(iwidth),PyInt_FromLong(iheight)); 
   	
+  	Py_XDECREF(image_data); //creating the tuple has increased the ref count, so decrease it again.
+  	
   	//check that object was built ok
   	if(return_data == NULL){
   		PyErr_SetString(PyExc_MemoryError,"Unable to create tuple object for return data");
+		free_globals(globals);
 		return NULL;
   	}
-  	
+  	free_globals(globals);
   	return return_data;
   		
 }
@@ -8434,11 +8452,46 @@ static PyObject * cRaw_canDecode(PyObject *self, PyObject *args){
 	
 	if (status)
 	{
+		free_globals(globals);
 		Py_RETURN_FALSE;
 	}else
 	{
+		free_globals(globals);
 		Py_RETURN_TRUE;
 	}
+}
+
+/**************************************************************************************************/
+
+void free_globals(struct glob_var *globals)
+{
+	//function frees all global variable memory
+	
+	//int i; //counter
+	
+	/*for(i=0;i<4;i++)
+	{
+		if(image[i] != NULL)
+		{
+			free(image[i]);
+			image[i] = NULL;
+		}
+	} */
+	if(image != NULL)
+	{
+		free(image);
+	}
+	
+	if(meta_data != NULL)
+	{
+		free(meta_data);
+		meta_data = NULL;
+	}
+	if(ifname != NULL)
+	{
+		free(ifname);
+		ifname = NULL;
+	}	
 }
 
 /************************************************************************/

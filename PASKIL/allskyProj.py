@@ -77,12 +77,11 @@ class projection:
         if self.__mode == "I":
             im = im.convertTo8bit()
             self.__mode = 'L'
-        
-        
+          
         #ensure that the image is aligned with geographic north
         if image_info['processing'].has_key('alignNorth'):
-            if image_info['processing']['alignNorth'] != 'geographic':
-                im = im.alignNorth(north = 'geographic')
+            if image_info['processing']['alignNorth'] != 'geographic (NESW)':
+                im = im.alignNorth(north='geographic', orientation='NESW')
             
         else:
             if not image_info['processing'].has_key('binaryMask'):
