@@ -365,14 +365,14 @@ def _putData(image, keo_pix, width, height, strip_width, angle, keo_fov_angle, s
     current_image=__imagePreProcess(image)
     
     #if the image has a larger field of view than the keogram, then reduce it
-    if int(current_image.getInfo['processing']['binaryMask']) > keo_fov_angle:
+    if int(current_image.getInfo()['processing']['binaryMask']) > keo_fov_angle:
         current_image = current_image.binaryMask(keo_fov_angle)
         current_image = current_image.centerImage()
     
     #if the image is larger than the keogram, then we have a problem! As a temporary fix
     #we just resize the whole image
     #TODO; change this to just resize the strip taken from the image (should be much faster)
-    if int(current_image.getInfo['camera']['Radius']) > height:
+    if int(current_image.getInfo()['camera']['Radius']) > height:
         current_image = current_image.resize((height,height))
     
     #read time data from image and convert to seconds
@@ -383,7 +383,9 @@ def _putData(image, keo_pix, width, height, strip_width, angle, keo_fov_angle, s
         raise IOError, "Cannot read creation time from image "+filename
     
     #calculate x pixel coordinate in keogram of where strip from current image should go
-    x_coordinate=int(((float(width)-strip_width)/float((end_secs-start_secs)))*float((capture_time_secs-start_secs))+strip_width/2)
+    strip_width_secs = (float((end_secs-start_secs))/float(width-strip_width)) * int(strip_width/2)
+    x_coordinate = ((float(width)/float(end_secs - start_secs + strip_width_secs)) * float((capture_time_secs-start_secs))) + strip_width/2
+    #x_coordinate=int(((float(width)-strip_width)/float((end_secs-start_secs)))*float((capture_time_secs-start_secs))+strip_width/2)
     
     #get strip from image
     strip=current_image.getStrip(angle, strip_width)
@@ -1210,7 +1212,7 @@ class keogram:
                 #if pix_roll is bigger than the keogram itself, then just blank the whole keogram
                 pix_roll = self.getWidth()
             else:  
-                pix_roll = time_part - self.__strip_width
+                pix_roll = time_part #- self.__strip_width
         
         if earliest_time < self.__start_time: #keogram needs to be rolled backwards in time    
         
@@ -1223,7 +1225,7 @@ class keogram:
                 #if pix_roll is bigger than the keogram itself, then just blank the whole keogram
                 pix_roll = self.getWidth()
             else:  
-                pix_roll = time_part + self.__strip_width
+                pix_roll = time_part #+ self.__strip_width
         
         #modify start and end times
         end_time=time_roll+self.__end_time
