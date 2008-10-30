@@ -244,7 +244,7 @@ def new(data, angle, start_time=None, end_time=None, strip_width=5, data_spacing
         spacings=[]
         i=1
         while i < len(times):
-            spacing=times[i]-times[i-1]
+            spacing = times[i]-times[i-1]
             if spacing != 0:
                 spacings.append((times[i]-times[i-1]).seconds)
             i+=1
@@ -295,9 +295,9 @@ def new(data, angle, start_time=None, end_time=None, strip_width=5, data_spacing
     
     #interpolate the data
     if keo_type == "CopyPaste":
-        _interpolateData(data_points, keo_image, mode, colour_table, strip_width, mean_data_spacing_pix)
+        _interpolateData(data_points, keo_image, mode, colour_table, strip_width, 1.5*mean_data_spacing_pix) #1.5 factor allows some flexibility in data spacing without interpolating across large gaps
     elif keo_type == "Average":
-        _interpolateData(data_points, keo_image, mode, colour_table, 1, mean_data_spacing_pix+5) #+5 is effective strip width - used in calculating the width of the keogram
+        _interpolateData(data_points, keo_image, mode, colour_table, 1, 1.5*(mean_data_spacing_pix+5)) #+5 is effective strip width - used in calculating the width of the keogram
     
     #create keogram object
     OCB=[]
@@ -363,6 +363,17 @@ def plotKeograms(keograms, columns=1, size=None, title=None):
 def _putData(image, keo_pix, width, height, strip_width, angle, keo_fov_angle, start_secs, end_secs, keo_type="CopyPaste"):
     
     current_image=__imagePreProcess(image)
+    
+    #if the image has a larger field of view than the keogram, then reduce it
+    if int(current_image.getInfo['processing']['binaryMask']) > keo_fov_angle:
+        current_image = current_image.binaryMask(keo_fov_angle)
+        current_image = current_image.centerImage()
+    
+    #if the image is larger than the keogram, then we have a problem! As a temporary fix
+    #we just resize the whole image
+    #TODO; change this to just resize the strip taken from the image (should be much faster)
+    if int(current_image.getInfo['camera']['Radius']) > height:
+        current_image = current_image.resize((height,height))
     
     #read time data from image and convert to seconds
     try:
@@ -433,9 +444,6 @@ def _putData(image, keo_pix, width, height, strip_width, angle, keo_fov_angle, s
                 try:
                     keo_pix[x_coordinate+j, i]=strip[strip_width/2+j][i]
                 except Exception, ex:
-                    print "image coordinates = ", x_coordinate+j, i
-                    print "image size = ", width, height
-                    print "j = ", j
                     raise ex
     elif keo_type == "Average":
         #average the strip in the x direction and copy the mean values into the keogram
@@ -1152,10 +1160,10 @@ class keogram:
         if file_list==None or len(file_list) == 0 :
             return self
         
-        latest_time=datetime.datetime.fromordinal(1)
-        earliest_time=datetime.datetime.utcnow()
+        latest_time = datetime.datetime.fromordinal(1)
+        earliest_time = datetime.datetime.utcnow()
         
-        capture_times=[]
+        capture_times = []
         
         #if the list is of file names then load the allskyImages
         images = []
@@ -1194,7 +1202,7 @@ class keogram:
         if latest_time > self.__end_time: #keogram needs to be rolled forwards in time            
             #work out time roll
             time_roll=latest_time-self.__end_time
-
+            
             #find out how many pixels to roll keogram by
             time_part = self.time2pix(self.__start_time + time_roll)
             

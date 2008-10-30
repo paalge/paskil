@@ -8219,13 +8219,9 @@ struct glob_var createGlobals(void){
 	//that used to be global variables in the original dcraw.
 	struct glob_var global_variables;
 	struct glob_var *globals = &global_variables;
-	//int i; //counter
-	/*for(i=0;i<4;i++)
-	{
-		image[i] = NULL; //pre-set the image pointers to NULL so that we know whether or not to free them later
-	}*/
-	meta_data = NULL; //as above
-	ifname = NULL; //and again!
+
+	meta_data = NULL; //initialise pointer to NULL so that we know whether to free it or not
+	ifname = NULL; //as above
 	
 	shot_select=0; 
 	multi_out=0;
@@ -8244,8 +8240,11 @@ struct glob_var createGlobals(void){
 	document_mode=0; 
 	highlight=0;
 	verbose=0; 
+	
+	//do not apply any white balance to the image
 	use_auto_wb=0; 
-	use_camera_wb=0; 
+	use_camera_wb=0;
+	 
 	use_camera_matrix=-1;
 	output_color=1; 
 	output_bps=8;
@@ -8335,7 +8334,6 @@ static PyObject * cRaw_getRawData(PyObject *self, PyObject *args){
 
 	//convert the python file pointer to a C file pointer and store in dcraw's global variable ifp
 	ifp= PyFile_AsFile(indata);
-
 	
 	int status=0;
 	four_color_rgb=1; //do not combine the two green channels
@@ -8353,7 +8351,7 @@ static PyObject * cRaw_getRawData(PyObject *self, PyObject *args){
     }
     
     if (!is_raw)
-    {
+    {	
     	PyErr_SetString(PyExc_IOError,"Cannot decode file");
     	free_globals(globals);
     	return NULL;   
@@ -8379,11 +8377,15 @@ static PyObject * cRaw_getRawData(PyObject *self, PyObject *args){
     }
     
     if (shot_select >= is_raw)
-    {
+    {	
       	PyErr_SetString(PyExc_ValueError,"Requested non-existant image");
     	free_globals(globals);
     	return NULL;
     }
+    
+    //Release the GIL so that other python threads can continue execution whilst the image is decoded
+	Py_BEGIN_ALLOW_THREADS;
+    
     fseeko (ifp, data_offset, SEEK_SET);
     (*load_raw)(globals);
    
@@ -8394,7 +8396,8 @@ static PyObject * cRaw_getRawData(PyObject *self, PyObject *args){
     convert_to_rgb();
 
   	//End of dcraw code - now have 4 channel raw (RGBG) data stored in image array
-
+	
+	Py_END_ALLOW_THREADS; //re-acquire the GIL
 	
   	//convert C image array into a numpy array object
   	PyArrayObject *image_data = NA_NewArray(image, tUInt16,2,iwidth*iheight,4);
@@ -8466,17 +8469,7 @@ static PyObject * cRaw_canDecode(PyObject *self, PyObject *args){
 void free_globals(struct glob_var *globals)
 {
 	//function frees all global variable memory
-	
-	//int i; //counter
-	
-	/*for(i=0;i<4;i++)
-	{
-		if(image[i] != NULL)
-		{
-			free(image[i]);
-			image[i] = NULL;
-		}
-	} */
+
 	if(image != NULL)
 	{
 		free(image);

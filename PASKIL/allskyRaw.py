@@ -217,9 +217,11 @@ class rawImage(allskyImage.allskyImage):
         
         for self._allskyImage__image in self.__channels:
             self._allskyImage__info = eval(info_bkup)
-            new_channels.append(method(self,*args,**kwargs).getImage())
+            new_ASI = method(self,*args,**kwargs)
+            
+            new_channels.append(new_ASI.getImage())
         
-        return rawImage(self.getFilename(),self.getInfo(),channels = new_channels)
+        return rawImage(self.getFilename(),new_ASI.getInfo(),channels = new_channels)
     
     ###################################################################################       
     def alignNorth(self,north="geographic"):
@@ -284,7 +286,7 @@ class rawImage(allskyImage.allskyImage):
                                        
     def load(self):
         if not self.__loaded:
-            
+           
             images = getRawData(self.getFilename())
             
             for image in images:
@@ -294,7 +296,7 @@ class rawImage(allskyImage.allskyImage):
                 channel.info = {}
             
             self.__loaded = True
-        
+           
     ###################################################################################        
         
     def getChannel(self,channel):
@@ -304,7 +306,7 @@ class rawImage(allskyImage.allskyImage):
         
         self.load()
         
-        if channel >= len(self.__channels) - 1:
+        if channel > len(self.__channels) - 1:
             raise ValueError,"Selected channel does not exist."
         
         new_info=self.getInfo()
