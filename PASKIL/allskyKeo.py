@@ -383,8 +383,8 @@ def _putData(image, keo_pix, width, height, strip_width, angle, keo_fov_angle, s
         raise IOError, "Cannot read creation time from image "+filename
     
     #calculate x pixel coordinate in keogram of where strip from current image should go
-    strip_width_secs = (float((end_secs-start_secs))/float(width-strip_width)) * int(strip_width/2)
-    x_coordinate = ((float(width)/float(end_secs - start_secs + strip_width_secs)) * float((capture_time_secs-start_secs))) + strip_width/2
+    strip_width_secs = (float((end_secs-start_secs))/float(width+1-strip_width)) * strip_width
+    x_coordinate = int(((float(width)/float(end_secs - start_secs + strip_width_secs)) * float((capture_time_secs-start_secs))) + strip_width/2)
     #x_coordinate=int(((float(width)-strip_width)/float((end_secs-start_secs)))*float((capture_time_secs-start_secs))+strip_width/2)
     
     #get strip from image
@@ -513,8 +513,7 @@ def _interpolateData(data_list, image, mode, colour_table, strip_width, max_gap)
                 for x in range(start_pix+1, data_list[i+1]-int(strip_width/2)):
                 
                     keo_pix[x, y]=keo_pix[start_pix, y] + (x-start_pix)*gradient
-                    
-        
+                           
         # For RGB images with no colour table - simple linear interpolation between values of R,G and B            
         elif mode == "RGB" and colour_table==None:
             for y in range(image.size[1]):
@@ -1274,12 +1273,15 @@ class keogram:
         #put data into keogram
         for im in images:
             new_data_points.append(_putData(im, keo_pix, self.getWidth(), self.getHeight(), self.__strip_width, self.__angle, self.__fov_angle, start_secs, end_secs, keo_type=self.__keo_type))
+        
+        #update the data_points attribute
+        self.__data_points = new_data_points
                
         #interpolate the data
         if self.__keo_type == "CopyPaste":
-            _interpolateData(new_data_points, image, self.__mode, self.__colour_table, self.__strip_width, self.__data_spacing)
+            _interpolateData(new_data_points, image, self.__mode, self.__colour_table, self.__strip_width, 1.5*(self.__data_spacing))
         elif self.__keo_type == "Average":
-            _interpolateData(new_data_points, image, self.__mode, self.__colour_table, 1, self.__data_spacing+5) #+5 is effective strip width used when calculating keogram width
+            _interpolateData(new_data_points, image, self.__mode, self.__colour_table, 1, 1.5*(self.__data_spacing+5)) #+5 is effective strip width used when calculating keogram width
         
         #create new keogram object
         new_keogram=keogram(image, None, start_time, end_time, self.__angle, self.__fov_angle, [], self.__strip_width, self.__intensities, self.__keo_type, self.__data_points, self.__data_spacing)
