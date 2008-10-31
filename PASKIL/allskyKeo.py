@@ -1211,7 +1211,7 @@ class keogram:
                 #if pix_roll is bigger than the keogram itself, then just blank the whole keogram
                 pix_roll = self.getWidth()
             else:  
-                pix_roll = time_part #- self.__strip_width
+                pix_roll = time_part 
         
         if earliest_time < self.__start_time: #keogram needs to be rolled backwards in time    
         
@@ -1224,7 +1224,7 @@ class keogram:
                 #if pix_roll is bigger than the keogram itself, then just blank the whole keogram
                 pix_roll = self.getWidth()
             else:  
-                pix_roll = time_part #+ self.__strip_width
+                pix_roll = -time_part 
         
         #modify start and end times
         end_time=time_roll+self.__end_time
@@ -1233,10 +1233,10 @@ class keogram:
         #update entries in data_points. Remove any points which are no longer in the keogram
         new_data_points = []
         for point in self.__data_points:
-            if ((point + pix_roll < 0) or (point + pix_roll > self.getWidth())):
+            if ((point - pix_roll < 0) or (point - pix_roll > self.getWidth())):
                 continue
             else:
-                new_data_points.append(point + pix_roll)           
+                new_data_points.append(point - pix_roll)           
             
         #if the keogram has a colour table applied then use the intensity data, otherwise use the image
         if self.__intensities == None:
