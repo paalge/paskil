@@ -39,6 +39,9 @@ from PASKIL.extensions import cSquish
 import pyfits, numpy
 import sys, datetime, os, math
 import warnings
+import matplotlib
+import matplotlib.pyplot
+from pylab import AutoLocator,NullLocator,FuncFormatter
 
 #attempt to import psyco to improve performance
 try:
@@ -661,6 +664,103 @@ class allskyImage:
         return new_image
         
     ###################################################################################
+    
+    def _plot(self, subplot):
+        """
+        Returns a matplotlib subplot object containing the allsky image data.
+        """
+        
+        #turn off the axes
+        subplot.yaxis.set_visible(False)
+        subplot.xaxis.set_visible(False)
+        
+        #if the image has a colour table applied, then create a colour bar
+        try:
+            colour_table = self.__info['processing']['applyColourTable']
+        except KeyError:
+            colour_table = None
+        
+        if colour_table is not None:
+            #find the thresholds on the colour table - then we can just display
+            #the interesting parts of the colour table.
+            
+            #first we find the lower threshold
+            colour_table.reverse()
+            offset = colour_table.index(colour_table[-1])
+            lower_threshold = len(colour_table)- 1 - offset
+            
+            #now the upper threshold
+            colour_table.reverse()
+            upper_threshold = colour_table.index(colour_table[-1])
+            
+            colour_bar_height = len(colour_table)
+            colour_bar_width = 11
+
+            #create a colour bar image
+            colour_bar_image = Image.new("RGB",(colour_bar_width,colour_bar_height))
+            colour_bar_pix = colour_bar_image.load()
+            
+            #colour in the colour bar based on the colour table of the image
+            for y in xrange(colour_bar_height):
+                current_ct_index = int((float(colour_bar_height - y)/float(colour_bar_height)) * (len(colour_table)-1))
+                current_colour = colour_table[current_ct_index]
+                
+                for x in xrange(colour_bar_width):
+                    colour_bar_pix[x,y] = current_colour
+            
+            #if the image could contain values outside of the threshold
+            #region (there is now no way to determine this for certain, since the
+            #intensity data was lost when the colour table was applied) then put
+            #arrow heads on the colour bar to indicate this
+            
+            if lower_threshold != 0:
+                d = ImageDraw.Draw(colour_bar_image)
+                y0 = colour_bar_height - lower_threshold
+                d.polygon([(0,y0),(0,y0-11),(5,y0-1),(10,y0-11),(10,y0)],fill='white')
+            if upper_threshold != colour_bar_height-1:
+                d = ImageDraw.Draw(colour_bar_image)
+                y0 = colour_bar_height - upper_threshold
+                d.polygon([(0,y0),(0,y0+11),(5,y0+1),(10,y0+11),(10,y0)],fill='white')
+            
+            #create a fake colour table - this is used to get matplotlib to create the colourbar axes
+            #which we then use to plot out colour bar image into
+            fake_data = numpy.random.rand(2,2)
+            fake_colour_image = subplot.pcolor(fake_data)
+            
+            #create the matplotlib colour bar object and plot the colour table image in it
+            colour_bar = matplotlib.pyplot.colorbar(fake_colour_image,ax=subplot)
+            colour_bar.ax.axes.clear()
+            
+            if not self.__info['processing'].has_key('absoluteCalibration'):
+                colour_bar.ax.axes.set_ylabel("Pixel Value")
+                colour_bar.ax.yaxis.set_label_position("left")
+            
+            colour_bar.ax.xaxis.set_major_locator(NullLocator())
+            
+            colour_bar.ax.imshow(colour_bar_image,origin="top")
+
+            colour_bar.ax.axes.set_ylim((lower_threshold,upper_threshold))
+            colour_bar.ax.axes.set_xlim((-1,11))
+            #plot our colour bar image into the colour bar axes         
+            colour_bar.ax.yaxis.set_major_locator(AutoLocator())
+            colour_bar.ax.yaxis.set_major_formatter(FuncFormatter(self._formatCalibrated))
+            colour_bar.ax.yaxis.tick_right()
+            
+            
+        #plot the image data into the axes
+        subplot.imshow(self.__image,origin="top", aspect="equal")
+        
+        return subplot
+        
+    ###################################################################################        
+    
+    def _formatCalibrated(self,x, pos):
+        if self.__info['processing'].has_key('absoluteCalibration'):
+            return self.__info['processing']['absoluteCalibration'] * x
+        else:
+            return x
+
+    ###################################################################################        
         
     def projectToHeight(self, height, grid_size=300, background='black'):
         """

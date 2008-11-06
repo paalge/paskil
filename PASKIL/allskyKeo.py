@@ -343,7 +343,7 @@ def plotKeograms(keograms, columns=1, size=None, title=None):
     #create subplots for figure
     for keo in keograms:
         
-        subplots.append(keo.plot(figure, number_of_subplots, current_column, current_row))
+        subplots.append(keo._plot(figure, number_of_subplots, current_column, current_row))
         
         #update row and column numbers - left to right, top to bottom
         if current_column < columns:
@@ -365,7 +365,7 @@ def _putData(image, keo_pix, width, height, strip_width, angle, keo_fov_angle, s
     current_image=__imagePreProcess(image)
     
     #if the image has a larger field of view than the keogram, then reduce it
-    if int(current_image.getInfo()['processing']['binaryMask']) > keo_fov_angle:
+    if int(current_image.getInfo()['camera']['fov_angle']) > keo_fov_angle:
         current_image = current_image.binaryMask(keo_fov_angle)
         current_image = current_image.centerImage()
     
@@ -989,7 +989,7 @@ class keogram:
         
     ###################################################################################                            
     
-    def plot(self, figure, num, col, row):
+    def _plot(self, figure, num, col, row):
         """
         Returns a matplotlib figure object containing a plot of the keogram. The keo_title option should be a string that you want to
         appear as the title for the plot. The default is the time range of the keogram. Setting keo_title to None will result in no title
