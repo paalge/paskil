@@ -367,24 +367,16 @@ class allskyImage:
         elif mode == "I":
             #if the image is 16bit then cannot use the ImageChops module, so use own multiplication routine
             if inverted:
-                im_pix = new_image.__image.load()
-                mask_pix = mask.load()
-            
-                width, height = new_image.getSize()
-            
-                for x in range(width):
-                    for y in range(height):
-                        im_pix[x, y] = int(max(im_pix[x, y], 65535-mask_pix[x, y]))
+                im_pix = numpy.asarray(self.__image)
+                mask_pix = numpy.asarray(mask)
+                
+                new_image.__image = Image.fromarray(numpy.maximum(im_pix, 65535-mask_pix))
             
             else:
-                im_pix = new_image.__image.load()
-                mask_pix = mask.load()
+                im_pix = numpy.asarray(self.__image)
+                mask_pix = numpy.asarray(mask)
                 
-                width, height = new_image.getSize()
-            
-                for x in range(width):
-                    for y in range(height):
-                        im_pix[x, y] = int((float(im_pix[x, y])*float(mask_pix[x, y]))/65535.0)
+                new_image.__image = Image.fromarray(numpy.minimum(im_pix, mask_pix))
         else:
             raise ValueError, "Unsupported image mode"
         
@@ -581,7 +573,7 @@ class allskyImage:
         elif self.__info['processing']['alignNorth'].count('NWSE') != 0:
             im = self.__image.rotate(float(self.__info['camera']['cam_rot']) - angle)
         else:
-            raise(ValueError,"getStrip(): Cannot read orientation data from info dict. Try re-aligning the image with North")
+            raise(ValueError, "getStrip(): Cannot read orientation data from info dict. Try re-aligning the image with North")
         
         #load pixel values into an array 
         pixels = im.load()
@@ -639,6 +631,27 @@ class allskyImage:
         return strip  
     
     ###################################################################################
+    
+    def histogram(self):
+        """
+        Returns a histogram of the image. For 'L' mode images this will be a list of 
+        length 256, for 'I' mode images it will be a list of length 65536. The histogram
+        method cannot be used for RGB images.
+        """
+        mode = self.getMode()
+        
+        if mode == "L":
+            histogram = self.__image.histogram() #use PIL histogram method for 8bit images
+        elif mode == "I":          
+            im_pix = numpy.asarray(self.__image) #load pixel values
+            histogram = numpy.histogram(im_pix, bins=range(65536), new=True)[0]
+            
+        else:
+            raise ValueError, "Unsupported image mode"
+        
+        return histogram
+    
+    ###################################################################################    
     
     def load(self):
         if not self.__loaded:
