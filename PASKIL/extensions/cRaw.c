@@ -8236,7 +8236,7 @@ struct glob_var createGlobals(void){
 	user_mul[3]=0;
 	threshold=0;
 	half_size=0; 
-	four_color_rgb=0; 
+	four_color_rgb=1; //interpolate RGB as four colours 
 	document_mode=0; 
 	highlight=0;
 	verbose=0; 
@@ -8247,7 +8247,7 @@ struct glob_var createGlobals(void){
 	 
 	use_camera_matrix=-1;
 	output_color=1; 
-	output_bps=8;
+	output_bps=16; //16bit output, without gamma curve applied and without white point
 	output_tiff=0; 
 	med_passes=0;
 	no_auto_bright=0;

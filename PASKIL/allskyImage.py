@@ -534,16 +534,16 @@ class allskyImage:
         for x in range(new_image.getSize()[0]):#for x in range image width
             for y in range(new_image.getSize()[1]):#for y in range image height
                 #for each x,y find the angle from the center
-                angle=misc.xy2angle(x, y, int(new_image.__info['camera']['x_center']), int(new_image.__info['camera']['y_center']), float(new_image.__info['camera']['fov_angle']), int(new_image.__info['camera']['Radius']))
+                angle = self.xy2angle(x, y)
                 
                 #skip angles outside of the field of view
                 if angle >= new_image.__info['camera']['fov_angle']:
                     continue
                     
                 #apply correction to pixels inside the field of view
-                gradient=calibration.calibration_data[int(angle)+1]-calibration.calibration_data[int(angle)]
+                gradient = calibration.calibration_data[int(angle)+1]-calibration.calibration_data[int(angle)]
                 correction = 1.0/(calibration.calibration_data[int(angle)] + (angle-float(int(angle)))*gradient)
-                image_pix[x, y]=int((image_pix[x, y]*correction)+0.5)
+                image_pix[x, y] = int((image_pix[x, y]*correction)+0.5)
         
         #update processing history
         new_image.__info['processing']['flatFieldCorrection']=""
@@ -693,6 +693,9 @@ class allskyImage:
         except KeyError:
             colour_table = None
         
+        #plot the image data into the axes
+        subplot.imshow(self.__image,origin="top", aspect="equal")
+        
         if colour_table is not None:
             #find the thresholds on the colour table - then we can just display
             #the interesting parts of the colour table.
@@ -707,6 +710,7 @@ class allskyImage:
             upper_threshold = colour_table.index(colour_table[-1])
             
             colour_bar_height = len(colour_table)
+            
             colour_bar_width = 11
 
             #create a colour bar image
@@ -741,11 +745,11 @@ class allskyImage:
             fake_colour_image = subplot.pcolor(fake_data)
             
             #create the matplotlib colour bar object and plot the colour table image in it
-            colour_bar = matplotlib.pyplot.colorbar(fake_colour_image,ax=subplot)
+            colour_bar = matplotlib.pyplot.colorbar(fake_colour_image,ax=subplot,pad=0.15)
             colour_bar.ax.axes.clear()
             
             if not self.__info['processing'].has_key('absoluteCalibration'):
-                colour_bar.ax.axes.set_ylabel("Pixel Value")
+                colour_bar.ax.axes.set_ylabel("CCD Counts")
                 colour_bar.ax.yaxis.set_label_position("left")
             
             colour_bar.ax.xaxis.set_major_locator(NullLocator())
@@ -760,8 +764,7 @@ class allskyImage:
             colour_bar.ax.yaxis.tick_right()
             
             
-        #plot the image data into the axes
-        subplot.imshow(self.__image,origin="top", aspect="equal")
+        
         
         return subplot
         
@@ -986,6 +989,39 @@ class allskyImage:
             raise ValueError, "Illegal value for format argument, expecting \'png\' or \'fits\'."
         
     ###################################################################################        
+    
+    def xy2angle(self,x,y):
+        """
+        Converts x and y pixel coordinates into an angle from the zenith (from the Z axis).
+        The angle returned is in degrees. Note that (x,y)=(0,0) is the top left corner of
+        the image.
+        """
+        x_0 = self.__info['camera']['x_center']
+        y_0 = self.__info['camera']['y_center']
+        
+        dist_from_center=math.sqrt(((x-x_0)*(x-x_0)) + ((y-y_0)*(y-y_0)))
+        
+        if self.__info['camera']['lens_projection'] == 'equidistant':
+            #calculate focal length
+            focal_length=float(self.__info['camera']['Radius'])/float(self.__info['camera']['fov_angle'])
+            
+            #calculate the angle
+            angle = dist_from_center/focal_length
+        
+        elif self.__info['camera']['lens_projection'] == 'equisolidangle':
+
+            #calculate focal length
+            focal_length=float(self.__info['camera']['Radius'])/(2.0*math.sin(math.radians(float(self.__info['camera']['fov_angle']))/2.0))
+            
+            #calculate angle
+            angle_radians = 2.0 * math.asin(dist_from_center/(2.0 * focal_length))
+            angle = math.degrees(angle_radians)
+        
+        else:
+            raise ValueError, "Unsupported lens projection type"
+    
+        return angle
+
 ###################################################################################                
 
 #use psyco to pre-compile computationally intensive functions

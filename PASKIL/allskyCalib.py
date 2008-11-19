@@ -115,8 +115,8 @@ def fromImages(dataset):
     of a set of "flat field images" stored in the specified dataset object. These are images in which the
     sky is approximately evenly lit. These images should be chosen by looking for time periods with a low 
     variance using the variance class. For each image in the dataset, this function takes slices through 
-    the centre of the image between 0-359 degrees from North at 1 degree resolution. It then records the 
-    values of the intensities at angles 0-90 from the centre. When this has been done for all images the 
+    the center of the image between 0-359 degrees from North at 1 degree resolution. It then records the 
+    values of the intensities at angles 0-90 from the center. When this has been done for all images the 
     median values of intensity for each angle from the centre are calculated. These are then normalised.
     """
 
@@ -124,44 +124,34 @@ def fromImages(dataset):
 #centre of the image at 1 degree resolution. It then records the values of the intensities at angles 0-fov_angle from 
 #the centre. When this has been done for all images the median values of intensity for each angle from the centre are 
 #calculated. These are then normalised.
-    data=[]
-    results=[]
-    #create list to hold values
-    for i in range(91):
-        data.append([])
+    sum = [0]*91
+    count = [0]*91
+    results = []
     
-    for infile,site_info_file in dataset.getAll():
-        image=allskyImage.new(infile,site_info_file) #create allskyImage object from image file
-        image=image.convertTo8bit()
+    for image in dataset:
     
         #Apply binary mask to all images at 90 degree field of view
-        image=image.binaryMask(90)
+        image = image.binaryMask(90)
         
-        image=image.centreImage()
+        image = image.centerImage()
         
-        width,height = image.getSize()
+        width, height = image.getSize()
         
-        angle2pix=(float(image.info['camera']['Radius']-1.0))/180.0
+        x_center = image.getInfo()['camera']['x_center']
         
         for angle in range(180):
-            #take a vertical slice of the image 1 pixel wide and store
-            strip=image.getStrip(angle,1)
+            #take a vertical slice of the image 1 pixel wide
+            strip = image.getStrip(angle,1)
             
-            for i in range(91):
-                pix_position_1=int((i)*angle2pix)
-                pix_position_2=int((180-i)*angle2pix)
+            for y in range(len(strip)):
+                angle_from_zenith = int(image.xy2angle(x_center,y)+0.5)
+                sum[angle_from_zenith] += strip[y]
+                count[angle_from_zenith] += 1
                 
-                data[90-i].append(strip[0][pix_position_1])
-                data[90-i].append(strip[0][pix_position_2])
-                
-    #find median values of intensities
+    #find mean values of calibration factors at different angles
     for angle in range(91):
-        results.append(float(stats.median(data[angle])))
-        
-    #normalise intensities
-    maximum=max(results)
-    for angle in range(91):
-        results[angle]=float(results[angle])/float(maximum)
+        ff_factor = (sum[angle]/float(count[angle]))/(sum[0]/float(count[0]))
+        results.append(ff_factor)
         
     return calibration(results) #return calibration object
     

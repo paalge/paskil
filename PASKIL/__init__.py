@@ -111,5 +111,5 @@ Bugs and comments:
     nonbiostudent@hotmail.com
 """
 #Define a list of all modules in PASKIL package.
-__all__ = ["allskyCalib", "allskyColour", "allskyData", "allskyImage", "allskyImagePlugins", "allskyProj", "allskyKeo", "allskyRaw","misc", "stats", "plugins"]
+__all__ = ["allskyCalib", "allskyColour", "allskyData", "allskyImage", "allskyImagePlugins", "allskyPlot","allskyProj", "allskyKeo", "allskyRaw","misc", "stats", "plugins"]
 __version__ = '3.1.4'

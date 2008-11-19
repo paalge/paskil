@@ -44,7 +44,7 @@ class NEF_Format:
         """
         
         #read image header data, here we assume that the image header already contains all the metadata in the correct format
-        info = {'header':{},'camera':{'fov_angle':'90','lens_projection':'equisolidangle','Radius':'1305','x_center':'1950','y_center':'1305'},'processing':{}}
+        info = {'header':{},'camera':{'fov_angle':'90','lens_projection':'equisolidangle','Radius':'1045','x_center':'1969','y_center':'1342'},'processing':{}}
     
         #return new allskyImage object
         return allskyRaw.rawImage(image_filename,info)
