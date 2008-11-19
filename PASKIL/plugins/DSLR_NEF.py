@@ -1,8 +1,8 @@
-
+from __future__ import with_statement
 
 #import required modules
 from PASKIL import allskyImage, allskyImagePlugins,allskyRaw
-
+import datetime,os
 #start plugin class definition
 class NEF_Format:
     """
@@ -28,9 +28,9 @@ class NEF_Format:
         image types and do not overlap with other plugins.
         """
         if image_filename.endswith(".NEF"):
-            return True
-        
-        return False
+            return allskyRaw.isRaw(image_filename)
+        else:
+            return False
             
     ###################################################################################    
         
@@ -42,10 +42,32 @@ class NEF_Format:
         The image argument is a PIL image, and the info_file is either a file pointer to a metadata file or 
         None.
         """
+        #Read site info file
+        camera={}
+        processing={}
+        header={}
         
-        #read image header data, here we assume that the image header already contains all the metadata in the correct format
-        info = {'header':{},'camera':{'fov_angle':'90','lens_projection':'equisolidangle','Radius':'1045','x_center':'1969','y_center':'1342'},'processing':{}}
-    
+        with open(info_filename,"r") as info_file:
+            for line in info_file: #read file line by line
+                if line.isspace(): 
+                    continue #ignore blank lines
+                words=line.split("=") #split the line at the = sign
+                
+                if len(words) != 2:
+                    print "Error! allskyImagePlugins.DSLR_LYR.open(): Cannot read site info file, too many words per line"
+                    sys.exit()
+                    
+                camera[words[0].lstrip().rstrip()] = words[1].lstrip().rstrip() #store the values (minus white space) in a dictionary
+        
+        #Read creation time from filename
+        filename = os.path.basename(image_filename)
+        creation_time=datetime.datetime.strptime(filename.rstrip(".NEF"), "LYR-SLR-%Y%m%d_%H%M%S")
+        
+        creation_time=creation_time.strftime("%d %b %Y %H:%M:%S %Z")
+        header = {'Wavelength':"RGGB",'Creation Time': creation_time}
+        
+        info={'header':header,'camera':camera,'processing':processing}
+        
         #return new allskyImage object
         return allskyRaw.rawImage(image_filename,info)
         
