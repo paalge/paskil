@@ -989,22 +989,11 @@ class keogram:
         
     ###################################################################################                            
     
-    def _plot(self, figure, num, col, row):
+    def _plot(self, subplot):
         """
-        Returns a matplotlib figure object containing a plot of the keogram. The keo_title option should be a string that you want to
-        appear as the title for the plot. The default is the time range of the keogram. Setting keo_title to None will result in no title
-        on the plot. The x_label and y_label options should be strings that you want to appear as axis titles on the plot. The defaults are
-        "Time (UT)" and "Scan angle (degrees)" respectively. Setting them to None will result in no axis titles. The size option should be
-        a tuple (width,height) in inches. The default value is None. In this case the size for the plot is determined automatically based on
-        the size of the keogram image. 
-        
-        Use show() to view the plot in an interactive viewing window. E.g.:
-            from pylab import show
-            plot=keo.plot()
-            plot
-            show()
+        To do
         """
-        
+        print "allskyKeo.plot called"
         #calculate number of minutes between tick marks
         time_range_days=date2num(self.__end_time)-date2num(self.__start_time)
         time_range_mins=time_range_days*24.0*60.0
@@ -1018,7 +1007,6 @@ class keogram:
         else:
             minutes=[0, 30] #else have hour and half hour marks
         
-        
         if self.title == "DEFAULT":    
         #create title string for keogram
             start_time_string= self.__start_time.ctime()
@@ -1027,14 +1015,10 @@ class keogram:
         else:
             keo_title = self.title
         
-        #create a new subplot object to hold this keogram
-        subplot = matplotlib.axes.Subplot(figure, num, col, row)
-        
         #add title
         if keo_title != None:
             subplot.set_title(keo_title)
     
-        
         #plot keogram image in figure,matplotlib doesn't support 16bit images, so if the image is not RGB, then need to check that it is 8bit
         if self.__image.mode == 'RGB' or self.__image.mode == 'L':
             image=subplot.imshow(self.__image, origin="top", aspect="auto")
@@ -1050,17 +1034,15 @@ class keogram:
         subplot.yaxis.set_xbound(0, self.__width)
         subplot.yaxis.set_ybound(90+self.__fov_angle, 90-self.__fov_angle)
         subplot.yaxis.yaxis.tick_left() #set the position of the tick marks for the y axis of the new set
+        
         #set axis titles
         if self.y_label != None:
             subplot.yaxis.set_ylabel(self.y_label)
             subplot.yaxis.yaxis.set_label_position("left")
-        
-        
+
         subplot.yaxis.xaxis.set_major_locator(NullLocator()) #turn off the x axis of the new set
-      
         subplot.yaxis = subplot.yaxis.yaxis
-        
-        
+            
         #x axis
         subplot.xaxis=subplot.axes.twiny() #create another set of axes (which will become the x axis)
         subplot.xaxis.set_xbound(date2num(self.__start_time), date2num(self.__end_time))
@@ -1074,24 +1056,15 @@ class keogram:
         subplot.xaxis.xaxis.set_major_locator(x_tick_positions) #set the tick mark positions for the x axis of the new set
         subplot.xaxis.xaxis.set_major_formatter(time_format) #set the tick mark format for the x axis of the new set
        
-
         subplot.set_ybound(90+self.__fov_angle, 90-self.__fov_angle)
 
         subplot.yaxis.set_major_formatter(FuncFormatter(rev))
         subplot.xaxis = subplot.xaxis.xaxis
        
         image.axes.axis('off') #remove pixel count axes from plotted image
-            
-#        #set axis titles
-#        if self.y_label != None:
-#            subplot.yaxis.set_label(self.y_label)
-#            subplot.yaxis.set_label_position("left")
-#            
-#        if self.x_label != None:
-#            subplot.xaxis.set_label(self.x_label)
-#            subplot.xaxis.set_label_position("bottom")
         
         #return a subplot object
+        print "allskyKeo.plot returned"
         return subplot
     
     ###################################################################################
