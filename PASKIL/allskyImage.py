@@ -152,7 +152,7 @@ class allskyImage:
         """
         
         #check that colour table has already been applied
-        if self.__info['processing'].keys().count('applyColourTable') == 0:
+        if ((self.__info['processing'].keys().count('applyColourTable') == 0) and (self.getMode() != "RGB")):
             warnings.warn("Adding a time stamp before applying a colour table will result in the colour table being applied to the time stamp as well!")
             sys.stdout.flush()
             
