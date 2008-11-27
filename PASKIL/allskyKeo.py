@@ -259,9 +259,14 @@ def new(data, angle, start_time=None, end_time=None, strip_width=5, data_spacing
     
     #if start and end times are set to None, then get them from the list of times
     if start_time == None:
-        start_time=min(times)
+        start_time = min(times)
+    elif start_time > max(times):
+        raise ValueError, "The image(s) are outside of the specified time range for the keogram"
     if end_time == None:
-        end_time=max(times)
+        end_time = max(times)
+    elif end_time < min(times):
+        raise ValueError, "The image(s) are outside of the specified time range for the keogram"
+
     
     #if the start and end times are the same (e.g. if the keogram has been created with a single image)
     #then add one hour to the end time
