@@ -272,6 +272,22 @@ def new(data, angle, start_time=None, end_time=None, strip_width=5, data_spacing
     #then add one hour to the end time
     if start_time == end_time:
         end_time = end_time + datetime.timedelta(hours=1)
+    
+    #crop the list of images/dataset to only include images in the specified range
+    if type(data) == type(list()):
+        i = 0
+        while i < len(data):
+            try:
+                time=datetime.datetime.strptime(im.getInfo()['header']['Creation Time'], "%d %b %Y %H:%M:%S %Z")#read creation time from header
+            except ValueError:
+                time=datetime.datetime.strptime(im.getInfo()['header']['Creation Time']+"GMT", "%d %b %Y %H:%M:%S %Z")#read creation time from header
+            if ((time < start_time) or (time > end_time)):
+                data.pop(i)
+                i -= 1
+            i += 1
+    else:
+        data = data.crop(start_time, end_time)
+    
         
     #convert start and end times into seconds since the epoch
     start_secs=calendar.timegm(start_time.timetuple())
