@@ -66,7 +66,7 @@ import ImageChops
 import ImageFilter
 import ImageOps
 
-from pylab import figure, imshow, title, MinuteLocator, NullLocator, DateFormatter, twinx, twiny, date2num, num2date, savefig, clf, FixedLocator, FuncFormatter
+from pylab import figure, imshow, title, MinuteLocator, NullLocator, DateFormatter, twinx, twiny, date2num, num2date, savefig, clf, FixedLocator, FuncFormatter,AutoLocator
 
 from PASKIL import allskyImage, allskyColour, misc, stats
 
@@ -972,6 +972,11 @@ class keogram:
         pixel in the keogram image by the median value of the pixels in an nxn square around it 
         (where n is an integer).
         """
+        #the filter size must be odd
+        if n%2 == 0:
+            warnings.warn("Filter size must be odd. Using n = "+str(n+1)+" instead")
+            n = n + 1
+        
         image = self.__image.filter(ImageFilter.MedianFilter(n))
         
         if self.__intensities != None:
@@ -986,7 +991,7 @@ class keogram:
             
     ###################################################################################                
     
-    def pix2angle(self, pixel):
+    def pix2angle(self, pixel,*args):
         """
         Converts a vertical pixel coordinate into an angle in degrees. If the pixel coordinate is outside of the range of the 
         keogram None is returned. This is the inverse operation of angle2pix().
@@ -1014,7 +1019,7 @@ class keogram:
         """
         To do
         """
-        print "allskyKeo.plot called"
+
         #calculate number of minutes between tick marks
         time_range_days=date2num(self.__end_time)-date2num(self.__start_time)
         time_range_mins=time_range_days*24.0*60.0
@@ -1040,12 +1045,12 @@ class keogram:
         if keo_title != None:
             subplot.set_title(keo_title)
     
-        #plot keogram image in figure,matplotlib doesn't support 16bit images, so if the image is not RGB, then need to check that it is 8bit
-        if self.__image.mode == 'RGB' or self.__image.mode == 'L':
-            image=subplot.imshow(self.__image, origin="top", aspect="auto")
-        else:
-            image=subplot.imshow(self.__image.convert('L'), origin="top", aspect="auto", cmap=matplotlib.cm.gray)
-            
+#        #plot keogram image in figure,matplotlib doesn't support 16bit images, so if the image is not RGB, then need to check that it is 8bit
+#        if self.__image.mode == 'RGB' or self.__image.mode == 'L':
+#            image = subplot.imshow(self.__image, origin="top", aspect="auto")
+#        else:
+#            image = subplot.imshow(self.__image.convert('L'), origin="top", aspect="auto", cmap=matplotlib.cm.gray)
+#            
         #define formatting for axes
         x_tick_positions=MinuteLocator(minutes) #find the positions of the x tick marks
         time_format= DateFormatter("%H:%M") #define the format of the times displayed on the x_axis
@@ -1077,15 +1082,22 @@ class keogram:
         subplot.xaxis.xaxis.set_major_locator(x_tick_positions) #set the tick mark positions for the x axis of the new set
         subplot.xaxis.xaxis.set_major_formatter(time_format) #set the tick mark format for the x axis of the new set
        
-        subplot.set_ybound(90+self.__fov_angle, 90-self.__fov_angle)
-
-        subplot.yaxis.set_major_formatter(FuncFormatter(rev))
+        
         subplot.xaxis = subplot.xaxis.xaxis
-       
+        #subplot.set_ybound(90+self.__fov_angle, 90-self.__fov_angle)
+        
+        subplot.yaxis.set_major_locator(AutoLocator())
+        subplot.yaxis.set_major_formatter(FuncFormatter(rev))
+        
+        #plot keogram image in figure,matplotlib doesn't support 16bit images, so if the image is not RGB, then need to check that it is 8bit
+        if self.__image.mode == 'RGB' or self.__image.mode == 'L':
+            image = subplot.imshow(self.__image, origin="top", aspect="auto")
+        else:
+            image = subplot.imshow(self.__image.convert('L'), origin="top", aspect="auto", cmap=matplotlib.cm.gray)       
+        
         image.axes.axis('off') #remove pixel count axes from plotted image
         
         #return a subplot object
-        print "allskyKeo.plot returned"
         return subplot
     
     ###################################################################################

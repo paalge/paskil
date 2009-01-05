@@ -141,7 +141,7 @@ def fromImages(dataset):
         
         for angle in range(180):
             #take a vertical slice of the image 1 pixel wide
-            strip = image.getStrip(angle,1)
+            strip = image.getStrip(angle,1)[0]
             
             for y in range(len(strip)):
                 angle_from_zenith = int(image.xy2angle(x_center,y)+0.5)
@@ -192,7 +192,7 @@ class calibration:
         intensity.
         """
         figure(1)
-        title("Normalised flat field intensity against angle from vertical")
+        title("Normalised flat field intensity against angle from zenith")
         plot(range(len(self.calibration_data)),self.calibration_data)
         xlabel("Angle (degrees)")
         ylabel("Normalised Flat Field Intensity")
