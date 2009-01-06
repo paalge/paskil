@@ -66,19 +66,13 @@ import ImageChops
 import ImageFilter
 import ImageOps
 
-from pylab import figure, imshow, title, MinuteLocator, NullLocator, DateFormatter, twinx, twiny, date2num, num2date, savefig, clf, FixedLocator, FuncFormatter,AutoLocator
+from pylab import figure, imshow, title, MinuteLocator, NullLocator, DateFormatter, twinx, twiny, date2num, num2date, savefig, clf, FixedLocator, FuncFormatter,AutoLocator, FixedFormatter
 
 from PASKIL import allskyImage, allskyColour, misc, stats
 
 #Functions
 
 ###################################################################################    
-
-def rev(x, pos):
-    """
-    This function is used in formatting the axes of a keogram plot.
-    """
-    return str(int(math.fabs(x-180)))
 
 def __imagePreProcess(image):
     """
@@ -700,10 +694,10 @@ class keogram:
         Note that the angle IS NOT the angle from North unless the keogram has been created to run in the north-south direction. 
         If the angle is outside of the range of the keogram None is returned. This is the inverse operation of pix2angle()
         """
-        if angle < (90-self.__fov_angle) or angle >= (90+self.__fov_angle):
+        if angle < (90-self.__fov_angle) or angle > (90+self.__fov_angle):
             return None
         
-        return int((angle-(90-self.__fov_angle))*float(self.__image.size[1]/float(2*self.__fov_angle))+0.5)    
+        return int((angle-(90-self.__fov_angle))*float(self.__image.size[1]/float(2.0*self.__fov_angle))+0.5)    
         
     ###################################################################################                                
     
@@ -991,14 +985,14 @@ class keogram:
             
     ###################################################################################                
     
-    def pix2angle(self, pixel,*args):
+    def pix2angle(self, pixel):
         """
         Converts a vertical pixel coordinate into an angle in degrees. If the pixel coordinate is outside of the range of the 
         keogram None is returned. This is the inverse operation of angle2pix().
         """
-        if pixel < 0 or pixel >= self.__height:
+        if pixel < 0 or pixel > self.__height:
             return None
-        return float((90-self.__fov_angle)+((2*self.__fov_angle)/self.__height)*pixel)
+        return float((90-self.__fov_angle)+((2*self.__fov_angle)/float(self.__height))*pixel)
     
     ###################################################################################                        
         
@@ -1017,21 +1011,61 @@ class keogram:
     
     def _plot(self, subplot):
         """
-        To do
+        Plots the keogram data into the given subplot object. This method is required for
+        compatibility with the allskyPlot module
         """
-
-        #calculate number of minutes between tick marks
-        time_range_days=date2num(self.__end_time)-date2num(self.__start_time)
-        time_range_mins=time_range_days*24.0*60.0
-        if int(time_range_mins/10) == 0:
-            minutes=[]
-        elif int(time_range_mins/60) <= 1:#if the time range is less than 1 hour
-            minutes=range(0, 60, int(time_range_mins/10)) #list containing the number of minutes at which we want tick marks
-        
-        elif int(time_range_mins/60) >= 7: #if time range is greater than 7 hours just have hour marks
-            minutes=[0]
+        #plot keogram image,matplotlib doesn't support 16bit images, so if the image is not RGB, then need to check that it is 8bit
+        if self.__image.mode == 'RGB' or self.__image.mode == 'L':
+            image = subplot.imshow(self.__image, origin="top", aspect="auto")
         else:
-            minutes=[0, 30] #else have hour and half hour marks
+            image = subplot.imshow(self.__image.convert('L'), origin="top", aspect="auto", cmap=matplotlib.cm.gray)       
+        
+        
+        #create tick marks for the y-axis every 20 degrees
+        y_ticks = [] #tick positions
+        y_labels = [] 
+        for y in range(0,180,20):
+            y_ticks.append(self.angle2pix(y))
+            y_labels.append(str(int(math.fabs(y-180))))
+        
+        subplot.yaxis.set_major_locator(FixedLocator(y_ticks))
+        subplot.yaxis.set_major_formatter(FixedFormatter(y_labels))
+        
+        
+        #create tick marks for the x-axis
+        time_span = self.__end_time - self.__start_time
+
+        x_ticks = []
+        x_labels = []
+        current_time = self.__start_time.replace(minute=0,second=0,microsecond=0)
+        while current_time <= self.__end_time:
+            pix = self.time2pix(current_time)
+            if pix is not None: #skip times outside the range of the keogram
+                x_ticks.append(pix)
+                x_labels.append(current_time.strftime("%H:%M"))
+            
+            if time_span <= datetime.timedelta(hours=1):
+                #if the keogram is less than an hour long - tick every 10 mins
+                current_time += datetime.timedelta(minutes=10)
+        
+            elif time_span < datetime.timedelta(hours=7):
+                #if the keogram is less than 7 hours long - tick every 30 mins
+                current_time += datetime.timedelta(minutes=30)  
+                
+            else:
+                #otherwise only tick every hour
+                current_time += datetime.timedelta(hours=1)
+        
+        subplot.xaxis.set_major_locator(FixedLocator(x_ticks))
+        subplot.xaxis.set_major_formatter(FixedFormatter(x_labels))
+        
+        #set axis titles
+        if self.y_label != None:
+            subplot.axes.set_ylabel(self.y_label)
+            subplot.yaxis.set_label_position("left")
+            
+        if self.x_label != None:
+            subplot.axes.set_xlabel(self.x_label)
         
         if self.title == "DEFAULT":    
         #create title string for keogram
@@ -1044,58 +1078,6 @@ class keogram:
         #add title
         if keo_title != None:
             subplot.set_title(keo_title)
-    
-#        #plot keogram image in figure,matplotlib doesn't support 16bit images, so if the image is not RGB, then need to check that it is 8bit
-#        if self.__image.mode == 'RGB' or self.__image.mode == 'L':
-#            image = subplot.imshow(self.__image, origin="top", aspect="auto")
-#        else:
-#            image = subplot.imshow(self.__image.convert('L'), origin="top", aspect="auto", cmap=matplotlib.cm.gray)
-#            
-        #define formatting for axes
-        x_tick_positions=MinuteLocator(minutes) #find the positions of the x tick marks
-        time_format= DateFormatter("%H:%M") #define the format of the times displayed on the x_axis
-        
-        #y axis
-        subplot.yaxis=subplot.axes.twinx() #create another set of axes (which will become the y axis)
-        subplot.yaxis.set_xbound(0, self.__width)
-        subplot.yaxis.set_ybound(90+self.__fov_angle, 90-self.__fov_angle)
-        subplot.yaxis.yaxis.tick_left() #set the position of the tick marks for the y axis of the new set
-        
-        #set axis titles
-        if self.y_label != None:
-            subplot.yaxis.set_ylabel(self.y_label)
-            subplot.yaxis.yaxis.set_label_position("left")
-
-        subplot.yaxis.xaxis.set_major_locator(NullLocator()) #turn off the x axis of the new set
-        subplot.yaxis = subplot.yaxis.yaxis
-            
-        #x axis
-        subplot.xaxis=subplot.axes.twiny() #create another set of axes (which will become the x axis)
-        subplot.xaxis.set_xbound(date2num(self.__start_time), date2num(self.__end_time))
-        subplot.xaxis.set_ybound(0, self.__height)
-        subplot.xaxis.xaxis.tick_bottom() #set the position of the tick marks for the x axis of the new set
-        if self.x_label != None:
-            subplot.xaxis.set_xlabel(self.x_label)
-            subplot.xaxis.xaxis.set_label_position("bottom")
-        subplot.xaxis.yaxis.tick_right()
-        subplot.xaxis.yaxis.set_visible(False)
-        subplot.xaxis.xaxis.set_major_locator(x_tick_positions) #set the tick mark positions for the x axis of the new set
-        subplot.xaxis.xaxis.set_major_formatter(time_format) #set the tick mark format for the x axis of the new set
-       
-        
-        subplot.xaxis = subplot.xaxis.xaxis
-        #subplot.set_ybound(90+self.__fov_angle, 90-self.__fov_angle)
-        
-        subplot.yaxis.set_major_locator(AutoLocator())
-        subplot.yaxis.set_major_formatter(FuncFormatter(rev))
-        
-        #plot keogram image in figure,matplotlib doesn't support 16bit images, so if the image is not RGB, then need to check that it is 8bit
-        if self.__image.mode == 'RGB' or self.__image.mode == 'L':
-            image = subplot.imshow(self.__image, origin="top", aspect="auto")
-        else:
-            image = subplot.imshow(self.__image.convert('L'), origin="top", aspect="auto", cmap=matplotlib.cm.gray)       
-        
-        image.axes.axis('off') #remove pixel count axes from plotted image
         
         #return a subplot object
         return subplot
