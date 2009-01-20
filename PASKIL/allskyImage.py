@@ -99,6 +99,8 @@ class allskyImage:
         self.__filename=image_file
         self.__info={}
         
+        self.title = "DEFAULT"
+        
         #make hard copies of the info libraries 
         self.__info['camera']=info['camera'].copy()
         self.__info['header']=info['header'].copy()
@@ -711,8 +713,12 @@ class allskyImage:
             
             colour_bar_height = len(colour_table)
             
-            colour_bar_width = 11
-
+            colour_bar_width = (upper_threshold - lower_threshold)/23 #23 is just an arbitrary number that works
+            
+            #the colour bar should be an odd number of pixels wide (to make drawing arrowheads easy)
+            if colour_bar_width % 2 != 0:
+                colour_bar_width += 1
+            
             #create a colour bar image
             colour_bar_image = Image.new("RGB",(colour_bar_width,colour_bar_height))
             colour_bar_pix = colour_bar_image.load()
@@ -729,15 +735,14 @@ class allskyImage:
             #region (there is now no way to determine this for certain, since the
             #intensity data was lost when the colour table was applied) then put
             #arrow heads on the colour bar to indicate this
-            
             if lower_threshold != 0:
                 d = ImageDraw.Draw(colour_bar_image)
                 y0 = colour_bar_height - lower_threshold
-                d.polygon([(0,y0),(0,y0-11),(5,y0-1),(10,y0-11),(10,y0)],fill='white')
+                d.polygon([(0,y0),(0,y0-colour_bar_width),((colour_bar_width-1)/2,y0-1),((colour_bar_width-1),y0-colour_bar_width),((colour_bar_width-1),y0)],fill='white')
             if upper_threshold != colour_bar_height-1:
                 d = ImageDraw.Draw(colour_bar_image)
                 y0 = colour_bar_height - upper_threshold
-                d.polygon([(0,y0),(0,y0+11),(5,y0+1),(10,y0+11),(10,y0)],fill='white')
+                d.polygon([(0,y0),(0,y0+colour_bar_width),((colour_bar_width-1)/2,y0+1),((colour_bar_width-1),y0+colour_bar_width),((colour_bar_width-1),y0)],fill='white')
             
             #create a fake colour table - this is used to get matplotlib to create the colourbar axes
             #which we then use to plot out colour bar image into
@@ -757,24 +762,32 @@ class allskyImage:
             colour_bar.ax.imshow(colour_bar_image,origin="top")
 
             colour_bar.ax.axes.set_ylim((lower_threshold,upper_threshold))
-            colour_bar.ax.axes.set_xlim((-1,11))
+            colour_bar.ax.axes.set_xlim((-1,colour_bar_width-1))
             #plot our colour bar image into the colour bar axes         
             colour_bar.ax.yaxis.set_major_locator(AutoLocator())
             colour_bar.ax.yaxis.set_major_formatter(FuncFormatter(self._formatCalibrated))
             colour_bar.ax.yaxis.tick_right()
             
-            
+        if self.title == "DEFAULT":    
+        #create title string for image
+            image_title = self.__info['header']['Creation Time']
+        else:
+            image_title = self.title
         
-        
+        #add title
+        if image_title != None:
+            subplot.set_title(image_title)    
+          
         return subplot
         
     ###################################################################################        
     
     def _formatCalibrated(self,x, pos):
+
         if self.__info['processing'].has_key('absoluteCalibration'):
-            return self.__info['processing']['absoluteCalibration'] * x
+            return float(self.__info['processing']['absoluteCalibration']) * x 
         else:
-            return x
+            return x 
 
     ###################################################################################        
         
