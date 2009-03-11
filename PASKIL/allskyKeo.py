@@ -15,10 +15,6 @@ Concepts:
     due to lack of data are not interpolated across and will result in blank spaces in the keogram. The 
     angle (from geographic North) that the strips are taken from the images at, can be set using the angle 
     argument.
-    
-    Note: The Open Closed Boundary (OCB) methods in this module are 'experimental' to say the least, and have
-    little scientific backing. Probably best not to use them!
-
 
 
 Example:
@@ -26,29 +22,27 @@ Example:
     The following example creates a keogram of the 630nm wavelength between 18:30 and 19:30 on the 4/2/2003
     using the allsky images of type "png" stored in the directory "Allsky Images". The recursive option is 
     used to traverse the entire directory structure contained within "Allsky Images" looking for images. 
-    The keogram then has the OCB drawn on it and is plotted and viewed in an interactive plotting window.
+    The keogram is then plotted and viewed in an interactive plotting window.
 
 
-        from PASKIL import allskyKeo,allskyData
+        from PASKIL import allskyKeo, allskyData, allskyPlot
         import datetime
         from pylab import *
         
         #create datetime object defining start time for keogram
-        start_time=datetime.datetime.strptime("04 Feb 2003 18:30:00 GMT","%d %b %Y %H:%M:%S %Z")
+        start_time = datetime.datetime.strptime("04 Feb 2003 18:30:00 GMT","%d %b %Y %H:%M:%S %Z")
         
         #create datetime object defining end time for keogram 
-        end_time=datetime.datetime.strptime("04 Feb 2003 19:30:00 GMT","%d %b %Y %H:%M:%S %Z") 
+        end_time = datetime.datetime.strptime("04 Feb 2003 19:30:00 GMT","%d %b %Y %H:%M:%S %Z") 
         
         #create a new dataset object
-        dataset=allskyData.new("Allsky Images","630","png",site_info_file="site_info.txt",recursive="r") 
+        dataset = allskyData.new("Allsky Images","630","png",site_info_file="site_info.txt",recursive="r") 
         
         #create a new keogram with a sweep angle of 33 degrees and using a strip width of 3 pixels and a data spacing of 60 seconds
-        keo=allskyKeo.new(dataset,start_time,end_time,33,3,60) 
+        keo = allskyKeo.new(dataset,start_time,end_time,33,3,60) 
     
-        keo2=keo.plotOCB() #draw the OCB onto the keogram image
-        plot=keo2.plot() #plot the keogram
+        plot = allskyPlot.plot([keo]) #plot the keogram
 
-        plot #identify which figure we want to show
         show() #open the figure in an interactive plotting window    
     
 """ 
@@ -59,16 +53,18 @@ import datetime
 import calendar
 import time
 import math
+import numpy
 import matplotlib
 import warnings
 import Image
 import ImageChops
 import ImageFilter
 import ImageOps
+import ImageDraw
 
-from pylab import figure, imshow, title, MinuteLocator, NullLocator, DateFormatter, twinx, twiny, date2num, num2date, savefig, clf, FixedLocator, FuncFormatter,AutoLocator, FixedFormatter
+from pylab import figure, imshow, title, MinuteLocator, NullLocator, DateFormatter, twinx, twiny, date2num, num2date, savefig, clf, FixedLocator, FuncFormatter, AutoLocator, FixedFormatter, MultipleLocator
 
-from PASKIL import allskyImage, allskyColour, misc, stats
+from PASKIL import allskyImage, allskyColour, allskyPlot, misc, stats
 
 #Functions
 
@@ -81,40 +77,47 @@ def __imagePreProcess(image):
     the original object.
     """   
         
-    if image.getInfo()['processing'].keys().count('binaryMask') == 0:
-        image=image.binaryMask(float(image.getInfo()['camera']['fov_angle']))
+    if not image.getInfo()['processing'].has_key('binaryMask'):
+        image = image.binaryMask(float(image.getInfo()['camera']['fov_angle']))
         
-    if image.getInfo()['processing'].keys().count('centerImage') == 0:
-        image=image.centerImage()
+    if not image.getInfo()['processing'].has_key('centerImage'):
+        image = image.centerImage()
         
-    if image.getInfo()['processing'].keys().count('alignNorth') == 0:
-        image=image.alignNorth()
+    if not image.getInfo()['processing'].has_key('alignNorth'):
+        image = image.alignNorth()
     
     return image
         
 ###################################################################################            
 
-def __checkImages(images, mode=None, wavelength=None, colour_table=None):
+def __checkImages(images, mode=None, wavelength=None, colour_table=None, calib_factor=None):
     """
-    Checks that all allskyImages in the images list have the same mode, wavelength and 
-    colour table either as each other or as those specified by the optional arguments.
-    These are essentially the same checks that are done when a dataset is created.
+    Checks that all allskyImages in the images list have the same mode, wavelength, absolute 
+    calibration factor and colour table either as each other or as those specified by the 
+    optional arguments. These are essentially the same checks that are done when a dataset is 
+    created.
     """
     if len(images) == 0:
         raise ValueError, "Cannot perform checks on an empty list!"
     
     #if no optional arguments are specified, then take the values from the first image in the list
-    if mode == None:
+    if mode is None:
         mode = images[0].getMode()
     
-    if wavelength == None:
+    if wavelength is None:
         wavelength = images[0].getInfo()['header']['Wavelength']
     
-    if colour_table == None:
+    if colour_table is None:
         try:
             colour_table = images[0].getInfo()['processing']['applyColourTable']
         except KeyError:
             colour_table = None
+    
+    if calib_factor is None:
+        try:
+            calib_factor = images[0].getInfo()['processing']['absoluteCalibration']
+        except KeyError:
+            calib_factor = None
     
     #compare these values to all the other images in the list
     for im in images:
@@ -126,10 +129,18 @@ def __checkImages(images, mode=None, wavelength=None, colour_table=None):
             if im.getInfo()['processing']['applyColourTable'] != colour_table:
                 raise ValueError, "Image has incorrect colour table"
         except KeyError:
-            if colour_table == None:
+            if colour_table is None:
                 pass
             else:
                 raise ValueError, "Image has incorrect colour table"
+        try:
+            if im.getInfo()['processing']['absoluteCalibration'] != calib_factor:
+                raise ValueError, "Image has incorrect absolute calibration factor"
+        except KeyError:
+            if calib_factor is None:
+                pass
+            else:
+                raise ValueError, "Image has incorrect absolute calibration factor"
       
 ###################################################################################
  
@@ -148,18 +159,21 @@ def load(filename):
 
     start_time=datetime.datetime.strptime(image.info['start_time'].lstrip().rstrip(), "%d %b %Y %H:%M:%S")
     end_time=datetime.datetime.strptime(image.info['end_time'].lstrip().rstrip(), "%d %b %Y %H:%M:%S")
-    OCB=list(eval(image.info['OCB']))
     fov_angle=float(image.info['fov_angle'])
     strip_width=int(image.info['strip_width'])
     keo_type = image.info['keo_type']
     data_points = eval(image.info['data_points'])
     data_spacing = int(image.info['data_spacing'])
+    try:
+        calib_factor = float(image.info['calib_factor'])
+    except ValueError:
+        calib_factor = None
     
     #clear image header data
     image.info={}
     
     #create new keogram object
-    new_keogram=keogram(image, None, start_time, end_time, angle, fov_angle, OCB, strip_width, None, keo_type, data_points, data_spacing)
+    new_keogram=keogram(image, None, start_time, end_time, angle, fov_angle, strip_width, None, keo_type, data_points, data_spacing, calib_factor)
     
     #if it should have a colour table then apply it
     if colour_table != None:
@@ -209,6 +223,11 @@ def new(data, angle, start_time=None, end_time=None, strip_width=5, data_spacing
         except KeyError:
             colour_table = None
         
+        try:
+            calib_factor = data[0].getInfo['processing']['absoluteCalibration']
+        except KeyError:
+            calib_factor = None
+        
         for im in data:
             try:
                 time=datetime.datetime.strptime(im.getInfo()['header']['Creation Time'], "%d %b %Y %H:%M:%S %Z")#read creation time from header
@@ -227,6 +246,7 @@ def new(data, angle, start_time=None, end_time=None, strip_width=5, data_spacing
         keo_fov_angle = float(max(data.getFov_angles()))
         colour_table = data.getColourTable()
         radii = data.getRadii()
+        calib_factor = data.getCalib_factor()
     
     times.sort()
         
@@ -314,70 +334,22 @@ def new(data, angle, start_time=None, end_time=None, strip_width=5, data_spacing
     elif keo_type == "Average":
         _interpolateData(data_points, keo_image, mode, colour_table, 1, 1.5*(mean_data_spacing_pix+5)) #+5 is effective strip width - used in calculating the width of the keogram
     
+    if keo_type == "Average":
+        strip_width = 5
     #create keogram object
-    OCB=[]
-    keo_obj = keogram(keo_image, colour_table, start_time, end_time, angle, keo_fov_angle, OCB, strip_width, None, keo_type, data_points, mean_data_spacing_pix)
+    keo_obj = keogram(keo_image, colour_table, start_time, end_time, angle, keo_fov_angle, strip_width, None, keo_type, data_points, mean_data_spacing_pix, calib_factor)
         
     return keo_obj
         
-###################################################################################    
-
-def plotKeograms(keograms, columns=1, size=None, title=None):
-    """
-    Returns a matplotlib figure object containing plots of all the specified keograms. The keograms 
-    argument should be a sequence of keogram objects. Keograms will be plotted in the order they 
-    appear in the keograms list, left to right, top to bottom. By default, the keograms will be 
-    plotted below each other in a single column. This behaivior can be modified using the 
-    columns option. The titles of the individual keograms can be set using their title attribute.
-    The title of the whole figure can be set using the title option.
-    """
-      
-    #create a new matplotlib figure object.
-    figure = matplotlib.pyplot.figure()
-    
-    if size != None:
-        figure.set_size_inches(size[0], size[1])
-    
-    number_of_subplots = len(keograms)
-    rows = math.ceil(float(number_of_subplots)/float(columns))
-    
-    #Create the title for the figure
-    if title != None:
-        figure.text(.5, .95, title, horizontalalignment='center') 
-    
-    #if there are more than one keograms to plot then extend the vertical space for each subplot
-    #this is to prevent axis titles and axis labels from overlapping
-    if number_of_subplots > 1:
-        figure.subplotpars.hspace = 0.4
-    
-    subplots = []
-    
-    current_row = 1
-    current_column = 1
-    
-    #create subplots for figure
-    for keo in keograms:
-        
-        subplots.append(keo._plot(figure, number_of_subplots, current_column, current_row))
-        
-        #update row and column numbers - left to right, top to bottom
-        if current_column < columns:
-            current_column += 1
-        elif current_column == columns:
-            current_column = 1
-            current_row += 1
-    
-    #add subplots to figure
-    for s in subplots:
-        figure.add_subplot(s)
-    
-    return figure  
-        
-###################################################################################    
+###################################################################################      
 
 def _putData(image, keo_pix, width, height, strip_width, angle, keo_fov_angle, start_secs, end_secs, keo_type="CopyPaste"):
     
-    current_image=__imagePreProcess(image)
+    current_image = __imagePreProcess(image)
+    
+    if keo_type == "Average":
+        real_strip_width = strip_width
+        strip_width = 5
     
     #if the image has a larger field of view than the keogram, then reduce it
     if int(current_image.getInfo()['camera']['fov_angle']) > keo_fov_angle:
@@ -388,14 +360,17 @@ def _putData(image, keo_pix, width, height, strip_width, angle, keo_fov_angle, s
     #we just resize the whole image
     #TODO; change this to just resize the strip taken from the image (should be much faster)
     if int(current_image.getInfo()['camera']['Radius']) > height:
-        current_image = current_image.resize((height,height))
+        current_image = current_image.resize((height, height))
     
     #read time data from image and convert to seconds
     try:
-        capture_time=datetime.datetime.strptime(current_image.getInfo()['header'] ['Creation Time'], "%d %b %Y %H:%M:%S %Z")
-        capture_time_secs=calendar.timegm(capture_time.timetuple()) #convert to seconds since epoch
+        try:
+            capture_time = datetime.datetime.strptime(current_image.getInfo()['header'] ['Creation Time'], "%d %b %Y %H:%M:%S %Z")
+        except ValueError:
+            capture_time = datetime.datetime.strptime(current_image.getInfo()['header'] ['Creation Time'] + " GMT", "%d %b %Y %H:%M:%S %Z")
+        capture_time_secs = calendar.timegm(capture_time.timetuple()) #convert to seconds since epoch
     except KeyError:
-        raise IOError, "Cannot read creation time from image "+filename
+        raise IOError, "Cannot read creation time from image " + filename
     
     #calculate x pixel coordinate in keogram of where strip from current image should go
     strip_width_secs = (float((end_secs-start_secs))/float(width+1-strip_width)) * strip_width
@@ -403,12 +378,15 @@ def _putData(image, keo_pix, width, height, strip_width, angle, keo_fov_angle, s
     #x_coordinate=int(((float(width)-strip_width)/float((end_secs-start_secs)))*float((capture_time_secs-start_secs))+strip_width/2)
     
     #get strip from image
-    strip=current_image.getStrip(angle, strip_width)
+    if keo_type == "Average":
+        strip = current_image.getStrip(angle, real_strip_width)
+    else:
+        strip = current_image.getStrip(angle, strip_width)
     
     #if the image has a different Radius or field of view angle, or both then life is more difficult
-    im_fov_angle=float(current_image.getInfo()['camera']['fov_angle'])
-    im_radius=float(current_image.getInfo()['camera']['Radius'])
-    mode=current_image.getMode()
+    im_fov_angle = float(current_image.getInfo()['camera']['fov_angle'])
+    im_radius = float(current_image.getInfo()['camera']['Radius'])
+    mode = current_image.getMode()
     if im_fov_angle != keo_fov_angle:
        
         #change image fov by appending black pixels to it (the image fov will always be <= keo fov)
@@ -467,19 +445,19 @@ def _putData(image, keo_pix, width, height, strip_width, angle, keo_fov_angle, s
         if mode != "RGB":
             for i in range(height):
                 pix_sum = 0
-                for j in range(strip_width):
+                for j in range(real_strip_width):
                     pix_sum += strip[j][i]
-                mean_value = int((pix_sum / float(strip_width)) + 0.5)
+                mean_value = int((pix_sum / float(real_strip_width)) + 0.5)
                 keo_pix[x_coordinate, i] = mean_value
         else:
             for i in range(height):
                 pix_sum = [0, 0, 0]
-                for j in range(strip_width):
+                for j in range(real_strip_width):
                     pix_sum[0] += strip[j][i][0] #Red value
                     pix_sum[1] += strip[j][i][1] #green value
                     pix_sum[2] += strip[j][i][2] #blue value
                     
-                mean_value = (int((pix_sum[0] / float(strip_width)) + 0.5), int((pix_sum[1] / float(strip_width)) + 0.5), int((pix_sum[2] / float(strip_width)) + 0.5))
+                mean_value = (int((pix_sum[0] / float(real_strip_width)) + 0.5), int((pix_sum[1] / float(real_strip_width)) + 0.5), int((pix_sum[2] / float(real_strip_width)) + 0.5))
                 keo_pix[x_coordinate, i] = mean_value
     else:
         raise ValueError, "Unknown keogram type. Expecting \"CopyPaste\" or \"Average\", got "+type
@@ -557,15 +535,136 @@ def _interpolateData(data_list, image, mode, colour_table, strip_width, max_gap)
 ###################################################################################    
 
 
-#class definition
+#class definitions
 
 ###################################################################################    
 
+class keoIntensitiesBase:
+    def __init__(self, positions, intensities, calib_factor):
+        
+        self._intensities = intensities
+        self._positions = positions
+        self._calib_factor = calib_factor
+        
+        self.title = None
+        self.x_label = None
+        
+        if calib_factor is None:
+            self.y_label = "Intensity (CCD Counts)"
+        else:
+            self.y_label = "Intensity (kR)"
+    
+    def getRawIntensities(self):
+        return self._intensities
+    
+    def _hasColourBar(self):
+        return False
+    
+    def getCalibratedIntensities(self):
+        calib_intensities = []
+        
+        for i in range(len(self._intensities)):
+            calib_intensities.append(self._intensities[i]*self._calib_factor)
+        
+        return calib_intensities 
+        
+###################################################################################
+
+class keoTimeSlice(keoIntensitiesBase):
+    def __init__(self, positions, intensities, calib_factor):
+        keoIntensitiesBase.__init__(self, positions, intensities, calib_factor)
+        self.x_label = "Time (UT)"
+        
+    def getTimes(self):
+        return self._positions
+    
+    def _plot(self, subplot):
+                       
+        #create tick marks for the x-axis
+        time_span = self._positions[len(self._positions)-1] - self._positions[0]
+        
+        #decide on tick locations
+        if time_span <= datetime.timedelta(hours=1):
+            #if the keogram is less than an hour long - tick every 10 mins
+            x_ticks = range(0,70,10)
+        elif time_span < datetime.timedelta(hours=7):
+            #if the keogram is less than 7 hours long - tick every 30 mins
+            x_ticks = [0,30]         
+        else:
+            #otherwise only tick every hour
+            x_ticks = [0]
+        
+        #convert the datetime objects into floating point numbers for use with matplotlib
+        time_data = []
+        for date in self._positions:
+            time_data.append(date2num(date))
+        
+        #plot the data in the subplot
+        if self._calib_factor is not None:
+            subplot.plot(self._positions,self.getCalibratedIntensities())
+        else:
+            subplot.plot(self._positions,self.getRawIntensities())
+        subplot.xaxis.set_major_locator(MinuteLocator(x_ticks))
+        subplot.xaxis.set_major_formatter(DateFormatter("%H:%M"))
+        
+        subplot.xaxis.axes.set_xlim(date2num(self._positions[0]),date2num(self._positions[len(self._positions)-1]))
+        
+        #set axis titles
+        if self.y_label != None:
+            subplot.axes.set_ylabel(self.y_label)
+            subplot.yaxis.set_label_position("left")
+            
+        if self.x_label != None:
+            subplot.axes.set_xlabel(self.x_label)
+        
+        #add title
+        if self.title != None:
+            subplot.set_title(self.title)
+        
+        #return a subplot object
+        return subplot
+
+###################################################################################        
+
+class keoAngleSlice(keoIntensitiesBase):
+    def __init__(self, positions, intensities, calib_factor):
+        keoIntensitiesBase.__init__(self, positions, intensities, calib_factor)
+        self.x_label = "Scan Angle (degrees)"
+    
+    def getAngles(self):
+        return self._positions
+    
+    def _plot(self, subplot):
+        #plot the data in the subplot
+        if self._calib_factor is not None:
+            subplot.plot(self._positions,self.getCalibratedIntensities())
+        else:
+            subplot.plot(self._positions,self.getRawIntensities())
+        
+        subplot.xaxis.axes.set_xlim(self._positions[0],self._positions[len(self._positions)-1])
+        
+        #set axis titles
+        if self.y_label != None:
+            subplot.axes.set_ylabel(self.y_label)
+            subplot.yaxis.set_label_position("left")
+            
+        if self.x_label != None:
+            subplot.axes.set_xlabel(self.x_label)
+        
+        #add title
+        if self.title != None:
+            subplot.set_title(self.title)
+        
+        #return a subplot object
+        return subplot
+
+###################################################################################
+        
 class keogram:
     """
     Class to hold keogram data. Unless otherwise stated, all methods return a new keogram object.
     """    
-    def __init__(self, image, colour_table, start_time, end_time, angle, fov_angle, OCB, strip_width, intensities, keo_type, data_points, data_spacing):
+    def __init__(self, image, colour_table, start_time, end_time, angle, fov_angle, strip_width, intensities, keo_type, data_points, data_spacing, calib_factor):
         
         #set class attributes
         self.__image=image.copy()
@@ -573,20 +672,14 @@ class keogram:
         self.__keo_type = keo_type
         self.__data_points = data_points #pixel coordinates of where the image slices have been placed
         self.__data_spacing = data_spacing #median distance (in pixels) between data entries in keogram
+        self.__calib_factor = calib_factor
         
         if colour_table != None:
             self.__colour_table=range(len(colour_table))
             for i in range(len(colour_table)):
                 self.__colour_table[i]=colour_table[i]
         else:
-            self.__colour_table=None
-        
-        if OCB !=[]:
-            self.__OCB=range(len(OCB))
-            for i in range(len(OCB)):
-                self.__OCB[i]=OCB[i]
-        else:
-            self.__OCB=[]    
+            self.__colour_table=None   
             
         self.__width, self.__height = image.size
         self.__start_time=start_time
@@ -687,7 +780,22 @@ class keogram:
         return self.__keo_type
     
     ###################################################################################                                
+    
+    def absoluteCalibration(self, spectral_responsivity, exposure_time):
+        """
+        Returns a new keogram object which has been calibrated to kR
+        """
+        if ((self.__mode == "RGB") and (self.__intensities is None)):
+            raise RuntimeError, "No intensity data available for this keogram"
         
+        calib_factor = 1.0 / float(spectral_responsivity * exposure_time * 1000)
+        
+        new_keogram = keogram(self.__image, self.__colour_table, self.__start_time, self.__end_time, self.__angle, self.__fov_angle, self.__strip_width, self.__intensities, self.__keo_type, self.__data_points, self.__data_spacing, calib_factor)
+        
+        return new_keogram
+    
+     ###################################################################################                                
+            
     def angle2pix(self, angle):
         """
         Converts an angle in degrees in the range (90-fov_angle)-(90+fov_angle) to a vertical pixel coordinate in the keogram. 
@@ -731,154 +839,13 @@ class keogram:
         new_mode="RGB"
         
         #create new keogram object
-        new_keogram=keogram(new_image, new_colour_table, self.__start_time, self.__end_time, self.__angle, self.__fov_angle, self.__OCB, self.__strip_width, new_intensities, self.__keo_type, self.__data_points, self.__data_spacing)
+        new_keogram=keogram(new_image, new_colour_table, self.__start_time, self.__end_time, self.__angle, self.__fov_angle, self.__strip_width, new_intensities, self.__keo_type, self.__data_points, self.__data_spacing, self.__calib_factor)
 
         return new_keogram
         
-    ###################################################################################    
+    ###################################################################################                             
     
-    def calculateOCB(self):
-        """
-        Returns a list of length len(width) containing the vertical position (in pixels) of the Open Closed Boundary for the 
-        corresponding horizontal pixel coordinate. It also saves this data in the OCB attribute, so further calls to calculateOCB(),
-        findOCB() and plotOCB() will not require the OCB to be located again. The OCB is calculated at a resolution equal to the 
-        strip width used to create the keogram.
-        """
-        #if the OCB has already been calculated, then return the already calculated results
-        if len(self.__OCB) == self.__width:
-            return self.__OCB    
-            
-        #otherwise calculate the OCB
-        OCB=[]
-        for i in range(self.__strip_width):
-            OCB.append(None)
-        for pixel in range(self.__strip_width/2, self.__width-self.__strip_width/2, self.__strip_width):
-            time = self.pix2time(pixel)
-            step_function=self.findOCB(time, OCB[pixel])
-        
-            if step_function !=None:
-                for i in range(self.__strip_width):
-                    OCB.append(step_function.index(max(step_function)))
-            else:
-                for i in range(self.__strip_width):
-                    OCB.append(self.__height-1)
-                    
-        for i in range(self.__strip_width):            
-            OCB.remove(None)
-        
-        #median filter OCB values
-        OCB_copy=[]
-        for i in range(len(OCB)):
-            OCB_copy.append(OCB[i])    
-            
-        for i in range(self.__strip_width, len(OCB)-self.__strip_width, 2*self.__strip_width):
-            values=[]
-            for j in range(-self.__strip_width, self.__strip_width+1):
-                values.append(OCB_copy[i+j])
-            OCB[i]=stats.median(values)
-        
-        for i in range(len(OCB)):
-            self.__OCB.append(OCB[i])    
-        return OCB    
-        
-    ###################################################################################                            
-    
-    def findOCB(self, time, previous_position):
-        """
-        Returns the vertical position (in pixels) of the Open Closed Boundary at the specified time. If the time is outside the 
-        range of the keogram then ValueError will be raised.
-        """
-        #function returns latitude of OCB. 
-        #check that specified time is within range of keogram
-        if time > self.__end_time or time < self.__start_time:
-            raise ValueError, "Time is outside of range of keogram."
-        
-        #if the OCB has already been calculated then take it's value from the OCB list.
-        if len(self.__OCB) == self.__width:
-            return self.__OCB[self.time2pix(time)]
-        
-        auroral_intensity = 200 #min value counted as being "auroral"
-        
-        #read intensity values from array of keogram pixel values
-        angles, intensities=self.getIntensities(time, self.__strip_width)
-        
-        #return None if there is no data for this time
-        if intensities.count(0)==self.__height:
-            return None
-        
-        #if there are no high intensities in the strip, return
-        if max(intensities) < auroral_intensity:
-            median_intensity=stats.median(intensities) #median intensity before step
-            return misc.stepFunction(median_intensity, auroral_intensity, self.__height-1, self.__height)
-        
-        #set lower limit for search for step_position.
-        #This is done for efficiency, there is no need to look at all angles each time
-        if previous_position == None:
-            lower_limit = 1
-        else:
-            lower_limit = previous_position - self.__height/2
-            if lower_limit < 1:
-                lower_limit=1
-        
-        #create empty array for storing fit values
-        fit = []
-        
-        #for each possible position of the step (lower_limit-height), calculate median intensity before step, and create a step function ranging from his value to 255.                
-        for step_position in range(lower_limit, self.__height):
-            median_intensity=stats.median(intensities[0:step_position]) #median intensity before step
-        
-            #create step function
-            step_function = misc.stepFunction(median_intensity, auroral_intensity, step_position, self.__height)
-        
-            #calculate fit to data
-            fit.append(0.0)
-            for j in range(self.__height):
-                fit[step_position-lower_limit] = fit[step_position-lower_limit] + (step_function[j]-intensities[j])*(step_function[j]-intensities[j])
-    
-        #find optimum step function (one with minimum fit)
-        step_position=lower_limit+fit.index(min(fit)) #pixel position of step with lowest fit
-                #create optimum step function
-        median_intensity=stats.median(intensities[0:step_position])
-        step_function = misc.stepFunction(median_intensity, auroral_intensity, step_position, self.__height)
-                #if the OCB was not located, return 
-        if step_position==self.__height-1:
-            return step_function
-            
-        return step_function    
-        #Apply Blanchard et al criteria to check if we have really found the OCB
-
-        #check if polar cap intensity < auroral intensity
-        mean_polar_cap_intensity=stats.mean(intensities[0:step_position])
-        mean_auroral_intensity=stats.mean(intensities[step_position:])
-        
-        if mean_polar_cap_intensity > mean_auroral_intensity:
-            #print self.time2pix(time),": mean_polar_cap_intensity > mean_auroral_intensity",mean_polar_cap_intensity,mean_auroral_intensity
-            return None #Cannot find OCB for this time
-    
-
-        #check if step increase is more than 65% of polar cap intensity (should be 75% according to Blanchard, but the patches increase the polar cap intensity)
-        step_increase=255-mean_polar_cap_intensity
-        if step_increase<=(0.65*mean_polar_cap_intensity):
-            #print self.time2pix(time),": step_increase<=(0.65*mean_polar_cap_intensity)",step_increase,mean_polar_cap_intensity
-            return None #Cannot find OCB for this time
-            
-        #check if correlation is >80%
-
-        #multiply intensities by step function
-        step_times_data=[]
-        for i in range(self.__height):
-            step_times_data.append(step_function[i]*intensities[i])
-
-        correlation= (stats.mean(step_times_data)-(stats.mean(step_function)*stats.mean(intensities)))/(math.sqrt(stats.variance(step_function))*math.sqrt(stats.variance(intensities)))
-    
-        if correlation < 0.7:
-            #print self.time2pix(time),": correlation < 0.8 = ",correlation
-            return None
-        return step_function
-        
-    ###################################################################################                            
-    
-    def getIntensities(self, time, strip_width):
+    def getIntensitiesAt(self, position, strip_width=None, calibrated=False):
         """
         Returns a tuple of lists (angles, intensities) which correspond to a vertical slice through the keogram at the specified 
         time. The strip width argument controls the width in pixels of the strip that the intensities are averaged over. For example
@@ -886,6 +853,106 @@ class keogram:
         neighbouring pixels on each side. Intensities of zero are excluded from the mean calculation (since they correspond to times
         with no available data). For times within regions of missing data, getIntensities will return 0.
         """
+        
+        if (calibrated and (self.__calib_factor is None)):
+            raise ValueError, "No calibration data available for this keogram"
+        
+        #find out if we are taking a horizontal or vertical slice from the keogram
+        if isinstance(position, float):
+            if strip_width is None:
+                #set strip width to one degree
+                strip_width = abs(self.angle2pix(position + 0.5) - self.angle2pix(position - 0.5))
+                if strip_width == 0:
+                    strip_width = 1
+                
+            positions, intensities = self._getHorizontalStrip(position, strip_width)
+            return keoTimeSlice(positions, intensities,self.__calib_factor)
+            
+        elif isinstance(position, datetime.datetime):
+            if strip_width is None:
+                #set strip width to width used in creating keogram
+                strip_width = self.__strip_width
+                
+            positions, intensities = self._getVerticalStrip(position, strip_width)
+            return keoAngleSlice(positions, intensities,self.__calib_factor)
+        else:
+            raise TypeError, "Position must be either a float (angle) or a datetime object"
+
+        
+    ###################################################################################   
+    
+    def _getHorizontalStrip(self, angle, strip_width):
+        #check that specified angle is within range of keogram
+        if ((angle > (90 + self.__fov_angle)) or (angle < (90 - self.__fov_angle))):
+            raise ValueError, "Angle is outside of range of keogram."
+            
+        times = [] #list to hold time values
+        intensities = [] #list to hold intensity values
+        
+        if self.__intensities==None:
+            keo_pix = self.__image.load()
+        else:
+            keo_pix = self.__intensities.load()
+        
+        #calculate pixel position of angle
+        y_position = self.angle2pix(angle)
+        
+        for i in range(self.__width):
+            times.append(self.pix2time(i))
+            
+            #calculate list of mean intensities (of a strip of width strip_width)
+            sum_intensities=[]
+            
+            #work out max range for strip size (cannot exceed dimensions of keogram)
+            if y_position + int(-strip_width/2)+1 < 0: 
+                min_pix = -y_position
+            else:
+                min_pix=int(-strip_width/2)+1
+            if y_position + int(strip_width/2)+1 > self.__height-1: 
+                max_pix = self.__height-1-y_position
+            else:
+                max_pix=int(strip_width/2)+1    
+                           
+            for j in range(min_pix, max_pix):
+                #if there is intensity data for the keogram
+                if (self.__mode=="L") or (self.__intensities != None) or (self.__mode=="I"):
+                    sum_intensities.append(keo_pix[i, y_position+j])
+                
+                #if there is no intensity data but there is a colour table    
+                elif self.__mode == "RGB" and self.__colour_table != None:
+                    if self.__colour_table.count(keo_pix[i, y_position+j]) > 1:
+                        raise ValueError, "No unique intensity for RGB tuple"
+                        
+                    pix_intensity= self.__colour_table.index(keo_pix[i, y_position+j]) #for an RGB image, need to reverse the colour_table to get back to the original intensity
+                    sum_intensities.append(pix_intensity)
+                    
+                #no hope of finding intensities
+                else:
+                    raise RuntimeError, "There is no intensity data for this keogram."
+
+            #remove zeros from intensities list
+            while sum_intensities.count(0) != 0:
+                sum_intensities.remove(0)
+            
+            #calculate mean
+            if sum_intensities.count(0) >= int(len(sum_intensities)/2):
+                mean_intensity=0 #pixel is inside a region of no data
+            else:    
+                #remove zeros from intensities list
+                while sum_intensities.count(0) != 0:
+                    sum_intensities.remove(0)
+                
+                mean_intensity=float(sum(sum_intensities))/float(len(sum_intensities))
+            
+    
+            #store mean intensities in a list
+            intensities.append(mean_intensity)
+            
+        return (times, intensities)
+        
+    ###################################################################################       
+    
+    def _getVerticalStrip(self, time, strip_width):                                 
         #check that specified time is within range of keogram
         if time > self.__end_time or time < self.__start_time:
             raise ValueError, "Time is outside of range of keogram."
@@ -905,7 +972,7 @@ class keogram:
         angle_conversion_factor = float(2.0*self.__fov_angle)/float(self.__height)
         
         for i in range(self.__height):
-            angles.append((90.0+self.__fov_angle)-float(i)*angle_conversion_factor)
+            angles.append(180 - ((90.0+self.__fov_angle)-float(i)*angle_conversion_factor))
             
             #calculate list of mean intensities (of a strip of width strip_width)
             sum_intensities=[]
@@ -960,6 +1027,27 @@ class keogram:
         
     ###################################################################################                    
     
+    def histogram(self):
+        """
+        Returns a histogram of the keogram image. For 'L' mode images this will be a list of 
+        length 256, for 'I' mode images it will be a list of length 65536. The histogram
+        method cannot be used for RGB images.
+        """
+        mode = self.getMode()
+        
+        if mode == "L":
+            histogram = self.__image.histogram() #use PIL histogram method for 8bit images
+        elif mode == "I":          
+            im_pix = numpy.asarray(self.__image) #load pixel values
+            histogram = numpy.histogram(im_pix, bins=range(65537), new=True)[0]
+            
+        else:
+            raise ValueError, "Unsupported image mode"
+        
+        return histogram
+    
+    ###################################################################################                    
+    
     def medianFilter(self, n):
         """
         This is a thin wrapper function for the median filter provided by PIL. It replaces each 
@@ -979,7 +1067,7 @@ class keogram:
             intensities=None
             
         #create new keogram object
-        new_keogram=keogram(image, self.__colour_table, self.__start_time, self.__end_time, self.__angle, self.__fov_angle, self.__OCB, self.__strip_width, intensities, self.__keo_type, self.__data_points, self.__data_spacing)
+        new_keogram=keogram(image, self.__colour_table, self.__start_time, self.__end_time, self.__angle, self.__fov_angle, self.__strip_width, intensities, self.__keo_type, self.__data_points, self.__data_spacing, self.__calib_factor)
         
         return new_keogram    
             
@@ -1009,6 +1097,14 @@ class keogram:
         
     ###################################################################################                            
     
+    def _hasColourBar(self):
+        if self.__colour_table is not None:
+            return True
+        else:
+            return False
+            
+    ###################################################################################                            
+    
     def _plot(self, subplot):
         """
         Plots the keogram data into the given subplot object. This method is required for
@@ -1020,24 +1116,159 @@ class keogram:
         else:
             image = subplot.imshow(self.__image.convert('L'), origin="top", aspect="auto", cmap=matplotlib.cm.gray)       
         
-        
+    
+        if self.__colour_table is not None:
+            allskyPlot.createColourbar(subplot, self.__colour_table, self.__calib_factor)
+#            #find the thresholds on the colour table - then we can just display
+#            #the interesting parts of the colour table.
+#            
+#            #first we find the lower threshold
+#            colour_table.reverse()
+#            offset = colour_table.index(colour_table[-1])
+#            lower_threshold = len(colour_table)- 1 - offset
+#            
+#            #now the upper threshold
+#            colour_table.reverse()
+#            upper_threshold = colour_table.index(colour_table[-1])
+#
+#            #if the image could contain values outside of the threshold
+#            #region (there is now no way to determine this for certain, since the
+#            #intensity data was lost when the colour table was applied) then put
+#            #arrow heads on the colour bar to indicate this
+#            lower_arrow = 0
+#            upper_arrow = 0
+#            if lower_threshold != 0:
+#                lower_arrow = 7 #size of the arrow head in pixels
+#            if upper_threshold != len(colour_table)- 1:
+#                upper_arrow = 7 #size of the arrow head in pixels
+#            
+#            #decide on the size of the colour bar image - what is important here is the aspect ratio
+#            if (upper_threshold - lower_threshold) >= 230: 
+#                #colour bar is very long - extend width to get correct aspect ratio        
+#                colour_bar_width = (upper_threshold - lower_threshold)/33 #33 is just an arbitrary number that works
+#                #the colour bar should be an odd number of pixels wide (to make drawing arrowheads easy)
+#                if colour_bar_width % 2 != 0:
+#                    colour_bar_width += 1
+#                colour_bar_height = (upper_threshold - lower_threshold) + 1 + upper_arrow + lower_arrow #+1 = counting from zero!
+#                cb_height_scaling = 1.0
+#            else:
+#                #colour bar is very short - extend height to get correct aspect ratio
+#                colour_bar_width = 7
+#                cb_height_scaling = 230.0 / float(upper_threshold - lower_threshold)
+#                colour_bar_height = 231 +  upper_arrow + lower_arrow
+#            
+#            #create a colour bar image
+#            colour_bar_image = Image.new("RGB", (colour_bar_width, colour_bar_height),(255,255,255))
+#            colour_bar_pix = colour_bar_image.load()
+#            
+#            #colour in the arrows (if there are any)
+#            for y in xrange(0, upper_arrow): #remember that image indexing starts at top left
+#                for x in xrange(colour_bar_width):
+#                    colour_bar_pix[x, y] = colour_table[upper_threshold]
+#            for y in xrange(0, lower_arrow):
+#                for x in xrange(colour_bar_width):
+#                    colour_bar_pix[x, colour_bar_height-y-1] = colour_table[lower_threshold]
+#                    
+#            #colour in the rest of the colour bar based on the colour table of the image
+#            for y in xrange(colour_bar_height - upper_arrow - lower_arrow):
+#                current_ct_index = upper_threshold - (int((y/float(colour_bar_height - upper_arrow - lower_arrow) * (upper_threshold-lower_threshold))+0.5))
+#                current_colour = colour_table[current_ct_index]
+#                for x in xrange(colour_bar_width):
+#                    colour_bar_pix[x, y + upper_arrow] = current_colour
+#            
+#            #if the image could contain values outside of the threshold
+#            #region (there is now no way to determine this for certain, since the
+#            #intensity data was lost when the colour table was applied) then put
+#            #arrow heads on the colour bar to indicate this
+#            if lower_threshold != 0:
+#                d = ImageDraw.Draw(colour_bar_image)
+#                y0 = colour_bar_height
+#                d.polygon([(0, y0), (0, y0-colour_bar_width), ((colour_bar_width-1)/2, y0-1), ((colour_bar_width-1), y0-colour_bar_width), ((colour_bar_width-1), y0)], fill='white')
+#            if upper_threshold != colour_bar_height-1:
+#                d = ImageDraw.Draw(colour_bar_image)
+#                y0 = 0#colour_bar_height - upper_threshold - colour_bar_width
+#                d.polygon([(0, y0), (0, y0+colour_bar_width), ((colour_bar_width-1)/2, y0+1), ((colour_bar_width-1), y0+colour_bar_width), ((colour_bar_width-1), y0)], fill='white')
+#            
+#            #create a fake colour table - this is used to get matplotlib to create the colourbar axes
+#            #which we then use to plot out colour bar image into
+#            fake_data = numpy.random.rand(2, 2)
+#            fake_colour_image = subplot.pcolor(fake_data)
+#            
+#            #create the matplotlib colour bar object
+#            if subplot.numCols > 1:
+#                colour_bar = matplotlib.pyplot.colorbar(fake_colour_image, ax=subplot,pad=0.15)
+#            else:
+#                colour_bar = matplotlib.pyplot.colorbar(fake_colour_image, ax=subplot)
+#            colour_bar.ax.axes.clear() #get rid of our fake colourbar data
+#            
+#            
+#            #calculate where the ticks on the y axis of the colour bar should go.
+#            #this is slightly tricky since we have three scales to consider:
+#            #the absolute pixel coordinates of the image, the CCD counts of the 
+#            #camera and the absolute calibrated intensities. The following code
+#            #attempts to put approx 7 ticks at whole numbers of either CCD counts or
+#            #kR. It is not very elegant!
+#            if self.__calib_factor is None:
+#                colour_bar.ax.axes.set_ylabel("CCD Counts")
+#                y_ticks = []
+#                ccd_step_size = ((upper_threshold - lower_threshold) / 7.0) #we want ~7 labels on the colour bar
+#                if ccd_step_size > 1:
+#                    ccd_step_size = int(ccd_step_size +0.5) #try to make the tick spacing an integer number
+#                 
+#                pix_step_size =  ccd_step_size * cb_height_scaling #take account of the colourbar height scaling (if any)
+#                
+#                for i in range(8):
+#                    y_ticks.append(lower_arrow +1 + i*pix_step_size)
+#                 
+#                colour_bar.ax.yaxis.set_major_locator(FixedLocator(y_ticks)) 
+#            else:
+#                colour_bar.ax.axes.set_ylabel("kR")
+#                y_ticks = []
+#                cal_step_size = ((upper_threshold - lower_threshold)*self.__calib_factor / 7.0) #we want ~7 labels on the colour bar
+#                if cal_step_size > 1:
+#                    cal_step_size = int(cal_step_size +0.5) #try to make the tick spacing an integer number
+#                 
+#                pix_step_size =  (cal_step_size / float(self.__calib_factor)) * cb_height_scaling #take account of the colourbar height scaling (if any)
+#                
+#                for i in range(8):
+#                    y_ticks.append(lower_arrow +1 + i*pix_step_size)
+#                 
+#                colour_bar.ax.yaxis.set_major_locator(FixedLocator(y_ticks))
+#            
+#            #plot the colourbar image into the axes
+#            colour_bar.ax.yaxis.set_label_position("left")
+#            colour_bar.ax.xaxis.set_major_locator(NullLocator())            
+#            colour_bar.ax.imshow(colour_bar_image, origin="top")
+#            colour_bar.ax.axes.set_ylim((0, colour_bar_height))
+#            colour_bar.ax.axes.set_xlim((-1, colour_bar_width-1))
+#            
+#            #create a formatter function for the y-axis based on the various scaling factors
+#            #that have been used. The lambda functions take a pixel coordinate in the colourbar
+#            #image and return its value in either kR or CCD counts
+#            if self.__calib_factor is not None:
+#                y_formatter = lambda x, pos: self.__calib_factor * (((x -colour_bar_width-1)  / cb_height_scaling) + lower_threshold)
+#            else:
+#                y_formatter = lambda x, pos: ((x -colour_bar_width-1)  / cb_height_scaling) + lower_threshold
+#            colour_bar.ax.yaxis.set_major_formatter(FuncFormatter(y_formatter))
+#            colour_bar.ax.yaxis.tick_right()
+        #Now we are done with the colourbar and we return to the main axes
+         
         #create tick marks for the y-axis every 20 degrees
-        y_ticks = [] #tick positions
+        y_ticks = [] #tick positions (in pixels)
         y_labels = [] 
-        for y in range(0,180,20):
+        for y in range(0, 180, 20):
             y_ticks.append(self.angle2pix(y))
             y_labels.append(str(int(math.fabs(y-180))))
         
         subplot.yaxis.set_major_locator(FixedLocator(y_ticks))
         subplot.yaxis.set_major_formatter(FixedFormatter(y_labels))
-        
-        
+               
         #create tick marks for the x-axis
         time_span = self.__end_time - self.__start_time
 
-        x_ticks = []
+        x_ticks = [] #tick positions (in pixels)
         x_labels = []
-        current_time = self.__start_time.replace(minute=0,second=0,microsecond=0)
+        current_time = self.__start_time.replace(minute=0, second=0, microsecond=0)
         while current_time <= self.__end_time:
             pix = self.time2pix(current_time)
             if pix is not None: #skip times outside the range of the keogram
@@ -1081,60 +1312,9 @@ class keogram:
         
         #return a subplot object
         return subplot
-    
+
     ###################################################################################
-    
-    def plotOCB(self):
-        """
-        Returns a new keogram object with the position of the OCB drawn onto the keogram image. If the OCB has not been calculated 
-        already, then it will be calculated first and stored in both the original keogram object and the new one.
-        """
-        #check that the OCB has been calculated
-        if len(self.__OCB) != self.__width:
-            self.calculateOCB() #if it hasn't, then calculate it
         
-        
-        image=self.getImage()
-        
-        #load the pixel values
-        keo_pix = image.load()
-        
-        #check that keogram image is compatible with OCB array
-        if self.__width != len(self.__OCB):
-            raise ValueError, "Size mismatch between keogram and OCB data"
-    
-        #set the colour of the OCB line depending on the image mode of the keogram
-        if self.__mode == "RGB":
-            black = (0, 0, 0)
-        elif self.__mode == "L":
-            black = 0
-        else:
-            raise TypeError, "Unsupported image mode for keogram: "+str(self.__mode)
-    
-        #plot the OCB data 
-        for pixel in range(len(self.__OCB)):
-            
-            #make each point 5 pixels high (if possible)
-            top=-self.__OCB[pixel]
-            bottom = self.__height - self.__OCB[pixel]
-            
-            if top < -2:
-                top = -2
-            if bottom > 3:
-                bottom = 3
-            
-            #plot a 5 pixel high line for each OCB boundary position
-            for i in range(top, bottom):
-                keo_pix[pixel, self.__OCB[pixel]+i]=black
-        
-        #create new keogram object
-        new_keogram=keogram(image, self.__colour_table, self.__start_time, self.__end_time, self.__angle, self.__fov_angle, self.__OCB, self.__strip_width, self.__intensities, self.__keo_type, self.__data_points, self.__data_spacing)
-        
-                
-        return new_keogram
-        
-    ###################################################################################            
-    
     def roll(self, file_list):
         """
         This method is designed to be used for producing real-time keograms. The file_list argument should be either a list of tuples 
@@ -1272,7 +1452,7 @@ class keogram:
             _interpolateData(new_data_points, image, self.__mode, self.__colour_table, 1, 1.5*(self.__data_spacing+5)) #+5 is effective strip width used when calculating keogram width
         
         #create new keogram object
-        new_keogram=keogram(image, None, start_time, end_time, self.__angle, self.__fov_angle, [], self.__strip_width, self.__intensities, self.__keo_type, self.__data_points, self.__data_spacing)
+        new_keogram=keogram(image, None, start_time, end_time, self.__angle, self.__fov_angle, [], self.__strip_width, self.__intensities, self.__keo_type, self.__data_points, self.__data_spacing, self.__calib_factor)
         
         #if the original keogram had a colour table applied, then re-apply it now
         if self.__colour_table != None:
@@ -1294,13 +1474,13 @@ class keogram:
         header['angle']=str(self.__angle)
         header['start_time']=str(self.__start_time.strftime("%d %b %Y %H:%M:%S"))
         header['end_time']=str(self.__end_time.strftime("%d %b %Y %H:%M:%S"))
-        header['OCB']=str(self.__OCB)
         header['strip_width']=str(self.__strip_width)
         header['colour_table']=str(self.__colour_table)
         header['fov_angle']=str(self.__fov_angle)
         header['keo_type'] = self.__keo_type
         header['data_points'] = str(self.__data_points)
         header['data_spacing'] = str(self.__data_spacing)
+        header['calib_factor'] = str(self.__calib_factor)
         
         #if no colour table has been applied then save the image, otherwise save the intensities
         if self.__colour_table==None:
@@ -1317,37 +1497,7 @@ class keogram:
             
             #save image as png file
             misc.pngsave(self.__intensities, filename)
-    
-    ###################################################################################                        
-    
-    def savePlot(self, filename, remove_space=True, keo_title="DEFAULT", x_label="Time (UT)", y_label="Scan angle (degrees)", size=None):
-        """
-        Saves a plot of the keogram data as a png file specified by the filename argument. This is a convenience 
-        function which essentially does keo.plot() and then pylab.savefig(). However, it also removes the white 
-        borders in the matplotlib plots (this can be disabled by setting remove_space to False). The other 
-        arguments are the same as for plot().
-        """    
-        #ensure the current figure is clear
-        clf()
-        
-        #plot the keogram
-        plot=self.plot(keo_title=keo_title, x_label=x_label, y_label=y_label, size=size)
-        
-        #save the figure as a png
-        savefig(filename)
-        
-        if remove_space:
-            #reopen the image as a PIL image
-            im=Image.open(filename)
-            
-            #remove the white space from the image
-            im2=im.crop(ImageOps.invert(im.copy().convert('L')).getbbox())
-        
-            if not filename.endswith((".png", ".PNG")):
-                filename=filename+".png"
-        
-            im2.save(filename)
-        
+       
     ###################################################################################                    
             
     def time2pix(self, time):
@@ -1402,11 +1552,8 @@ class keogram:
         else:
             intensities_sec=self.__intensities.crop((start_pix, 0, end_pix, self.__height))
         
-        #get section of OCB data
-        OCB_sec=self.__OCB[start_pix:end_pix]
-        
         #return zoomed in keogram
-        return keogram(image_sec, self.__colour_table, start_time, end_time, self.__angle, self.__fov_angle, OCB_sec, self.__strip_width, intensities_sec, self.__keo_type, new_data_points, self.__data_spacing)
+        return keogram(image_sec, self.__colour_table, start_time, end_time, self.__angle, self.__fov_angle, self.__strip_width, intensities_sec, self.__keo_type, new_data_points, self.__data_spacing, self.__calib_factor)
                         
 ###################################################################################                                
-                                
+                                                                

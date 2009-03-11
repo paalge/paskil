@@ -322,7 +322,6 @@ class colourTable:
             place_holder=int(float_place_holder+0.5)
             
             if place_holder >= len(palette):
-                warnings.warn("Placeholder exceeds palette length. If this message appears more than once, consider ajusting thresholds")
                 place_holder=len(palette)-1
             
         #set values above max_threshold to last value in colour table

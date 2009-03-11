@@ -45,21 +45,21 @@ from mpl_toolkits.basemap import Basemap
 from matplotlib import cm
 
 #define private dictionary for converting between lens projection descriptions and matplotlib.basemap projection descriptions
-__proj_codes={'equidistant':'aeqd','equisolidangle':'laea','gnomonic':'gnom'}
+__proj_codes={'equidistant':'aeqd', 'equisolidangle':'laea', 'gnomonic':'gnom'}
 
 #define private dictionary for converting between image modes and numpy data types
-__data_types={'L':'uint8','I':'int16','RGB':'uint8'}
+__data_types={'L':'uint8', 'I':'int16', 'RGB':'uint8'}
 
 class projection:
     """
     Holds image data in a format suitable for use in producing map projections.
     """
     
-    def __init__(self, im,proj_height,grid_size,background='black'):
+    def __init__(self, im, proj_height, grid_size, background='black'):
         
         #check arguments
-        if background not in ['black','white']:
-            raise ValueError,"Illegal value for background, expecting 'black' or 'white'"
+        if background not in ['black', 'white']:
+            raise ValueError, "Illegal value for background, expecting 'black' or 'white'"
         
         self.__background=background
         
@@ -97,7 +97,7 @@ class projection:
         
         #if the background is white, then apply an inverted binary mask, this reduces the field of view by 1 degree
         if self.__background == 'white':
-            im=im.binaryMask(float(image_info['camera']['fov_angle'])-1,inverted=True)
+            im=im.binaryMask(float(image_info['camera']['fov_angle'])-1, inverted=True)
         
         #record fov in radians
         fov_angle=math.radians(float(image_info['camera']['fov_angle']))
@@ -126,7 +126,7 @@ class projection:
         
         #if the original image was not RGB then need to add a dimension to the array (even though it only has length 1), later code requires a 3D array
         if im.getMode()!='RGB':
-            im_array.shape=(im_array.shape[0],im_array.shape[1],1)
+            im_array.shape=(im_array.shape[0], im_array.shape[1], 1)
         
         #create an array of x,y pixel coordinates corresponding to a lat long grid
         
@@ -136,12 +136,12 @@ class projection:
         
         #max and min longitudes by looking at the lons of the corners of the map. This might go wrong for some maps - but should just result in parts of the image missing rather than anything more serious
         lllon=image_map.llcrnrlon
-        ullon=image_map(image_map.xmin,image_map.ymax,inverse=True)[0]
-        lrlon=image_map(image_map.xmax,image_map.ymin,inverse=True)[0]
+        ullon=image_map(image_map.xmin, image_map.ymax, inverse=True)[0]
+        lrlon=image_map(image_map.xmax, image_map.ymin, inverse=True)[0]
         urlon=image_map.urcrnrlon
         
-        start_lon=min([lllon,ullon,lrlon,urlon])
-        end_lon=max([lllon,ullon,lrlon,urlon])
+        start_lon=min([lllon, ullon, lrlon, urlon])
+        end_lon=max([lllon, ullon, lrlon, urlon])
         
         #define increments
         lat_increment=(end_lat-start_lat)/grid_size
@@ -163,9 +163,9 @@ class projection:
         
         #create array of pixel values in a regular lat lon grid
         if self.__mode=='RGB':
-            self.__image_data=numpy.empty((grid_size, grid_size,3), dtype=globals()['__data_types'][self.__mode])
+            self.__image_data=numpy.empty((grid_size, grid_size, 3), dtype=globals()['__data_types'][self.__mode])
         else:
-            self.__image_data=numpy.empty((grid_size, grid_size,1), dtype=globals()['__data_types'][self.__mode])
+            self.__image_data=numpy.empty((grid_size, grid_size, 1), dtype=globals()['__data_types'][self.__mode])
         
         for x in range(grid_size):
                 for y in range(grid_size):
@@ -178,21 +178,21 @@ class projection:
                         if i >= im_array.shape[0] or j >= im_array.shape[1] or j<0 or i<0:
                                 if self.__background == 'white':
                                     if im.getMode()=="I":
-                                       self.__image_data[y, x,:]=65535 #white in 16bit image 
+                                       self.__image_data[y, x, :]=65535 #white in 16bit image 
                                     else:
-                                        self.__image_data[y, x,:]=255 #white in RGB and 8bit images
+                                        self.__image_data[y, x, :]=255 #white in RGB and 8bit images
                                 else:
-                                    self.__image_data[y, x,:]=0
+                                    self.__image_data[y, x, :]=0
 
                         else:
-                            self.__image_data[y, x,:]=im_array[i, j,:]
+                            self.__image_data[y, x, :]=im_array[i, j, :]
 
         self.__image_lons=numpy.array(lons)
         self.__image_lats=numpy.array(lats)     
 
     ###################################################################################
     
-    def createMapProjection(self,grid_size=500,**kwargs):
+    def createMapProjection(self, grid_size=500, **kwargs):
         """
         Returns a matplotlib basemap object containing a plot of the map projection described by kwargs.
         The grid_size option sets the number of grid squares that the map plot will be split into to 
@@ -213,9 +213,9 @@ class projection:
         
         if self.__mode=='RGB':
             #transform image data to fit to map
-            red_transformed_data=numpy.array(observatory_map.transform_scalar(self.__image_data[:,:,0], self.__image_lons, self.__image_lats, ny, nx), dtype=globals()['__data_types'][self.__mode])
-            green_transformed_data=numpy.array(observatory_map.transform_scalar(self.__image_data[:,:,1], self.__image_lons, self.__image_lats, ny, nx), dtype=globals()['__data_types'][self.__mode])
-            blue_transformed_data=numpy.array(observatory_map.transform_scalar(self.__image_data[:,:,2], self.__image_lons, self.__image_lats, ny, nx), dtype=globals()['__data_types'][self.__mode])
+            red_transformed_data=numpy.array(observatory_map.transform_scalar(self.__image_data[:, :, 0], self.__image_lons, self.__image_lats, ny, nx), dtype=globals()['__data_types'][self.__mode])
+            green_transformed_data=numpy.array(observatory_map.transform_scalar(self.__image_data[:, :, 1], self.__image_lons, self.__image_lats, ny, nx), dtype=globals()['__data_types'][self.__mode])
+            blue_transformed_data=numpy.array(observatory_map.transform_scalar(self.__image_data[:, :, 2], self.__image_lons, self.__image_lats, ny, nx), dtype=globals()['__data_types'][self.__mode])
             
             #convert the array back into an image
             red_image=Image.fromarray(red_transformed_data)
@@ -223,11 +223,11 @@ class projection:
             blue_image=Image.fromarray(blue_transformed_data)
         
             #combine RGB channels into a single image
-            image=Image.merge('RGB',[red_image,green_image,blue_image])
+            image=Image.merge('RGB', [red_image, green_image, blue_image])
             
         else:
             #transform image data to fit to map
-            transformed_data=numpy.array(observatory_map.transform_scalar(self.__image_data[:,:,0], self.__image_lons, self.__image_lats, ny, nx), dtype=globals()['__data_types'][self.__mode])
+            transformed_data=numpy.array(observatory_map.transform_scalar(self.__image_data[:, :, 0], self.__image_lons, self.__image_lats, ny, nx), dtype=globals()['__data_types'][self.__mode])
         
             #convert the array back into an image
             image=Image.fromarray(transformed_data)
@@ -238,7 +238,7 @@ class projection:
         #plot the image. Matplotlib doesn't support 16bit images, so need to convert to 8bit before plotting
         if self.__mode == 'I':
             image=image.convert('L')
-        observatory_map.imshow(image,cmap=cm.gray) #plot the image, setting cmap to gray to prevent matplotlib applying its own colour table
+        observatory_map.imshow(image, cmap=cm.gray) #plot the image, setting cmap to gray to prevent matplotlib applying its own colour table
         
         return observatory_map
     
@@ -256,41 +256,41 @@ class projection:
         else:
             line_colour='white'
         
-        map=self.createMapProjection(projection='aeqd',lat_0=self.site_lat,lon_0=self.site_lon,resolution='h',width=3*self.fov_distance,height=3*self.fov_distance)
-        map.drawcoastlines(color=line_colour,linewidth=0.5)
-        map.drawmeridians(range(-180,180,10),color=line_colour)
-        map.drawparallels(range(-90,90,10),color=line_colour)
+        map=self.createMapProjection(projection='aeqd', lat_0=self.site_lat, lon_0=self.site_lon, resolution='h', width=3*self.fov_distance, height=3*self.fov_distance)
+        map.drawcoastlines(color=line_colour, linewidth=0.5)
+        map.drawmeridians(range(-180, 180, 10), color=line_colour)
+        map.drawparallels(range(-90, 90, 10), color=line_colour)
         map.drawmapboundary(fill_color=self.__background)
         
         return map
     
     ###################################################################################    
-    def overlaySuperDARN(self,SDARN_file):
-        """
-        Returns a PIL image object containing a SuperDARN convection plot with the allsky image
-        projected onto it. The SDARN_file argument should be the filename of a SuperDARN convection
-        plot image (these can be downloaded at http://superdarn.jhuapl.edu/archive.html).
-        """
-        
-        #open SuperDarn plot as a PIL image
-        SD_im=Image.open(SDARN_file)
-        
-        #find the radius (in pixels) of the map part of the image
-        bw_im=SD_im.convert('L') #convert the image to black and white
-        bw_im=ImageOps.invert(bw_im)
-        bw_im.save("bwtest.png")
-        
-        bw_im_array=numpy.asarray(bw_im).copy()
-        bw_im_array=bw_im_array.swapaxes(1, 0)
-
-        y=int(bw_im.size[1]/2.0) #look in the middle of the image
-        
-        
-        arr=numpy.array(bw_im_array[:,y]) #copy the pixel values into an array
-        
-        radius=int((len(arr.nonzero()[0])/2.0)+0.5) #find the length of the non-zero part of the array
-        
-        print radius
-        #
+#    def overlaySuperDARN(self,SDARN_file):
+#        """
+#        Returns a PIL image object containing a SuperDARN convection plot with the allsky image
+#        projected onto it. The SDARN_file argument should be the filename of a SuperDARN convection
+#        plot image (these can be downloaded at http://superdarn.jhuapl.edu/archive.html).
+#        """
+#        
+#        #open SuperDarn plot as a PIL image
+#        SD_im=Image.open(SDARN_file)
+#        
+#        #find the radius (in pixels) of the map part of the image
+#        bw_im=SD_im.convert('L') #convert the image to black and white
+#        bw_im=ImageOps.invert(bw_im)
+#        bw_im.save("bwtest.png")
+#        
+#        bw_im_array=numpy.asarray(bw_im).copy()
+#        bw_im_array=bw_im_array.swapaxes(1, 0)
+#
+#        y=int(bw_im.size[1]/2.0) #look in the middle of the image
+#        
+#        
+#        arr=numpy.array(bw_im_array[:,y]) #copy the pixel values into an array
+#        
+#        radius=int((len(arr.nonzero()[0])/2.0)+0.5) #find the length of the non-zero part of the array
+#        
+#        print radius
+#        #
     ###################################################################################        
 ###################################################################################

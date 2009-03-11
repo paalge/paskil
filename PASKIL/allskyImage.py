@@ -18,7 +18,7 @@ Concepts:
 Example:
     The following example code opens the image file "test.png" using the information in "site_info.txt".
     It then converts the image to 8bit, applies a binary mask giving a 70 degree field of view, centres 
-    the image,aligns the top of the image with geographic north and saves it as "testout.png". Note that 
+    the image,aligns the top of the image with geomagnetic north and saves it as "testout.png". Note that 
     you will also need to import the relevant plugin:
     
 
@@ -28,20 +28,26 @@ Example:
         im=im.convertTo8bit()
         im=im.binaryMask(70)
         im=im.centerImage()
-        im=im.alignNorth()
+        im=im.alignNorth(north='geomagnetic',orientation='NWSE')
         im.save("testout.png")    
 """
 ################################################################################################################################################################
 
-import Image, ImageOps, ImageDraw, ImageFilter, ImageFont, ImageChops 
-from PASKIL import misc, allskyImagePlugins, allskyProj
-from PASKIL.extensions import cSquish
-import pyfits, numpy
-import sys, datetime, os, math
+import sys
+import datetime
+import os
+import math
 import warnings
+
+import pyfits 
+import numpy
 import matplotlib
+import matplotlib.font_manager
 import matplotlib.pyplot
-from pylab import AutoLocator,NullLocator,FuncFormatter
+from pylab import AutoLocator, NullLocator, FuncFormatter, MultipleLocator
+import Image, ImageOps, ImageDraw, ImageFilter, ImageFont, ImageChops 
+
+from PASKIL import misc, allskyImagePlugins, allskyProj, allskyPlot
 
 #attempt to import psyco to improve performance
 try:
@@ -52,34 +58,24 @@ except ImportError:
     warnings.warn("Could not import psyco. This will reduce performance.")
  
 
-##Functions
 
-def new(image_filename, site_info_file="", force=False):
+def new(image_filename, site_info_file=None, force=False):
     """
     Creates a new allskyImage object. The image_filename argument specifies the image to be read. The site_info_file 
     option should be the filename of the site information file (if one is required). This is an optional file 
-    containing image metadata. A filepointer to this file is passed to the allskyImagePlugin open method, see
-    the allskyImagePlugins module for details. The default value is "", no site_info_file. The force option
+    containing image metadata. The filename of this file is passed to the allskyImagePlugin open method, see
+    the allskyImagePlugins module for details. The default value is None, no site_info_file. The force option
     allows you to force PASKIL to use an external plugin for opening the file. This can be useful for overwriting
     incorrect image metadata. The default is False, which means that where possible the image metadata will be read
     from the image header, rather than an external source.
     """    
-
-    if site_info_file != "":
-        info_filename=site_info_file
-    else:
-        info_filename = None
-    
-    
     #Load correct image plugin to open image
-    filetype=allskyImagePlugins.load(image_filename, info_filename, force)
+    filetype = allskyImagePlugins.load(image_filename, site_info_file, force)
     
     #Return allskyImage object
-    allsky_image = filetype.open(image_filename, info_filename)
+    allsky_image = filetype.open(image_filename, site_info_file)
 
     return allsky_image
-
-#allskyImage class definition
 
 ###################################################################################
 
@@ -94,17 +90,17 @@ class allskyImage:
     
         #set private class attributes
         self.__loaded = False #shows if the image data has been loaded yet.
-        self.__image=image.copy()
-        self.__image.__info={}
-        self.__filename=image_file
-        self.__info={}
+        self.__image = image.copy()
+        self.__image.__info = {}
+        self.__filename = image_file
+        self.__info = {}
         
         self.title = "DEFAULT"
         
         #make hard copies of the info libraries 
-        self.__info['camera']=info['camera'].copy()
-        self.__info['header']=info['header'].copy()
-        self.__info['processing']=info['processing'].copy()
+        self.__info['camera'] = info['camera'].copy()
+        self.__info['header'] = info['header'].copy()
+        self.__info['processing'] = info['processing'].copy()
     
     ###################################################################################
     
@@ -142,6 +138,24 @@ class allskyImage:
         
     ###################################################################################
 
+    def absoluteCalibration(self, spectral_responsivity, exposure_time, const_factor=1.0):
+        """
+        Returns a new allskyImage object which has been calibrated to kR. This is a lazy
+        operation in that the actual pixel values are not changed. Instead, the scaling 
+        on the colour bar will be changed when the image is plotted. The spectral 
+        responsivity should be in Counts per second per pixel per Rayleigh. Exposure
+        time should be in seconds. The constant factor option allows a fixed scaling 
+        factor to be applied, for example if transmission through the instrument dome
+        is 96%, then const_factor=1.04 will account for this.
+        """
+        new_info = self.getInfo()
+        
+        new_info['processing']['absoluteCalibration'] = const_factor / float(spectral_responsivity * exposure_time * 1000)
+        
+        return allskyImage(self.getImage(), self.__filename, new_info)
+        
+    ###################################################################################
+
     def addTimeStamp(self, format, colour="black", fontsize=20):
         """
         Prints the creation time (as specified in info[`header'][`Creation Time']) on the image in 
@@ -165,9 +179,9 @@ class allskyImage:
         
         #attempt to read time data from header
         try:
-            time=datetime.datetime.strptime(self.__info['header']['Creation Time'], "%d %b %Y %H:%M:%S %Z")
+            time = datetime.datetime.strptime(self.__info['header']['Creation Time'], "%d %b %Y %H:%M:%S %Z")
         except KeyError:
-            raise  IOError, "Cannot read time data from header for image "+self.__filename
+            raise  IOError, "Cannot read time data from header for image " + self.__filename
         
         #create copy of image
         new_image = self.__image.copy()
@@ -175,8 +189,11 @@ class allskyImage:
         #create a datetime string with the desired format
         time_string = time.strftime(format)
             
-        draw=ImageDraw.Draw(new_image)#create draw object of image
-        font = ImageFont.truetype("/usr/share/fonts/truetype/freefont/FreeSans.ttf", size=fontsize)#load font. This is likley to cause problems on systems where the fonts are stored under a different location. You'll just have to look for a suitable font, and change the path specified here - sorry!
+        draw = ImageDraw.Draw(new_image)#create draw object of image
+        
+        #find the font to use
+        font_file = matplotlib.font_manager.find_font("FreeSans")
+        font = ImageFont.truetype(font_file, size=fontsize)#load font. 
             
         #find size of timestamp
         text_width, text_height=draw.textsize(time_string, font=font)
@@ -193,7 +210,7 @@ class allskyImage:
         new_info = self.getInfo()
         
         #update processing history
-        new_info['processing']['addTimeStamp']=""
+        new_info['processing']['addTimeStamp'] = ""
         
         return allskyImage(new_image, self.__filename, new_info)
         
@@ -203,7 +220,8 @@ class allskyImage:
         """
         Aligns the top of the image with either geographic or geomagnetic north depending on the value of 
         the north argument. Default is "geographic", can also be set to "geomagnetic". The right hand edge 
-        of the image will be aligned with East. The returned all-sky image will be in a NESW orientation. 
+        of the image will be aligned with East. The returned all-sky image will be in a NESW orientation by 
+        default but this can be changed to 'NWSE' using the orientation argument. 
         The image must be centered before it can be aligned with North. It is expected that the images are
         in a NWSE orientation before they are processed by PASKIL (i.e. looking upwards).
         """               
@@ -246,7 +264,7 @@ class allskyImage:
             elif orientation == 'NWSE':
                 new_image = new_image.rotate(-float(new_info['camera']['Magn. Bearing']))
             else:
-                raise(ValueError,"Unknown value for orientation. Expecting \"NESW\" or \"NWSE\"")
+                raise(ValueError, "Unknown value for orientation. Expecting \"NESW\" or \"NWSE\"")
             
             new_info['camera']['cam_rot'] = new_info['camera']['Magn. Bearing']
             
@@ -401,48 +419,57 @@ class allskyImage:
         field of view in a rectangular image. The image returned will be square, with dimensions of
         RadiusxRadius.
         """
-        #create new allskyImage object
-        #new_image=allskyImage(self.__image, self.__filename, self.__info)
-            
-        #check that binary mask has been applied
-        if self.__info['processing'].keys().count('binaryMask') == 0:
-            raise RuntimeError, "Image must have binary mask applied before it can be centred"
-        
+
         #check if image has already been centered
         if self.__info['processing'].keys().count('centerImage') != 0:
             warnings.warn("Image "+self.__filename+" has already been centered")
         
         #first, the image field of view is centered in the image
         #get the bounding box of the image (box around non-zero parts of the image)
-        bounding_box=self.__image.getbbox()
+        r = int(self.__info['camera']['Radius'])
+        x_0 = int(self.__info['camera']['x_center'])
+        y_0 = int(self.__info['camera']['y_center'])
+        width, height = self.__image.size
         
-        if bounding_box == None:
-            raise RuntimeError, "Cannot find bounding box"
+        left = x_0 - r
+        if left < 0:
+            left = 0
+        right = x_0 + r
+        if right > (width -1):
+            right = width - 1
+        upper = y_0 - r
+        if upper < 0:
+            upper = 0
+        lower = y_0 + r
+        if lower > height -1:
+            lower = height
+
+        bounding_box = (left, upper, right, lower)
         
         #crop the image to the size of the bounding box
-        new_image=self.__image.crop(bounding_box)
+        new_image = self.__image.crop(bounding_box)
         
         #the image is now pasted into a new image which encompasses the entire (theoretical) circular field of view. This is done to allow PASKIL to cope with images taken with non-circular fields of view.
         
         #create new square image with dimensions RadiusxRadius
-        square_image=Image.new(self.__image.mode, (2*self.__info['camera']['Radius'], 2*self.__info['camera']['Radius']), color='black')
+        square_image = Image.new(self.__image.mode, (2*r, 2*r), color='black')
         
         #paste image into correct position in square image.
-        width, height=new_image.size
-        square_image.paste(new_image, (self.__info['camera']['Radius']-int(width/2), self.__info['camera']['Radius']-int(height/2), self.__info['camera']['Radius']-int(width/2)+width, self.__info['camera']['Radius']-int(height/2)+height))     
+        width, height = new_image.size
+        square_image.paste(new_image, (r-int(width/2), r-int(height/2), r-int(width/2)+width, r-int(height/2)+height))     
         
         #create a new info dictionary
-        new_info=self.getInfo()
+        new_info = self.getInfo()
         
         #update image center data
-        new_info['camera']['x_center']=int((square_image.size[0]/2) +0.5) #x coordinate of center
-        new_info['camera']['y_center']=int((square_image.size[1]/2) +0.5) #y coordinate of center
+        new_info['camera']['x_center'] = int((square_image.size[0]/2) +0.5) #x coordinate of center
+        new_info['camera']['y_center'] = int((square_image.size[1]/2) +0.5) #y coordinate of center
         
         #update processing history
         new_info['processing']['centerImage']=""
         
         #create new allskyImage object
-        new_asimage=allskyImage(square_image, self.__filename, new_info)
+        new_asimage = allskyImage(square_image, self.__filename, new_info)
         
         return new_asimage
     
@@ -450,18 +477,15 @@ class allskyImage:
     
     def convertTo8bit(self):
         """
-        Converts an "I" mode image (16 bit) containing 12 bit data (such as those produced by the 
-        UiO camera in LYR) into an "L" mode image (8bit). The apparent change in contrast levels 
-        caused by this function is not a bug! It is due to the fact that 12bit image data (with a 
-        maximum value of 4095) has been stored in a 16 bit image (with a possible maximum of 65535) 
-        and therefore looked darker than it actually was."""
+        Converts an "I" mode image into an "L" mode image.
+        """
         
         #update processing history
         info = self.getInfo()
-        info['processing']['convertTo8bit']=""
+        info['processing']['convertTo8bit'] = ""
         
         #create new allskyImage object with an 8bit image
-        new_image=allskyImage(self.__image.convert("L"), self.__filename, info)
+        new_image = allskyImage(self.__image.convert("L"), self.__filename, info)
      
         return new_image
         
@@ -511,9 +535,9 @@ class allskyImage:
 
     def flatFieldCorrection(self, calibration):
         """
-        Applies a flat field correction to the image. This is needed due to the angular dependance
-        of the sensitivity of the CCD (see allskyCalib). The calibration argument should be a 
-        allskyCalib.calibration object.
+        Applies a flat field correction to the image. This is needed due to the angular 
+        dependance of the transmission through the lens. The calibration argument should 
+        be an allskyCalib.calibration object.
         """
 
         #create new allskyImage object
@@ -575,61 +599,75 @@ class allskyImage:
         elif self.__info['processing']['alignNorth'].count('NWSE') != 0:
             im = self.__image.rotate(float(self.__info['camera']['cam_rot']) - angle)
         else:
-            raise(ValueError, "getStrip(): Cannot read orientation data from info dict. Try re-aligning the image with North")
+            raise ValueError, "getStrip(): Cannot read orientation data from info dict. Try re-aligning the image with North"
         
-        #load pixel values into an array 
-        pixels = im.load()
+        #convert the rotated image to a numpy array (im is a PIL Image object)
+        im_arr = numpy.asarray(im)
         
-        #find centre
+        #calculate bounding indices of slice
         width, height = im.size
-        centre = int((float(width)/2.0)+0.5)
+        centre = int((float(width)/2.0)+0.5) - 1
         
-        #record pixel vaules in centre slice
-        strip = []
-        for i in xrange(strip_width):
-            strip.append([])
-            for j in xrange(height):
-                strip[i].append(i+j)
-    
-        #copy centre strip pixel values into strip list
-        for j in range(int(-strip_width/2)+1, int(strip_width/2)+1):
-            for i in range(height):
-                
-                x=int(strip_width/2+j)
-                x2=int(centre+j)
-                
-                strip[x][i]= pixels[x2, i]
+        lower = centre - int(strip_width/2)
+        upper = centre + int(strip_width/2.0 +0.5) 
         
-        #check that the length of the strip is equal to the radius - it might not be since we are dealing with a rectangular image, the radius could be the diagonal length and we could have taken a strip from the non-diagonal
-        if len(strip[0]) != 2*self.__info['camera']['Radius']:
-            #if the length is different, then append black pixels to either end of the strip to make the lengths the same
-            difference=(2*self.__info['camera']['Radius'])-len(strip[0])
-            
-            if difference <=0:
-                raise RuntimeError, "Strip is longer than diameter of field of view - this shouldn't be possible, check the value you have used for 'Radius'"
-            
-            #define black for different image modes
-            if self.__image.mode in ("L", "I"):
-                black=0
-            elif self.__image.mode == "RGB":
-                black =(0, 0, 0)
-            else:
-                raise ValueError, "Unknown image mode"
-                
-            for i in range(len(strip)):
-                #create lists of black pixel values to prepend and append to the strip taken from the image
-                prepend=[black]*int(difference/2)
-                
-                if difference%2 !=0: #diffence is odd
-                    append=[black]*(int(difference/2)+1)
-                else:
-                    append=prepend
-                
-                strip[i].extend(append)
-                prepend.extend(strip[i])
-                    
-                strip[i]=prepend    
-                    
+        strip = im_arr[:,lower:upper].swapaxes(0,1).tolist()
+        
+        
+        
+#        #load pixel values into an array 
+#        pixels = im.load()
+#        
+#        #find centre
+#        width, height = im.size
+#        centre = int((float(width)/2.0)+0.5)
+#        
+#        #record pixel vaules in centre slice
+#        strip = []
+#        for i in xrange(strip_width):
+#            strip.append([])
+#            for j in xrange(height):
+#                strip[i].append(i+j)
+#    
+#        #copy centre strip pixel values into strip list
+#        for j in range(int(-strip_width/2)+1, int(strip_width/2)+1):
+#            for i in range(height):
+#                
+#                x=int(strip_width/2+j)
+#                x2=int(centre+j)
+#                
+#                strip[x][i]= pixels[x2, i]
+#        
+#        #check that the length of the strip is equal to the radius - it might not be since we are dealing with a rectangular image, the radius could be the diagonal length and we could have taken a strip from the non-diagonal
+#        if len(strip[0]) != 2*self.__info['camera']['Radius']:
+#            #if the length is different, then append black pixels to either end of the strip to make the lengths the same
+#            difference=(2*self.__info['camera']['Radius'])-len(strip[0])
+#            
+#            if difference <=0:
+#                raise RuntimeError, "Strip is longer than diameter of field of view - this shouldn't be possible, check the value you have used for 'Radius'"
+#            
+#            #define black for different image modes
+#            if self.__image.mode in ("L", "I"):
+#                black=0
+#            elif self.__image.mode == "RGB":
+#                black =(0, 0, 0)
+#            else:
+#                raise ValueError, "Unknown image mode"
+#                
+#            for i in range(len(strip)):
+#                #create lists of black pixel values to prepend and append to the strip taken from the image
+#                prepend=[black]*int(difference/2)
+#                
+#                if difference%2 !=0: #diffence is odd
+#                    append=[black]*(int(difference/2)+1)
+#                else:
+#                    append=prepend
+#                
+#                strip[i].extend(append)
+#                prepend.extend(strip[i])
+#                    
+#                strip[i]=prepend    
+      
         return strip  
     
     ###################################################################################
@@ -646,7 +684,7 @@ class allskyImage:
             histogram = self.__image.histogram() #use PIL histogram method for 8bit images
         elif mode == "I":          
             im_pix = numpy.asarray(self.__image) #load pixel values
-            histogram = numpy.histogram(im_pix, bins=range(65536), new=True)[0]
+            histogram = numpy.histogram(im_pix, bins=range(65537), new=True)[0]
             
         else:
             raise ValueError, "Unsupported image mode"
@@ -655,17 +693,10 @@ class allskyImage:
     
     ###################################################################################    
     
-    def load(self):
-        if not self.__loaded:
-            self.__image.load()
-            self.__loaded = True
-    
-    ###################################################################################    
-    
     def medianFilter(self, n):
         """
         This is a thin wrapper function for the median filter provided by PIL. It replaces each 
-        pixel by the median value of the pixels in an nxn square around it (where n is an integer).
+        pixel by the median value of the pixels in an nxn square around it (where n is an odd integer).
         """
 
         #create new allskyImage object
@@ -680,9 +711,27 @@ class allskyImage:
         
     ###################################################################################
     
+    def _hasColourBar(self):
+        """
+        Part of the plotting interface. Returns True if the image will be plotted with a
+        colour bar, False otherwise.
+        """
+        try:
+            colour_table = self.__info['processing']['applyColourTable']
+        except KeyError:
+            colour_table = None
+        
+        if colour_table is not None:
+            return True
+        else:
+            return False
+    
+    ###################################################################################   
+    
     def _plot(self, subplot):
         """
-        Returns a matplotlib subplot object containing the allsky image data.
+        Part of the plotting interface. Plots the image data into the supplied subplot
+        object. 
         """
         
         #turn off the axes
@@ -696,77 +745,15 @@ class allskyImage:
             colour_table = None
         
         #plot the image data into the axes
-        subplot.imshow(self.__image,origin="top", aspect="equal")
+        subplot.imshow(self.__image, origin="top", aspect="equal")
         
         if colour_table is not None:
-            #find the thresholds on the colour table - then we can just display
-            #the interesting parts of the colour table.
+            try:
+                calib_factor = float(self.__info['processing']['absoluteCalibration'])
+            except KeyError:
+                calib_factor = None    
             
-            #first we find the lower threshold
-            colour_table.reverse()
-            offset = colour_table.index(colour_table[-1])
-            lower_threshold = len(colour_table)- 1 - offset
-            
-            #now the upper threshold
-            colour_table.reverse()
-            upper_threshold = colour_table.index(colour_table[-1])
-            
-            colour_bar_height = len(colour_table)
-            
-            colour_bar_width = (upper_threshold - lower_threshold)/23 #23 is just an arbitrary number that works
-            
-            #the colour bar should be an odd number of pixels wide (to make drawing arrowheads easy)
-            if colour_bar_width % 2 != 0:
-                colour_bar_width += 1
-            
-            #create a colour bar image
-            colour_bar_image = Image.new("RGB",(colour_bar_width,colour_bar_height))
-            colour_bar_pix = colour_bar_image.load()
-            
-            #colour in the colour bar based on the colour table of the image
-            for y in xrange(colour_bar_height):
-                current_ct_index = int((float(colour_bar_height - y)/float(colour_bar_height)) * (len(colour_table)-1))
-                current_colour = colour_table[current_ct_index]
-                
-                for x in xrange(colour_bar_width):
-                    colour_bar_pix[x,y] = current_colour
-            
-            #if the image could contain values outside of the threshold
-            #region (there is now no way to determine this for certain, since the
-            #intensity data was lost when the colour table was applied) then put
-            #arrow heads on the colour bar to indicate this
-            if lower_threshold != 0:
-                d = ImageDraw.Draw(colour_bar_image)
-                y0 = colour_bar_height - lower_threshold
-                d.polygon([(0,y0),(0,y0-colour_bar_width),((colour_bar_width-1)/2,y0-1),((colour_bar_width-1),y0-colour_bar_width),((colour_bar_width-1),y0)],fill='white')
-            if upper_threshold != colour_bar_height-1:
-                d = ImageDraw.Draw(colour_bar_image)
-                y0 = colour_bar_height - upper_threshold
-                d.polygon([(0,y0),(0,y0+colour_bar_width),((colour_bar_width-1)/2,y0+1),((colour_bar_width-1),y0+colour_bar_width),((colour_bar_width-1),y0)],fill='white')
-            
-            #create a fake colour table - this is used to get matplotlib to create the colourbar axes
-            #which we then use to plot out colour bar image into
-            fake_data = numpy.random.rand(2,2)
-            fake_colour_image = subplot.pcolor(fake_data)
-            
-            #create the matplotlib colour bar object and plot the colour table image in it
-            colour_bar = matplotlib.pyplot.colorbar(fake_colour_image,ax=subplot,pad=0.15)
-            colour_bar.ax.axes.clear()
-            
-            if not self.__info['processing'].has_key('absoluteCalibration'):
-                colour_bar.ax.axes.set_ylabel("CCD Counts")
-                colour_bar.ax.yaxis.set_label_position("left")
-            
-            colour_bar.ax.xaxis.set_major_locator(NullLocator())
-            
-            colour_bar.ax.imshow(colour_bar_image,origin="top")
-
-            colour_bar.ax.axes.set_ylim((lower_threshold,upper_threshold))
-            colour_bar.ax.axes.set_xlim((-1,colour_bar_width-1))
-            #plot our colour bar image into the colour bar axes         
-            colour_bar.ax.yaxis.set_major_locator(AutoLocator())
-            colour_bar.ax.yaxis.set_major_formatter(FuncFormatter(self._formatCalibrated))
-            colour_bar.ax.yaxis.tick_right()
+            allskyPlot.createColourbar(subplot, colour_table, calib_factor)
             
         if self.title == "DEFAULT":    
         #create title string for image
@@ -779,15 +766,6 @@ class allskyImage:
             subplot.set_title(image_title)    
           
         return subplot
-        
-    ###################################################################################        
-    
-    def _formatCalibrated(self,x, pos):
-
-        if self.__info['processing'].has_key('absoluteCalibration'):
-            return float(self.__info['processing']['absoluteCalibration']) * x 
-        else:
-            return x 
 
     ###################################################################################        
         
@@ -840,10 +818,7 @@ class allskyImage:
     
     def save(self, filename, format="png"):
         """
-        Save the image and the meta-data as "filename". The format option should be a string which 
-        matches the format attribute of a registered allskyImagePlugin object. This allows users to
-        save in any format they wish, provided they write the plugin. See the allskyImagePlugins 
-        module for details. Natively supported formats are:
+        Save the image and the meta-data as "filename". The format argument can be:
         
             * "png":  a png image containing all the metadata in the image header
             
@@ -852,10 +827,9 @@ class allskyImage:
                   a colour table are stored as a single channel and are converted back
                   to RGB on loading) and three hdus containing metadata.
                   
-        The default format is "png".
-        """
-        #saves the image data as 'filename'
-        
+        The default format is "png". Although the format can also be read from the filename,
+        "myimage.fits" will be saved as a fits image, not a png.
+        """       
         #detect format from filename
         if filename.endswith((".png", ".PNG")):
             format = "png"
@@ -1003,7 +977,81 @@ class allskyImage:
         
     ###################################################################################        
     
-    def xy2angle(self,x,y):
+    def subtractBackgroundImage(self, background):
+        """
+        Returns a new allskyImage object with the specified background image subtracted.
+        The background argument should be an allskyImage object containing the 
+        background image data.
+        
+        If the image which the background is being subtracted from has had some processing
+        already applied to it (e.g. binaryMask, alignNorth etc.) then it is important that 
+        the background image is loaded with the correct parameters in the site info file. 
+        Otherwise it may be subtracted from the image at an incorrect angle/position.
+        """
+        
+        if self.__image.mode == "RGB":
+            raise TypeError, "Cannot subtract RGB images"
+        if self.__info['processing'].has_key('flatFieldCorrection'):
+            raise RuntimeError, "Background subtraction must be done before flat field calibration"
+        if self.__info['processing'].has_key('convertTo8bit'):
+            #conversion to 8bit scales intensities relative to max and min pixel values
+            #therefore it does not make sense to allow background subtraction (the background
+            #image will be scaled differently
+            raise TypeError, "Cannot subtract images which have been converted to 8bit (due to intensity scaling)"
+        if background.getMode() != self.__image.mode:
+            raise ValueError, "Background image has a different mode to image"
+        #apply the same processing to the background image as is applied to this image
+        if self.__info['processing'].has_key('binaryMask'):
+            background = background.binaryMask(self.__info['camera']['fov_angle'])
+        if self.__info['processing'].has_key('centerImage'):
+            background = background.centerImage()
+        if self.__info['processing'].has_key('alignNorth'):
+            #work out what orientation we are in
+            if self.__info['processing']['alignNorth'].count('NESW') != 0:
+                orientation = 'NESW'
+            elif self.__info['processing']['alignNorth'].count('NWSE') != 0:
+                orientation = 'NWSE'
+            else:
+                #this image was alignedNorth using an old version of PASKIL and
+                #is therefore in a NESW orientation
+                orientation = 'NESW'
+                
+            #now decide if we are aligned geographic or geomagnetic
+            if float(self.__info['camera']['cam_rot']) == 0.0:    
+                north = 'geographic'
+            else:
+                north = 'geomagnetic'
+            
+            background = background.alignNorth(north=north, orientation=orientation)
+        
+        #hopefully the background image is still the same size as this one, otherwise
+        #we have problem!
+        if background.getSize() != self.__image.size:
+            raise ValueError, "Background image is not the same size as the image it is to be subtracted from"
+        
+        #if the image is 8bit then use PIL's subtraction method
+        if self.__image.mode =='L':
+            new_image = ImageChops.subtract(self.__image, background.getImage())
+        else:
+            #convert to numpy arrays, subtract and convert back
+            im_arr = numpy.asarray(self.__image)
+            bkgd_arr = numpy.asarray(background.getImage())
+            
+            result = im_arr - bkgd_arr
+            
+            result = result * (result > 0) #replace negative numbers with zero
+            
+            new_image = Image.fromarray(result)
+        
+        new_info = self.getInfo()
+        
+        new_info['processing']['subtractBackground'] = background.getFilename()
+        
+        return allskyImage(new_image, self.__filename, new_info)
+        
+    ###################################################################################
+        
+    def xy2angle(self, x, y):
         """
         Converts x and y pixel coordinates into an angle from the zenith (from the Z axis).
         The angle returned is in degrees. Note that (x,y)=(0,0) is the top left corner of

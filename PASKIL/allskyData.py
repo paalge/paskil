@@ -74,7 +74,7 @@ def combine(datasets):
     """
     for i in range(1,len(datasets)):
         #check if datasets can be combined
-        if datasets[0].getWavelength() != datasets[i].getWavelength() or datasets[0].getMode() != datasets[i].getMode() or datasets[0].getColour_table() != datasets[i].getColour_table():
+        if ((datasets[0].getWavelength() != datasets[i].getWavelength()) or (datasets[0].getMode() != datasets[i].getMode()) or (datasets[0].getColour_table() != datasets[i].getColour_table()) or (datasets[0].getCalib_factor() != datasets[i].getCalib_factor())):
             raise ValueError, "Incompatible datasets"
     
     #create tuple list from dataset data
@@ -99,7 +99,7 @@ def combine(datasets):
     #remove duplicate entries from filetypes list
     filetypes=list(set(filetypes))
     
-    return dataset(tuple_list,datasets[0].getWavelength(),filetypes,datasets[0].getMode(),set(radii),set(fov_angles),datasets[0].getColour_table())
+    return dataset(tuple_list,datasets[0].getWavelength(),filetypes,datasets[0].getMode(),set(radii),set(fov_angles),datasets[0].getColour_table(),datasets[0].getCalib_factor())
 
 ###################################################################################        
 
@@ -147,15 +147,21 @@ def fromList(file_names,wavelength,filetype,site_info_file=""):
             found_wavelengths.add(current_image_wavelength)
             continue #if image has wrong wavelength then skip it
         
-        #check the image has the correct mode and colour table
+        #check the image has the correct mode, calib factor and colour table
         try:
             current_colour_table=current_image.getInfo()['processing']['colour_table']
         except KeyError:
             current_colour_table=None
         
+        try:
+            current_calib_factor = current_image.getInfo()['processing']['absoluteCalibration']
+        except KeyError:
+            current_calib_factor = None
+        
         if mode == None:
             mode = current_image.getMode()
             colour_table=current_colour_table
+            calib_factor = current_calib_factor
             
         if current_image.getMode() != mode:
             print "Warning! allskyData.fromList(): Skipping file ",filename,". Incorrect image mode."
@@ -164,7 +170,11 @@ def fromList(file_names,wavelength,filetype,site_info_file=""):
         if current_colour_table != colour_table:
             print "Warning! allskyData.fromList(): Skipping file ",filename,". Incorrect colour table."
             continue
-            
+        
+        if current_calib_factor != calib_factor:
+            print "Warning! allskyData.fromList(): Skipping file ",filename,". Incorrect absolute calibration factor."
+            continue
+        
         #add radius of image to radii list    
         if radii.count(current_image.getInfo()['camera']['Radius']) ==0:
             radii.append(float(current_image.getInfo()['camera']['Radius']))
@@ -189,7 +199,7 @@ def fromList(file_names,wavelength,filetype,site_info_file=""):
     data.sort(misc.tupleCompare)
     
     #return a dataset object
-    return dataset(data,wavelength,[filetype],mode,radii,fov_angles,colour_table)    
+    return dataset(data,wavelength,[filetype],mode,radii,fov_angles,colour_table, calib_factor)    
 
     
 ###################################################################################    
@@ -211,15 +221,15 @@ def load(filename):
     
 ###################################################################################    
     
-def new(directory,wavelength,filetype,site_info_file="",recursive=""):
+def new(directory,wavelength,filetype,site_info_file=None,recursive=False):
     """
     Returns a dataset object containing images of type filetype, taken at a wavelength of wavelength (needs
     to be the same value as in the image header under 'Wavelength' see allskyImagePlugins module for details), 
-    contained in the specified directory. If recursive is set to "r" then all subdirectories of "directory" 
-    will be searched, the default value is "" no recursive search. The site_info_file option should be the 
+    contained in the specified directory. If recursive is set to True then all subdirectories of "directory" 
+    will be searched, the default value is False no recursive search. The site_info_file option should be the 
     filename of the site information file (if one is required). This is an optional file containing image 
     metadata. A filepointer to this file is passed to the allskyImagePlugin open method, see the allskyImagePlugins 
-    module for details. The default value is "", no site_info_file. The filetype argument is a list of 
+    module for details. The default value is None, no site_info_file. The filetype argument is a list of 
     filetypes (e.g. ["png","jpg"]), so a dataset spanning many filetypes can be prodcued using this function 
     (if only a single filetype is desired then it must be specified as ["filetype"]). A dataset spanning images 
     with different site info files can only be produced by combining several datasets with different site info files.  
@@ -236,10 +246,11 @@ def new(directory,wavelength,filetype,site_info_file="",recursive=""):
     
     #expand the paths of the directory and site info file
     directory = os.path.normpath(directory)
-    site_info_file = os.path.normpath(site_info_file)
+    
     
     #check that the site info file exists
-    if site_info_file != "":
+    if site_info_file is not None:
+        site_info_file = os.path.normpath(site_info_file)
         if not os.path.exists(site_info_file):
             raise IOError, "Cannot find site information file "+site_info_file
     
@@ -248,17 +259,17 @@ def new(directory,wavelength,filetype,site_info_file="",recursive=""):
         raise IOError, "No directory called "+directory
     
     for i in range(len(filetype)):
-        if recursive == "r":
+        if recursive:
             #sweep the directory structure recursively
-            search_list=search_list+misc.findFiles(directory,"*."+filetype[i])
+            search_list=search_list+misc.findFiles(directory,"*."+filetype[i].lstrip("."))
 
         else:
             #only look in current directory
-            search_list=search_list+glob.glob(directory+os.sep+"*."+filetype[i])
+            search_list=search_list+glob.glob(directory+os.sep+"*."+filetype[i].lstrip("."))
     
     #check that some files with the specified extensions were found
     if len(search_list) == 0:
-        raise ValueError, "Unable to locate any files with extensions: ",filetype
+        raise ValueError, "Unable to locate any files with extensions: "+str(filetype)
     
     return fromList(search_list,wavelength,filetype,site_info_file)
         
@@ -270,7 +281,7 @@ class dataset:
     Essentially the dataset class operates like a hash table, with times (datetime objects) as keys and 
     filenames of images and their corresponding site_info_files (if any) as values.
     """
-    def __init__(self,data,wavelength,filetype,mode,radii,fov_angles,colour_table):
+    def __init__(self,data,wavelength,filetype,mode,radii,fov_angles,colour_table, calib_factor):
         
         #check that the filetype argument is of the correct type - this is a common error to make
         if type(filetype) != type(list()):
@@ -286,6 +297,7 @@ class dataset:
         self.__filenames=[]
         self.__site_info_files=[]
         self.__colour_table=colour_table
+        self.__calib_factor = calib_factor
 
         for i in range(len(data)):
             self.__times.append(data[i][0])
@@ -301,6 +313,13 @@ class dataset:
                     
     ###################################################################################    
     #define getters
+    def getCalib_factor(self):
+        """
+        Returns a float containing the absolute calibration factor (conversion factor
+        between pixel value and kR) for the images in the dataset.
+        """
+        return self.__calib_factor
+    
     def getWavelength(self):
         """
         Returns a string containing the wavelength of the dataset. This will have the same format as the
@@ -395,7 +414,7 @@ class dataset:
         
         if len(self.__radii)==1 and len(self.__fov_angles) == 1:
             #create new dataset
-            cropped_dataset=dataset(cropped_data,self.__wavelength,self.__filetype,self.__mode,self.__radii,self.__fov_angles,self.__colour_table)
+            cropped_dataset=dataset(cropped_data,self.__wavelength,self.__filetype,self.__mode,self.__radii,self.__fov_angles,self.__colour_table,self.__calib_factor)
         else:
             raise ValueError, "Operation not permitted on a dataset containing different fov angles and radii"
         

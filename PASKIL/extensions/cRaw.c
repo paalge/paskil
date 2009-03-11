@@ -23,7 +23,7 @@
    $Date: 2008/04/29 18:18:53 $
  */
 #include"Python.h"
-#include "numarray/libnumarray.h"
+#include "numpy/libnumarray.h"
 #define VERSION "8.86"
 
 #define _GNU_SOURCE
@@ -8393,7 +8393,7 @@ static PyObject * cRaw_getRawData(PyObject *self, PyObject *args){
 
 	vng_interpolate(); //use this interpolation method since have 4 colors
     
-    convert_to_rgb();
+    //convert_to_rgb(); //this function changes the colour scaling and therefore shouldn't be used for calibration
 
   	//End of dcraw code - now have 4 channel raw (RGBG) data stored in image array
 	

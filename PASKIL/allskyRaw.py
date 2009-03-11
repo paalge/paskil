@@ -1,20 +1,11 @@
-import Image,ImageChops
-import allskyImage
-import datetime,numpy,zlib
 import warnings
-from PASKIL.extensions import cRaw,cSquish
+import datetime
 
-###################################################################################
+import numpy
+import Image, ImageChops
 
-def getHeaderData(filename):
-    """
-    Returns a dictionary containing the header data stored in an .sqd raw file.
-    """
-    
-    #read compressed header from file using cSquish extension
-    header = cSquish.getHeader(filename)
-        
-    return eval(header)
+import allskyImage
+from PASKIL.extensions import cRaw
     
 ###################################################################################   
 
@@ -23,19 +14,14 @@ def isRaw(filename):
     Returns True if the file is a raw image file that can be decoded by the allskyRaw module,
     False otherwise.
     """
-    
-    #check if the file is an sqd file first since this takes less time
-    if cSquish.isSqd(filename):
+    fp = open(filename,"rb")
+        
+    if cRaw.canDecode(fp):
+        fp.close()
         return True
     else:
-        fp = open(filename,"rb")
-        
-        if cRaw.canDecode(fp):
-            fp.close()
-            return True
-        else:
-            fp.close()
-            return False
+        fp.close()
+        return False
 
 ###################################################################################
      
@@ -45,16 +31,16 @@ def getTimeStamp(filename):
     the filename argument.
     """
     #open file for reading (binary)
-    fp=open(filename,"rb")
+    fp = open(filename,"rb")
     
     #get timestamp from raw image
-    timestamp=cRaw.getTimestamp(fp)
+    timestamp = cRaw.getTimestamp(fp)
     
     #close the file
     fp.close()
     
     #convert the timestamp to a datetime object
-    time=datetime.datetime.fromtimestamp(timestamp)
+    time = datetime.datetime.fromtimestamp(timestamp)
     
     #return the answer
     return time
@@ -67,34 +53,32 @@ def getRawData(filename):
     a single channel in the raw image, typically (R,G,B,G).
     """
     #open file for reading (binary)
-    fp=open(filename,"rb")
+    fp = open(filename,"rb")
     
     #get the raw pixel data from the image
-    (raw_data,width,height)=cRaw.getRawData(fp)
-    
+    (raw_data,width,height) = cRaw.getRawData(fp)
     
     #close the file
     fp.close()
 
     #split the array into 4 arrays (one for each color) and convert the data into Int32
-    red_data=numpy.array(raw_data[:,0],dtype="int32")
+    red_data = numpy.array(raw_data[:,0],dtype="int32")
     red_data.shape = (height,width)
 
-    green1_data=numpy.array(raw_data[:,1],dtype="int32")
+    green1_data = numpy.array(raw_data[:,1],dtype="int32")
     green1_data.shape = (height,width)
     
-    blue_data=numpy.array(raw_data[:,2],dtype="int32")
+    blue_data = numpy.array(raw_data[:,2],dtype="int32")
     blue_data.shape = (height,width)
     
-    green2_data=numpy.array(raw_data[:,3],dtype="int32")
+    green2_data = numpy.array(raw_data[:,3],dtype="int32")
     green2_data.shape = (height,width,)
     
     #convert the raw data array back into an image
-    image1=Image.fromarray(red_data)
-    #image2=Image.fromstring("I",(width,height),green1_data.tostring())
-    image2=Image.fromarray(green1_data)
-    image3=Image.fromarray(blue_data)
-    image4=Image.fromarray(green2_data)
+    image1 = Image.fromarray(red_data)
+    image2 = Image.fromarray(green1_data)
+    image3 = Image.fromarray(blue_data)
+    image4 = Image.fromarray(green2_data)
 
     return (image1,image2,image3,image4)
 
@@ -323,7 +307,7 @@ class rawImage(allskyImage.allskyImage):
             raise ValueError, "Unknown channel selection"
         
         
-        return allskyImage.allskyImage(self.__channels[channel], self.getFilename, new_info)
+        return allskyImage.allskyImage(self.__channels[channel], self.getFilename(), new_info)
   
     ###################################################################################
                
@@ -374,50 +358,4 @@ class rawImage(allskyImage.allskyImage):
         cSquish.compress(raw_data,mask_array,str(self.__info),filename.rstrip(".sqd"))
   
      ###################################################################################
-###################################################################################            
-       
-class sqdImage(rawImage):       
-       
-     def __init__(self,filename):
-           
-         #define class private attributes
-         self.__info = getHeaderData(filename)
-         self.__filename = filename
-         self.__loaded = False
-         self.__size = cSquish.getSize(filename)
-         self.__channels = []
-       
-     ###################################################################################       
-       
-     def load(self):
-         
-         if not self.__loaded:
-             #create a mask image for the field of view
-             white_image = Image.new('L', self.__size)
-        
-             mask = allskyImage.allskyImage(white_image,"None",self.__info)
-        
-             mask = mask.binaryMask(float(self.__info['camera']['fov_angle']))
-        
-             mask_array = numpy.asarray(mask)
-             
-             decoded_data = cSquish.decompress(self.__filename)
-             print "got here"
-             im_array = numpy.zeros(shape=(4,self.__size[0],self.__size[1]),dtype='int')
-             
-             offset = self.__size[0]*self.__size[1]
-             
-             for k in range(4):
-                 for i in range(self.__size[0]):
-                     for j in range(self.__size[1]):
-                         if mask_array[i][j]:
-                             im_array[k][i][j] = decoded_data[i+j+k*offset]
-             
-             im = Image.fromarray(im_array[0])
-             im.save("decodedsqd.png")
-             
- 
-         
-     ###################################################################################
-###################################################################################                    
-           
+###################################################################################                      
