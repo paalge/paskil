@@ -126,7 +126,6 @@ Writing Your Own Plugin:
 
 import allskyImage
 import pyfits
-from PASKIL.extensions import cRaw,cSquish
 import Image, ImageOps
 
 types = [] #list to hold all available plugins
@@ -150,7 +149,7 @@ def load(image_filename, info_filename, force):
             return types[i]
         i += 1
 
-    raise TypeError,("allskyImagePlugins.load(): Unrecognised filetype for "+image_filename+". Make sure you have imported the required plugin for the image.")
+    raise TypeError, ("allskyImagePlugins.load(): Unrecognised filetype for "+image_filename+". Make sure you have imported the required plugin for the image.")
 
     
 ###################################################################################
@@ -220,10 +219,10 @@ class PASKIL_Allsky_Image_PNG:
         del info['header']
         
         #create a dictionary containing all the metadata
-        info={'header':header,'camera':camera,'processing':processing}
+        info={'header':header, 'camera':camera, 'processing':processing}
         
         #return new allskyImage object
-        return allskyImage.allskyImage(image,image.filename,info)        
+        return allskyImage.allskyImage(image, image.filename, info)        
         
     ###################################################################################            
 ###################################################################################    
@@ -245,7 +244,7 @@ class PASKIL_Allsky_Image_FITS:
     
     ###################################################################################        
     
-    def test(self, image_filename ,info_filename):
+    def test(self, image_filename , info_filename):
         """
         Returns true if image_filename is in the PASKIL FITS format, false otherwise.
         """
@@ -312,7 +311,7 @@ class PASKIL_Allsky_Image_FITS:
             except:
                 processing[processing_hdu.data[i][0]]=processing_hdu.data[i][1]
         
-        info={'header':header,'camera':camera,'processing':processing}
+        info={'header':header, 'camera':camera, 'processing':processing}
         
         mode=hdulist[0].header['PSKMODE']
         
@@ -329,43 +328,10 @@ class PASKIL_Allsky_Image_FITS:
             
             new_image = ImageOps.flip(Image.merge("RGB", [red_image, green_image, blue_image]))
             
-        return allskyImage.allskyImage(new_image,image.filename,info)
+        return allskyImage.allskyImage(new_image, image_filename, info)
         
     ###################################################################################            
-###################################################################################    
-
-class PASKIL_Allsky_Image_SQD:
-    """
-    Plugin class used to load the PASKIL sqd raw image format. This is a compressed format consisting
-    of a header string compressed using the zlib module and four channel image data compressed using the
-    cSquish PASKIL extension module (Huffman compression).
-    """
-    
-    def __init__(self):
-        self.name = "PASKIL All-Sky sqd Image"
-        
-    ###################################################################################                
-    
-    def test(self, image_filename, info_filename):
-        """
-        Returns True if the file is an sqd file, False otherwise.
-        """
-        #return False
-        #cSquish.getHeader(image_filename)
-
-        return cSquish.isSqd(image_filename)
-    
-    ###################################################################################                   
-
-    def open(self, image_filename, info_filename):
-        """
-        Returns a new allskyRaw.rawImage object containing the data contained in the sqd file.
-        """
-        import allskyRaw 
-        return allskyRaw.sqdImage(image_filename)
-        
-     ###################################################################################            
-###################################################################################           
+###################################################################################               
                   
 #register plugins
 register(PASKIL_Allsky_Image_PNG())

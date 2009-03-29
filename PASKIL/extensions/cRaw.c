@@ -1,26 +1,8 @@
 /*
-   dcraw.c -- Dave Coffin's raw photo decoder
-   Copyright 1997-2008 by Dave Coffin, dcoffin a cybercom o net
-
-   This is a command-line ANSI C program to convert raw photos from
-   any digital camera on any computer running any operating system.
-
-   No license is required to download and use dcraw.c.  However,
-   to lawfully redistribute dcraw, you must either (a) offer, at
-   no extra charge, full source code* for all executable files
-   containing RESTRICTED functions, (b) distribute this code under
-   the GPL Version 2 or later, (c) remove all RESTRICTED functions,
-   re-implement them, or copy them from an earlier, unrestricted
-   Revision of dcraw.c, or (d) purchase a license from the author.
-
-   The functions that process Foveon images have been RESTRICTED
-   since Revision 1.237.  All other code remains free for all uses.
-
-   *If you have not modified dcraw.c in any way, a link to my
-   homepage qualifies as "full source code".
-
-   $Revision: 1.403 $
-   $Date: 2008/04/29 18:18:53 $
+ * This extension module is a slightly modified version of 
+ * Dave Coffin's dcraw.c raw photo decoder. Changes have been
+ * made to allow it to be compiled as a Python extension
+ * module, but the majority of the code is unchanged.
  */
 #include"Python.h"
 #include "numpy/libnumarray.h"
@@ -8499,15 +8481,14 @@ static PyMethodDef cRaw_methods[] = {
 
 PyMODINIT_FUNC initcRaw(void){
 	import_libnumarray();
-	Py_InitModule3("cRaw", cRaw_methods,"");
-		       /*"The cRaw extension module provides functionality for reading the many varieties of raw image formats
-		       used by commercial digital cameras. It is based entirely on the dcraw program written by Dave Coffin.
-		       The dcraw code has been modified to allow it to be implemented as a library, primarily this involved 
-		       removing the original code's dependence on global variables. This has been done by introducing a global
-		       variables structure. Macros are used to redefine function calls to include a pointer to this structure
-		       as an argument, and also to redefine the name of global variables to correspond to variables in the structure
-		       (this is done in the header file). In some cases, local variables had to be renamed in order not to clash 
-		       with globals. In short, this code is a mess! However, keeping most of the dcraw code unchanged means that
-		       the flexibility (with respect to the range of raw formats supported) of dcraw is maintained. This extension 
-		       module was not designed to be used 'stand alone' and should instead be accessed using the allskyRaw module.");*/
+	Py_InitModule3("cRaw", cRaw_methods,"The cRaw extension module provides functionality for reading the many varieties of raw image formats\n\
+used by commercial digital cameras. It is based entirely on the dcraw program written by Dave Coffin.\n\
+The dcraw code has been modified to allow it to be implemented as a library, primarily this involved\n\
+removing the original code's dependence on global variables. This has been done by introducing a global\n\
+variables structure. Macros are used to redefine function calls to include a pointer to this structure\n\
+as an argument, and also to redefine the name of global variables to correspond to variables in the structure\n\
+(this is done in the header file). In some cases, local variables had to be renamed in order not to clash\n\
+with globals. In short, this code is a mess! However, keeping most of the dcraw code unchanged means that\n\
+the flexibility (with respect to the range of raw formats supported) of dcraw is maintained. This extension\n\
+module was not designed to be used 'stand alone' and should instead be accessed using the allskyRaw module.");
 }

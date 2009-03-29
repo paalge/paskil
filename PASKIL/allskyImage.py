@@ -1,34 +1,39 @@
 """
 Introduction:
 
-    The allskyImage module provides a class of the same name which is used to represent an all-sky image. 
-    The class contains methods for performing various manipulations of the image including aligning it 
-    with North and applying a false colour scale. PASKIL supports both 16bit and 8bit images, however,
-    the routines for 8bit images are considerably faster.
+    The allskyImage module provides a class of the same name which is used to 
+    represent an all-sky image. The class contains methods for performing 
+    various manipulations of the image including aligning it with North and 
+    applying a false colour scale. PASKIL supports both 16bit and 8bit images,
+    however, the routines for 8bit images are considerably faster.
 
 
 Concepts:
 
-    An allskyImage object has two major constituents, a Python Image Library (PIL) image object which holds 
-    the image data itself, and a hash table (or dictionary as it is known in Python) containing the image metadata.
-    For details of what metadata is required, and how to load it into PASKIL see the allskyImagePlugins module.
-    
+    An allskyImage object has two major constituents, a Python Image Library 
+    (PIL) image object which holds the image data itself, and a hash table (or
+    dictionary as it is known in Python) containing the image metadata. For 
+    details of what metadata is required, and how to load it into PASKIL see 
+    the allskyImagePlugins module.
     
     
 Example:
-    The following example code opens the image file "test.png" using the information in "site_info.txt".
-    It then converts the image to 8bit, applies a binary mask giving a 70 degree field of view, centres 
-    the image,aligns the top of the image with geomagnetic north and saves it as "testout.png". Note that 
-    you will also need to import the relevant plugin:
+    The following example code opens the image file "test.png" using the 
+    information in "site_info.txt". It then converts the image to 8bit, applies
+    a binary mask giving a 70 degree field of view, centres the image, aligns 
+    the top of the image with geomagnetic north and saves it as "testout.png". 
+    Note that you will also need to import the relevant plugin:
     
 
         from PASKIL import allskyImage #import the allskyImage module
-
-        im=allskyImage.new("test.png",site_info_file="site_info.txt") #create a new allskyImage object
+        
+        #create a new allskyImage object
+        im=allskyImage.new("test.png", site_info_file="site_info.txt")
+        
         im=im.convertTo8bit()
         im=im.binaryMask(70)
         im=im.centerImage()
-        im=im.alignNorth(north='geomagnetic',orientation='NWSE')
+        im=im.alignNorth(north='geomagnetic', orientation='NWSE')
         im.save("testout.png")    
 """
 ################################################################################################################################################################
@@ -39,12 +44,11 @@ import os
 import math
 import warnings
 
-import pyfits 
 import numpy
+import pyfits 
 import matplotlib
 import matplotlib.font_manager
 import matplotlib.pyplot
-from pylab import AutoLocator, NullLocator, FuncFormatter, MultipleLocator
 import Image, ImageOps, ImageDraw, ImageFilter, ImageFont, ImageChops 
 
 from PASKIL import misc, allskyImagePlugins, allskyProj, allskyPlot
@@ -192,7 +196,7 @@ class allskyImage:
         draw = ImageDraw.Draw(new_image)#create draw object of image
         
         #find the font to use
-        font_file = matplotlib.font_manager.find_font("FreeSans")
+        font_file = matplotlib.font_manager.findfont("FreeSans")
         font = ImageFont.truetype(font_file, size=fontsize)#load font. 
             
         #find size of timestamp
@@ -288,38 +292,41 @@ class allskyImage:
         #cannot apply a colour table to an RGB image
         if self.__image.mode == "RGB":
             raise TypeError, "Cannot apply a colour table to an RGB image"
-        
-        #create new allskyImage object
-        new_image=allskyImage(self.__image, self.__filename, self.__info)
                 
         #check if the image has had the flat field calibration applied
-        if new_image.__info['processing'].keys().count('flatFieldCorrection') == 0:
+        if self.__info['processing'].keys().count('flatFieldCorrection') == 0:
             warnings.warn("Images should have flat field corrections applied before the colour table is applied")
             
         #check if the image has already had a colour table applied
-        if new_image.__info['processing'].keys().count('applyColourTable') != 0:
-            raise RuntimeError, "A colour table has already been applied to "+new_image.__filename
+        if self.__info['processing'].keys().count('applyColourTable') != 0:
+            raise RuntimeError, "A colour table has already been applied to " + self.__filename
+        
+        #get a copy of the image
+        new_image = self.getImage()
             
         #apply colour table
-        if new_image.getMode() != "I": #PIL doesn't support 16bit images, so need to use own routine if "I" mode image
-            new_image.__image.putpalette(colour_table.getColourTable())
+        if self.__image.mode != "I": #PIL doesn't support 16bit images, so need to use own routine if "I" mode image
+            new_image.putpalette(colour_table.getColourTable())
         else:
-            RGB_image=Image.new("RGB", new_image.getSize(), "Black")
-            image_pix=new_image.__image.load()
-            RGB_pix=RGB_image.load()
+            RGB_image = Image.new("RGB", new_image.size, "Black")
+            image_pix = new_image.load()
+            RGB_pix = RGB_image.load()
             
             for x in range(RGB_image.size[0]):
                 for y in range(RGB_image.size[1]):
-                    RGB_pix[x, y]=colour_table.colour_table[image_pix[x, y]]
+                    RGB_pix[x, y] = colour_table.colour_table[image_pix[x, y]]
                     
-            new_image.__image=RGB_image
+            new_image = RGB_image
             
-        new_image.__image=new_image.__image.convert("RGB")
+        new_image = new_image.convert("RGB")
+        
+        #copy the info
+        new_info = self.getInfo()
         
         #update processing history
-        new_image.__info['processing']['applyColourTable']=colour_table.colour_table
+        new_info['processing']['applyColourTable'] = colour_table.colour_table
         
-        return new_image
+        return allskyImage(new_image, self.__filename, new_info)
 
     ###################################################################################    
     
@@ -329,22 +336,20 @@ class allskyImage:
         The fov_angle argument should be the field of view in degrees from the centre. The inverted
         options controls whether the mask is black or white, default is False = black.
         """
-        #create new allskyImage object
-        new_image=allskyImage(self.__image, self.__filename, self.__info)
                 
-        if fov_angle > new_image.__info['camera']['fov_angle']:
+        if fov_angle > self.__info['camera']['fov_angle']:
             raise ValueError, "Field of view is too large for image."
         
         if self.__info['camera']['lens_projection'] == 'equidistant':
             #calculate focal length
-            focal_length=float(new_image.__info['camera']['Radius'])/float(new_image.__info['camera']['fov_angle'])
+            focal_length=float(self.__info['camera']['Radius'])/float(self.__info['camera']['fov_angle'])
             
             #calculate radius for masking circle
             radius=int((focal_length*fov_angle)+0.5)
         
         elif self.__info['camera']['lens_projection'] == 'equisolidangle':
             #calculate focal length
-            focal_length=float(new_image.__info['camera']['Radius'])/(2.0*math.sin(math.radians(float(new_image.__info['camera']['fov_angle']))/2.0))
+            focal_length=float(self.__info['camera']['Radius'])/(2.0*math.sin(math.radians(float(self.__info['camera']['fov_angle']))/2.0))
             
             #calculate radius for masking circle
             radius=int((2.0*focal_length*math.sin(math.radians(fov_angle)/2.0))+0.5)
@@ -352,37 +357,37 @@ class allskyImage:
         else:
             raise ValueError, "Unsupported lens projection type"
         
-        mode = new_image.__image.mode
+        mode = self.__image.mode
         
         if mode == "I":
-            white=65535
+            white = 65535
         elif mode == "L":
-            white=255
+            white = 255
         elif mode == "RGB":
-            white=(255, 255, 255)    
+            white = (255, 255, 255)    
         else:
             raise ValueError, "Unsupported image mode"
             
         #calculate bounding box for the circle
-        bb_left = int(new_image.__info['camera']['x_center'])-radius
-        bb_top = int(new_image.__info['camera']['y_center'])-radius
-        bb_right =int(new_image.__info['camera']['x_center'])+radius
-        bb_bottom = int(new_image.__info['camera']['y_center'])+radius
+        bb_left = int(self.__info['camera']['x_center']) - radius
+        bb_top = int(self.__info['camera']['y_center']) - radius
+        bb_right = int(self.__info['camera']['x_center']) + radius
+        bb_bottom = int(self.__info['camera']['y_center']) + radius
         
         #create a black mask image
-        mask=Image.new(mode, new_image.getSize(), "Black")
+        mask = Image.new(mode, self.__image.size, "Black")
         
         #draw white circle
-        draw=ImageDraw.Draw(mask)
+        draw = ImageDraw.Draw(mask)
         draw.ellipse((bb_left, bb_top, bb_right, bb_bottom), fill=white)
         
         #apply the mask to the image
         if mode == "L" or mode == "RGB":
             if inverted:
                 mask = ImageChops.invert(mask)
-                new_image.__image = ImageChops.lighter(new_image.__image, mask)
+                new_image = ImageChops.lighter(self.__image, mask)
             else:
-                new_image.__image = ImageChops.multiply(new_image.__image, mask)
+                new_image = ImageChops.multiply(self.__image, mask)
         
         elif mode == "I":
             #if the image is 16bit then cannot use the ImageChops module, so use own multiplication routine
@@ -390,26 +395,28 @@ class allskyImage:
                 im_pix = numpy.asarray(self.__image)
                 mask_pix = numpy.asarray(mask)
                 
-                new_image.__image = Image.fromarray(numpy.maximum(im_pix, 65535-mask_pix))
+                new_image = Image.fromarray(numpy.maximum(im_pix, 65535-mask_pix))
             
             else:
                 im_pix = numpy.asarray(self.__image)
                 mask_pix = numpy.asarray(mask)
                 
-                new_image.__image = Image.fromarray(numpy.minimum(im_pix, mask_pix))
+                new_image = Image.fromarray(numpy.minimum(im_pix, mask_pix))
         else:
             raise ValueError, "Unsupported image mode"
         
+        new_info = self.getInfo()
+        
         #update radius value
-        new_image.__info['camera']['Radius'] = radius
+        new_info['camera']['Radius'] = radius
         
         #update fov_angle value
-        new_image.__info['camera']['fov_angle'] = fov_angle
+        new_info['camera']['fov_angle'] = fov_angle
         
         #update the processing history
-        new_image.__info['processing']['binaryMask'] = str(fov_angle)
+        new_info['processing']['binaryMask'] = str(fov_angle)
         
-        return new_image
+        return allskyImage(new_image, self.__filename, new_info)
     
     ###################################################################################        
 
@@ -493,7 +500,7 @@ class allskyImage:
     
     def createQuicklook(self, size=(480, 640), timestamp="%a %b %d %Y, %H:%M:%S %Z", fontsize=16):
         """
-        Returns an allskyImage object which contains a thumbnail image with a timestamp appended to
+        Returns an PIL Image object which contains a thumbnail image with a timestamp appended to
         the bottom of it. The size option should be a tuple specifying the thumbnail size in 
         pixels. Note that the actual thumbnail produced will be 24 pixels higher due to the size of
         the timestamp. This method also preserves the aspect ratio of the image, so the thumbnail 
@@ -503,33 +510,30 @@ class allskyImage:
         """
     
         #create new allskyImage object
-        new_image=allskyImage(self.__image, self.__filename, self.__info)
+        new_image = allskyImage(self.__image, self.__filename, self.__info)
         
         #resize image
-        quicklook=new_image.resize(size)
+        quicklook = new_image.resize(size)
         
         if timestamp != None:
             #append 24 pixels to the bottom of the image
-            if quicklook.__image.mode == "RGB":
+            if self.__image.mode == "RGB":
                 white=(255, 255, 255)
-            elif quicklook.__image.mode == "L":
+            elif self.__image.mode == "L":
                 white=255
-            elif quicklook.__image.mode == "I":
+            elif self.__image.mode == "I":
                 white=65536
             else:
                 raise ValueError, "Image mode not supported yet"
             
-            im=Image.new(quicklook.__image.mode, (quicklook.getSize()[0], quicklook.getSize()[1]+24), white) #create new image which is 24 pixels bigger
-            im.paste(quicklook.__image, (0, 0, quicklook.getSize()[0], quicklook.getSize()[1]))
+            im=Image.new(self.__image.mode, (quicklook.getSize()[0], quicklook.getSize()[1]+24), white) #create new image which is 24 pixels bigger
+            im.paste(quicklook.getImage(), (0, 0, quicklook.getSize()[0], quicklook.getSize()[1]))
             
             quicklook=allskyImage(im, self.__filename, self.__info)
             
             quicklook=quicklook.addTimeStamp(timestamp, fontsize=fontsize)
         
-        #update header data
-        quicklook.__info['processing']['quicklook']=size
-        
-        return quicklook
+        return quicklook.getImage()
                     
     ###################################################################################
 
@@ -539,31 +543,25 @@ class allskyImage:
         dependance of the transmission through the lens. The calibration argument should 
         be an allskyCalib.calibration object.
         """
-
-        #create new allskyImage object
-        new_image=allskyImage(self.__image, self.__filename, self.__info)
     
         #check that image has been centered
-        if new_image.__info['processing'].keys().count('centerImage') == 0:
+        if self.__info['processing'].keys().count('centerImage') == 0:
             raise RuntimeError, "Image must be centered before it can be calibrated"
             
         #check if the image has already been calibrated
-        if new_image.__info['processing'].keys().count('flatFieldCorrection') != 0:
+        if self.__info['processing'].keys().count('flatFieldCorrection') != 0:
             warnings.warn("Image has already been calibrated")
-            
-        #check that calibration data has the correct number of entries
-        if len(calibration.calibration_data) != new_image.__info['camera']['fov_angle']+1:
-            raise ValueError, "Incorrect number of entries in calibration data"
-
-        image_pix=new_image.__image.load() #load pixel values
         
-        for x in range(new_image.getSize()[0]):#for x in range image width
-            for y in range(new_image.getSize()[1]):#for y in range image height
+        new_image = self.getImage() #copy image
+        image_pix = new_image.load() #load pixel values
+        
+        for x in range(new_image.size[0]):#for x in range image width
+            for y in range(new_image.size[1]):#for y in range image height
                 #for each x,y find the angle from the center
                 angle = self.xy2angle(x, y)
                 
                 #skip angles outside of the field of view
-                if angle >= new_image.__info['camera']['fov_angle']:
+                if angle >= self.__info['camera']['fov_angle']:
                     continue
                     
                 #apply correction to pixels inside the field of view
@@ -572,9 +570,10 @@ class allskyImage:
                 image_pix[x, y] = int((image_pix[x, y]*correction)+0.5)
         
         #update processing history
-        new_image.__info['processing']['flatFieldCorrection']=""
+        new_info = self.getInfo()
+        new_info['processing']['flatFieldCorrection']=""
         
-        return new_image
+        return allskyImage(new_image, self.__filename, new_info)
         
     ###################################################################################
     
@@ -605,69 +604,14 @@ class allskyImage:
         im_arr = numpy.asarray(im)
         
         #calculate bounding indices of slice
-        width, height = im.size
+        width = im.size[0]
         centre = int((float(width)/2.0)+0.5) - 1
         
         lower = centre - int(strip_width/2)
         upper = centre + int(strip_width/2.0 +0.5) 
         
-        strip = im_arr[:,lower:upper].swapaxes(0,1).tolist()
-        
-        
-        
-#        #load pixel values into an array 
-#        pixels = im.load()
-#        
-#        #find centre
-#        width, height = im.size
-#        centre = int((float(width)/2.0)+0.5)
-#        
-#        #record pixel vaules in centre slice
-#        strip = []
-#        for i in xrange(strip_width):
-#            strip.append([])
-#            for j in xrange(height):
-#                strip[i].append(i+j)
-#    
-#        #copy centre strip pixel values into strip list
-#        for j in range(int(-strip_width/2)+1, int(strip_width/2)+1):
-#            for i in range(height):
-#                
-#                x=int(strip_width/2+j)
-#                x2=int(centre+j)
-#                
-#                strip[x][i]= pixels[x2, i]
-#        
-#        #check that the length of the strip is equal to the radius - it might not be since we are dealing with a rectangular image, the radius could be the diagonal length and we could have taken a strip from the non-diagonal
-#        if len(strip[0]) != 2*self.__info['camera']['Radius']:
-#            #if the length is different, then append black pixels to either end of the strip to make the lengths the same
-#            difference=(2*self.__info['camera']['Radius'])-len(strip[0])
-#            
-#            if difference <=0:
-#                raise RuntimeError, "Strip is longer than diameter of field of view - this shouldn't be possible, check the value you have used for 'Radius'"
-#            
-#            #define black for different image modes
-#            if self.__image.mode in ("L", "I"):
-#                black=0
-#            elif self.__image.mode == "RGB":
-#                black =(0, 0, 0)
-#            else:
-#                raise ValueError, "Unknown image mode"
-#                
-#            for i in range(len(strip)):
-#                #create lists of black pixel values to prepend and append to the strip taken from the image
-#                prepend=[black]*int(difference/2)
-#                
-#                if difference%2 !=0: #diffence is odd
-#                    append=[black]*(int(difference/2)+1)
-#                else:
-#                    append=prepend
-#                
-#                strip[i].extend(append)
-#                prepend.extend(strip[i])
-#                    
-#                strip[i]=prepend    
-      
+        strip = im_arr[:, lower:upper].swapaxes(0, 1).tolist()
+             
         return strip  
     
     ###################################################################################
@@ -697,17 +641,14 @@ class allskyImage:
         """
         This is a thin wrapper function for the median filter provided by PIL. It replaces each 
         pixel by the median value of the pixels in an nxn square around it (where n is an odd integer).
-        """
-
-        #create new allskyImage object
-        new_image=allskyImage(self.__image, self.__filename, self.__info)
-        
-        new_image.__image = new_image.__image.filter(ImageFilter.MedianFilter(n))
+        """       
+        new_image = self.__image.filter(ImageFilter.MedianFilter(n))
         
         #update processing history
-        new_image.__info['processing']['medianFilter'] = n
+        new_info = self.getInfo()
+        new_info['processing']['medianFilter'] = n
         
-        return new_image
+        return allskyImage(new_image, self.__filename, new_info)
         
     ###################################################################################
     
@@ -795,24 +736,22 @@ class allskyImage:
         #check that the new size maintains the aspect ratio of the image
         if float(size[0])/float(self.__image.size[0]) != float(size[1])/float(self.__image.size[1]):
             #if not then change it so it does
-            size=(size[0], int((float(size[0])/float(self.__image.size[0]))*float(self.__image.size[1])+0.5))
+            size = (size[0], int((float(size[0])/float(self.__image.size[0]))*float(self.__image.size[1])+0.5))
             
         #resize the image
-        resized_image=self.__image.resize(size)
+        resized_image = self.__image.resize(size)
         
         #calculate scaling factors for x and y
         scaling = float(size[0])/float(self.__image.size[0])
         
-        #create new allskyImage
-        new_image=allskyImage(resized_image, self.__filename, self.__info)
-        
         #change the header data to reflect the change
-        new_image.__info['camera']['x_center']=int(int(new_image.__info['camera']['x_center'])*scaling+0.5)
-        new_image.__info['camera']['y_center']=int(int(new_image.__info['camera']['y_center'])*scaling+0.5)
-        new_image.__info['camera']['Radius']=int(int(new_image.__info['camera']['Radius'])*scaling+0.5)
+        new_info = self.getInfo()
+        new_info['camera']['x_center']=int(int(new_info['camera']['x_center'])*scaling+0.5)
+        new_info['camera']['y_center']=int(int(new_info['camera']['y_center'])*scaling+0.5)
+        new_info['camera']['Radius']=int(int(new_info['camera']['Radius'])*scaling+0.5)
         
         #return resized image
-        return new_image
+        return allskyImage(resized_image, self.__filename, new_info)
         
     ###################################################################################
     
@@ -1030,7 +969,7 @@ class allskyImage:
             raise ValueError, "Background image is not the same size as the image it is to be subtracted from"
         
         #if the image is 8bit then use PIL's subtraction method
-        if self.__image.mode =='L':
+        if self.__image.mode == 'L':
             new_image = ImageChops.subtract(self.__image, background.getImage())
         else:
             #convert to numpy arrays, subtract and convert back

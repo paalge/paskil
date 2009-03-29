@@ -3,11 +3,11 @@ Module containing miscellaneous functions used internally by PASKIL
 
 """
 
-import math,os,glob
+import math, os, glob
 
 ###################################################################################
 
-def findFiles(directory,search_string):
+def findFiles(directory, search_string):
     """
     Function performs a recursive search of the specified directory using the search string provided. It returns a list of filenames of 
     all files that matched the search string    
@@ -17,7 +17,7 @@ def findFiles(directory,search_string):
     
     for filename in glob.glob(directory+os.sep+"*"):
         if os.path.isdir(filename):
-            found_files=found_files+findFiles(filename,search_string)
+            found_files=found_files+findFiles(filename, search_string)
     
     #remove empty items
     while found_files.count([]) != 0:
@@ -27,7 +27,7 @@ def findFiles(directory,search_string):
 
 ###################################################################################
 
-def pngsave(im, file):
+def pngsave(im, file_):
     """
     Function saves a PIL image as a PNG file, preserving the header data
     """
@@ -41,18 +41,16 @@ def pngsave(im, file):
     meta = PngImagePlugin.PngInfo()
 
     # copy metadata into new object
-    for k,v in im.info.iteritems():
+    for k, v in im.info.iteritems():
         if k in reserved: continue
         meta.add_text(k, v, 0)
 
     # and save
-    im.save(file, "PNG", pnginfo=meta)
-    
-    return
+    im.save(file_, "PNG", pnginfo=meta)
 
 ###################################################################################
 
-def xy2angle(x,y,x_0,y_0,fov_angle,radius):
+def xy2angle(x, y, x_0, y_0, fov_angle, radius):
     """
     Converts x and y coordinates into angle from the centre (from the Z axis).
     """
@@ -69,19 +67,19 @@ def tupleCompare(first, second):
     Compares the first elements of two tuples
     """
     
-    return cmp( first[0], second[0] )
+    return cmp(first[0], second[0])
     
 ###################################################################################
 
-def stepFunction(min,max,step_position,length):
+def stepFunction(min_, max_, step_position, length):
     """
     Returns a step function
     """
     step_function=[]
-    for i in range(0,step_position):
-        step_function.append(min)
-    for i in range(step_position,length):
-        step_function.append(max)
+    for i in range(0, step_position):
+        step_function.append(min_)
+    for i in range(step_position, length):
+        step_function.append(max_)
     
     return step_function
     

@@ -1,4 +1,9 @@
-import warnings
+"""
+The allskyRaw module is designed to allow decoding and manipulation of raw image files.
+It is largely incomplete and still needs a lot of work before it is fully functional.
+However, it can be used to load raw images and extract single colour channels from them.
+"""
+
 import datetime
 
 import numpy
@@ -14,7 +19,7 @@ def isRaw(filename):
     Returns True if the file is a raw image file that can be decoded by the allskyRaw module,
     False otherwise.
     """
-    fp = open(filename,"rb")
+    fp = open(filename, "rb")
         
     if cRaw.canDecode(fp):
         fp.close()
@@ -31,7 +36,7 @@ def getTimeStamp(filename):
     the filename argument.
     """
     #open file for reading (binary)
-    fp = open(filename,"rb")
+    fp = open(filename, "rb")
     
     #get timestamp from raw image
     timestamp = cRaw.getTimestamp(fp)
@@ -53,26 +58,26 @@ def getRawData(filename):
     a single channel in the raw image, typically (R,G,B,G).
     """
     #open file for reading (binary)
-    fp = open(filename,"rb")
+    fp = open(filename, "rb")
     
     #get the raw pixel data from the image
-    (raw_data,width,height) = cRaw.getRawData(fp)
+    (raw_data, width, height) = cRaw.getRawData(fp)
     
     #close the file
     fp.close()
 
     #split the array into 4 arrays (one for each color) and convert the data into Int32
-    red_data = numpy.array(raw_data[:,0],dtype="int32")
-    red_data.shape = (height,width)
+    red_data = numpy.array(raw_data[:, 0], dtype="int32")
+    red_data.shape = (height, width)
 
-    green1_data = numpy.array(raw_data[:,1],dtype="int32")
-    green1_data.shape = (height,width)
+    green1_data = numpy.array(raw_data[:, 1], dtype="int32")
+    green1_data.shape = (height, width)
     
-    blue_data = numpy.array(raw_data[:,2],dtype="int32")
-    blue_data.shape = (height,width)
+    blue_data = numpy.array(raw_data[:, 2], dtype="int32")
+    blue_data.shape = (height, width)
     
-    green2_data = numpy.array(raw_data[:,3],dtype="int32")
-    green2_data.shape = (height,width,)
+    green2_data = numpy.array(raw_data[:, 3], dtype="int32")
+    green2_data.shape = (height, width,)
     
     #convert the raw data array back into an image
     image1 = Image.fromarray(red_data)
@@ -80,44 +85,46 @@ def getRawData(filename):
     image3 = Image.fromarray(blue_data)
     image4 = Image.fromarray(green2_data)
 
-    return (image1,image2,image3,image4)
+    return (image1, image2, image3, image4)
 
 ###################################################################################
 
 def new(filename, site_info_file):
     
     #load image data
-    (ch1,ch2,ch3,ch4) = getRawData(filename)
+    (ch1, ch2, ch3, ch4) = getRawData(filename)
     
     #open site info file
-    info_file=open(site_info_file,'r')
+    info_file=open(site_info_file, 'r')
+    camera = {}
     
     #read in data from site info file and store in info dictionary
     for line in info_file: #read file line by line
-            if line.isspace(): 
-                continue #ignore blank lines
-            words=line.split("=") #split the line at the = sign
-            
-            if len(words) != 2:
-                raise ValueError, "Cannot read site info file, too many words per line"
+        if line.isspace(): 
+            continue #ignore blank lines
+        words=line.split("=") #split the line at the = sign
+        
+        if len(words) != 2:
+            raise ValueError, "Cannot read site info file, too many words per line"
 
-            camera[words[0].lstrip().rstrip()] = words[1].lstrip().rstrip() #store the values (minus white space) in a dictionary
-     
+        camera[words[0].lstrip().rstrip()] = words[1].lstrip().rstrip() #store the values (minus white space) in a dictionary
+ 
     creation_time=getTimeStamp(filename)
         
     creation_time=creation_time.strftime("%d %b %Y %H:%M:%S %Z")
-    header = {'Wavelength':"RGBG",'Creation Time': creation_time}   
+    header = {'Wavelength':"RGBG", 'Creation Time': creation_time}   
     
     
-    info={'header':header,'camera':camera,'processing':{}}
+    info={'header':header, 'camera':camera, 'processing':{}}
     
-    return rawImage((ch1,ch2,ch3,ch4),filename,info)
+    return rawImage((ch1, ch2, ch3, ch4), filename, info)
 
 ###################################################################################
 
 class rawImage(allskyImage.allskyImage):
     """
-    Holds the separate channels of a raw image file.
+    Holds the separate channels of a raw image file. This class is less than half written! You
+    should only use the getChannel method for now.
     """
     
     def __init__(self, filename, info, channels=None):
@@ -135,39 +142,43 @@ class rawImage(allskyImage.allskyImage):
             self.__loaded = True
 
         #create dummy image object to pass to allskyImage.allskyImage.__init__()
-        dummy_image = Image.new("1",(0,0))
+        dummy_image = Image.new("1", (0, 0))
         
-        allskyImage.allskyImage.__init__(self,dummy_image,filename,info)
+        allskyImage.allskyImage.__init__(self, dummy_image, filename, info)
    
     ###################################################################################      
         
     def getImage(self):
+        raise NotImplementedError, "The allskyRaw module is still under construction, and this method is not finished/debugged yet!"
         return self.convertToRGB().getImage()
     
     ###################################################################################          
     
-    def getStrip(self, angle, strip_width,channel=None):
+    def getStrip(self, angle, strip_width, channel=None):
+        raise NotImplementedError, "The allskyRaw module is still under construction, and this method is not finished/debugged yet!"
         
         if channel == None:
             rgb_image = self.convertToRGB()
             
-            return rgb_image.getStrip(angle,strip_width)
+            return rgb_image.getStrip(angle, strip_width)
         
         channel = self.getChannel(channel)
-        return channel.getStrip(angle,strip_width)
+        return channel.getStrip(angle, strip_width)
         
     ###################################################################################      
     
-    def applyColourTable(self,colour_table):
+    def applyColourTable(self, colour_table):
+        raise NotImplementedError, "The allskyRaw module is still under construction, and this method is not finished/debugged yet!"
         raise TypeError, "Cannot apply a colour table to a raw image. Apply it to the separate channels"
     
     ###################################################################################          
     
     def convertToRGB(self):
+        raise NotImplementedError, "The allskyRaw module is still under construction, and this method is not finished/debugged yet!"
         
         self.load()
         
-        mean_green = ImageChops.add(self.__channels[1],self.__channels[3],0.5)
+        mean_green = ImageChops.add(self.__channels[1], self.__channels[3], 0.5)
         
         #rescale values (currently have 16bit data stored in 32bit integers)
         scale = 4294967295.0 / 65535.0 
@@ -177,23 +188,24 @@ class rawImage(allskyImage.allskyImage):
         
         
         #might need to convert each channel to mode "L" before trying to merge them to RGB
-        rgb_image = Image.merge("RGB",(self.__channels[0].point(lambda i: i * scale + 0),mean_green.point(lambda i: i * scale + 0),self.__channels[2].point(lambda i: i * scale + 0)))
+        rgb_image = Image.merge("RGB", (self.__channels[0].point(lambda i: i * scale + 0), mean_green.point(lambda i: i * scale + 0), self.__channels[2].point(lambda i: i * scale + 0)))
         
         new_info = self.getInfo()
         
         new_info['header']['Wavelength'] = "RGB"
         
-        return allskyImage.allskyImage(rgb_image,self.getFilename,new_info)
+        return allskyImage.allskyImage(rgb_image, self.getFilename, new_info)
             
     ###################################################################################
     
-    def addTimestamp(self,format, colour="black", fontsize=20):
+    def addTimeStamp(self, format, colour="black", fontsize=20):
+        raise NotImplementedError, "The allskyRaw module is still under construction, and this method is not finished/debugged yet!"
         
-        return self.__runMethod(allskyImage.allskyImage.addTimestamp, format, colour=colour,fontsize=fontsize)
+        return self.__runMethod(allskyImage.allskyImage.addTimeStamp, format, colour=colour, fontsize=fontsize)
            
     ###################################################################################
     
-    def __runMethod(self,method,*args,**kwargs):
+    def __runMethod(self, method, *args, **kwargs):
         self.load()
         new_channels = []
         
@@ -201,37 +213,41 @@ class rawImage(allskyImage.allskyImage):
         
         for self._allskyImage__image in self.__channels:
             self._allskyImage__info = eval(info_bkup)
-            new_ASI = method(self,*args,**kwargs)
+            new_ASI = method(self, *args, **kwargs)
             
             new_channels.append(new_ASI.getImage())
         
-        return rawImage(self.getFilename(),new_ASI.getInfo(),channels = new_channels)
+        return rawImage(self.getFilename(), new_ASI.getInfo(), channels = new_channels)
     
     ###################################################################################       
-    def alignNorth(self,north="geographic"):
+    def alignNorth(self, north="geographic"):
+        raise NotImplementedError, "The allskyRaw module is still under construction, and this method is not finished/debugged yet!"
         
         return self.__runMethod(allskyImage.allskyImage.alignNorth, north=north)
            
     ###################################################################################
     
     def binaryMask(self, fov_angle, inverted=False):
+        raise NotImplementedError, "The allskyRaw module is still under construction, and this method is not finished/debugged yet!"
         
         return self.__runMethod(allskyImage.allskyImage.binaryMask, fov_angle, inverted=inverted)
            
     ###################################################################################
     
     def centerImage(self):
+        raise NotImplementedError, "The allskyRaw module is still under construction, and this method is not finished/debugged yet!"
         return self.__runMethod(allskyImage.allskyImage.centerImage)
     
     ###################################################################################    
     
     def convertTo8bit(self):
+        raise NotImplementedError, "The allskyRaw module is still under construction, and this method is not finished/debugged yet!"
         return self.__runMethod(allskyImage.allskyImage.convertTo8bit)
     
     ###################################################################################        
     
     def createQuicklook(self, size=(480, 640), timestamp="%a %b %d %Y, %H:%M:%S %Z", fontsize=16):
-        
+        raise NotImplementedError, "The allskyRaw module is still under construction, and this method is not finished/debugged yet!"
         rgb_image = self.convertToRGB()
         
         return rgb_image.createQuicklook(size=size, timestamp=timestamp, fontsize=fontsize)
@@ -239,20 +255,23 @@ class rawImage(allskyImage.allskyImage):
     ###################################################################################        
     
     def flatFieldCorrection(self, calibration):
-        return self.__runMethod(allskyImage.allskyImage.flatFieldCorrection,calibration)
+        raise NotImplementedError, "The allskyRaw module is still under construction, and this method is not finished/debugged yet!"
+        return self.__runMethod(allskyImage.allskyImage.flatFieldCorrection, calibration)
     
     ###################################################################################            
     
-    def medianFilter(self, n,separate_channels=False):
+    def medianFilter(self, n, separate_channels=False):
+        raise NotImplementedError, "The allskyRaw module is still under construction, and this method is not finished/debugged yet!"
         if not separate_channels:
             rgb_image = self.convertToRGB()
             return rgb_image.medianFilter(n)
         else:
-            return self.__runMethod(allskyImage.allskyImage.medianFilter,n)
+            return self.__runMethod(allskyImage.allskyImage.medianFilter, n)
         
     ################################################################################### 
     
-    def projectToHeight(self, height, grid_size=300,background='black',channel=None):
+    def projectToHeight(self, height, grid_size=300, background='black', channel=None):
+        raise NotImplementedError, "The allskyRaw module is still under construction, and this method is not finished/debugged yet!"
         
         if channel == None:
             rgb_image = self.convertToRGB()
@@ -262,9 +281,10 @@ class rawImage(allskyImage.allskyImage):
                
     ###################################################################################    
     
-    def resize(self,size):
+    def resize(self, size):
+        raise NotImplementedError, "The allskyRaw module is still under construction, and this method is not finished/debugged yet!"
         
-        self.__runMethod(allskyImage.allskyImage.resize,size)
+        self.__runMethod(allskyImage.allskyImage.resize, size)
     
     ###################################################################################
                                        
@@ -283,7 +303,7 @@ class rawImage(allskyImage.allskyImage):
            
     ###################################################################################        
         
-    def getChannel(self,channel):
+    def getChannel(self, channel):
         """
         Returns an allskyImage object containing the image data of the specified raw channel.
         """    
@@ -291,7 +311,7 @@ class rawImage(allskyImage.allskyImage):
         self.load()
         
         if channel > len(self.__channels) - 1:
-            raise ValueError,"Selected channel does not exist."
+            raise ValueError, "Selected channel does not exist."
         
         new_info=self.getInfo()
         
@@ -314,48 +334,9 @@ class rawImage(allskyImage.allskyImage):
     
     ###################################################################################     
       
-    def save(self,filename):
-        """
-        Compresses the raw data using the Canonical Huffman algorithm and saves the raw data as 
-        a PASKIL '.sqd' file. Only pixel data within the field of view is saved, resulting in 
-        considerably smaller files than is possible using other formats.       
-        """
-        
-        self.load()
-            
-        #add image size to info dict
-        size=self.__channels[0].size
+    def save(self, filename):
+        raise NotImplementedError, "The allskyRaw module is still under construction, and this method is not finished/debugged yet!"
 
-        self.__info['header']['size']=size
-        
-        #convert the header data to a string and compress it using the zip library
-        #compressed_header = zlib.compress(str(self.__info), 9)
-        
-        #create a mask image for the field of view
-        white_image = Image.new('I', size,color=255)
-        
-        mask = allskyImage.allskyImage(white_image,"None",self.__info)
-        
-        mask = mask.binaryMask(float(self.__info['camera']['fov_angle']))
-
-        mask_array = numpy.asarray(mask.getImage())
-        mask_array = mask_array.flatten()
-
-        mask_array = numpy.concatenate((mask_array,mask_array,mask_array,mask_array))
-        print "mask array shape = ", mask_array.shape
-
-        #combine the channels of the raw image into an array
-        channel1_data = numpy.asarray(self.__channels[0]).flatten()
-        channel2_data = numpy.asarray(self.__channels[1]).flatten()
-        channel3_data = numpy.asarray(self.__channels[2]).flatten()
-        channel4_data = numpy.asarray(self.__channels[3]).flatten()
-        
-        raw_data = numpy.concatenate((channel1_data,channel2_data,channel3_data,channel4_data))
-    
-    
-        #sys.exit()
-        #compress the data using the huffman algorithm
-        cSquish.compress(raw_data,mask_array,str(self.__info),filename.rstrip(".sqd"))
   
      ###################################################################################
 ###################################################################################                      

@@ -21,7 +21,7 @@ Concepts:
     
     The first stage is achieved by looking for images which have a small variance in intensity. PASKIL provides
     the calculateVariances() function for this purpose. Having plotted the variances of your data set, you 
-    should look for time periods of low intensity and create a new data set containing only these images. This
+    should look for time periods of low variance and create a new data set containing only these images. This
     data set can then be analysed image by image and the angular dependance of CCD sensitivity estimated using 
     the fromImages() function.
 
@@ -36,24 +36,22 @@ Example:
         from PASKIL import allskyImage,allskyCalib,allskyData #import the modules
         
         #create dataset object containing the calibration images
-        calibration_dataset=allskyData.new("calibration images","630",["png"],site_info_file="site_info.txt","") 
+        calibration_dataset = allskyData.new("calibration images","630",["png"],site_info_file="site_info.txt") 
         
-        calibration=allskyCalib.fromImages(calibration_dataset) #create calibration object
+        calibration = allskyCalib.fromImages(calibration_dataset) #create calibration object
         
-        image=allskyImage.new("test.png",site_info_file="site_info.txt") #create allskyImage object
-        image=image.flatFieldCorrection(calibration) #apply flat field correction
+        image = allskyImage.new("test.png",site_info_file="site_info.txt") #create allskyImage object
+        image = image.flatFieldCorrection(calibration) #apply flat field correction
         image.save("test_out.png") #save corrected image
     
 """
 
 ################################################################################################################################################################
 
-
-import allskyImage
 from PIL import Image #imports from PIL
-import stats,misc #imports from PASKIL
-import datetime,calendar #imports from other python modules
-from pylab import figure,title,xlabel,ylabel,plot
+import stats, misc #imports from PASKIL
+import datetime, calendar #imports from other python modules
+from pylab import figure, title, xlabel, ylabel, plot
 #Functions
 
 ###################################################################################
@@ -65,18 +63,17 @@ def calculateVariances(dataset):
     """
     data=[]
     
-    for infile,site_info_file in dataset.getAll():
+    for infile, site_info_file in dataset.getAll():
         
         im=Image.open(infile)
-        var,mean=stats.variance_mean(im.getdata())
-        time = datetime.datetime.strptime(im.info['Creation Time'],"%d %b %Y %H:%M:%S %Z")
-        data.append((time,var,mean))
+        var, mean=stats.variance_mean(im.getdata())
+        time = datetime.datetime.strptime(im.info['Creation Time'], "%d %b %Y %H:%M:%S %Z")
+        data.append((time, var, mean))
 
     #sort list into chronological order
     data.sort(misc.tupleCompare)
     return variance(data) #return variance object
     
-
 ###################################################################################
 
 def fromFile(filename):
@@ -94,7 +91,7 @@ def fromFile(filename):
     data_file=open(filename)
     
     for line in data_file:
-        raw_data.append((float(line.split()[0].strip()),float(line.split()[1].strip())))
+        raw_data.append((float(line.split()[0].strip()), float(line.split()[1].strip())))
         
     #sort raw data into angle order
     raw_data.sort(misc.tupleCompare)
@@ -124,7 +121,7 @@ def fromImages(dataset):
 #centre of the image at 1 degree resolution. It then records the values of the intensities at angles 0-fov_angle from 
 #the centre. When this has been done for all images the median values of intensity for each angle from the centre are 
 #calculated. These are then normalised.
-    sum = [0]*91
+    _sum = [0]*91
     count = [0]*91
     results = []
     
@@ -135,22 +132,20 @@ def fromImages(dataset):
         
         image = image.centerImage()
         
-        width, height = image.getSize()
-        
         x_center = image.getInfo()['camera']['x_center']
         
         for angle in range(180):
             #take a vertical slice of the image 1 pixel wide
-            strip = image.getStrip(angle,1)[0]
+            strip = image.getStrip(angle, 1)[0]
             
             for y in range(len(strip)):
-                angle_from_zenith = int(image.xy2angle(x_center,y)+0.5)
-                sum[angle_from_zenith] += strip[y]
+                angle_from_zenith = int(image.xy2angle(x_center, y)+0.5)
+                _sum[angle_from_zenith] += strip[y]
                 count[angle_from_zenith] += 1
                 
     #find mean values of calibration factors at different angles
     for angle in range(91):
-        ff_factor = (sum[angle]/float(count[angle]))/(sum[0]/float(count[0]))
+        ff_factor = (_sum[angle]/float(count[angle]))/(_sum[0]/float(count[0]))
         results.append(ff_factor)
         
     return calibration(results) #return calibration object
@@ -167,7 +162,7 @@ def loadVariances(filename):
     data_file=open(filename)
     
     for line in data_file:
-        data_point=line.split()[0].strip(),float(line.split()[1].strip()),float(line.split()[2].strip())
+        data_point=line.split()[0].strip(), float(line.split()[1].strip()), float(line.split()[2].strip())
         variances.append(data_point[1])
         
     return variance(variances)
@@ -180,7 +175,7 @@ class calibration:
     """
     Container class for flat field calibration data.
     """
-    def __init__(self,calibration_data):
+    def __init__(self, calibration_data):
         self.calibration_data=calibration_data
         
     ###################################################################################
@@ -193,7 +188,7 @@ class calibration:
         """
         figure(1)
         title("Normalised flat field intensity against angle from zenith")
-        plot(range(len(self.calibration_data)),self.calibration_data)
+        plot(range(len(self.calibration_data)), self.calibration_data)
         xlabel("Angle (degrees)")
         ylabel("Normalised Flat Field Intensity")
         
@@ -201,13 +196,13 @@ class calibration:
         
     ###################################################################################
     
-    def save(self,filename):
+    def save(self, filename):
         """
         Saves the calibration data as a text file. This can be loaded using the fromFile function, 
         meaning that calibration data should only need to be calculated once.
         """
         #function writes calibration data to file for later processing.
-        f=open(filename,"w")
+        f=open(filename, "w")
     
         for i in range(len(self.calibration_data)):
             f.write(str(i)+"  "+str(self.calibration_data[i])+"\n")
@@ -221,17 +216,17 @@ class variance:
     """
     Container class for variance data
     """
-    def __init__(self,variances):
+    def __init__(self, variances):
         self.variances=variances
                     
     ###################################################################################
     
-    def save(self,filename):
+    def save(self, filename):
         """
         Saves the variance data as a text file. This can be loaded using the loadVariances() function, 
         meaning that variance data should only need to be calculated once.
         """
-        f=open(filename,"w")
+        f=open(filename, "w")
         
         for i in range(len(self.variances)):
             f.write(str(calendar.timegm(self.variances[i][0].timetuple()))+"  "+str(self.variances[i][1])+"  "+str(self.variances[i][2])+"\n") #write: time,variance,mean

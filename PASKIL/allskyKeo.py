@@ -6,7 +6,6 @@ Introduction:
     the images and stacked together in the time axis.
     
     
-
 Concepts:
     
     Keograms are created by taking strips of pixel values out of all-sky images and stacking them together.
@@ -36,22 +35,20 @@ Example:
         end_time = datetime.datetime.strptime("04 Feb 2003 19:30:00 GMT","%d %b %Y %H:%M:%S %Z") 
         
         #create a new dataset object
-        dataset = allskyData.new("Allsky Images","630","png",site_info_file="site_info.txt",recursive="r") 
+        dataset = allskyData.new("Allsky Images","630","png",site_info_file="site_info.txt",recursive=True) 
         
         #create a new keogram with a sweep angle of 33 degrees and using a strip width of 3 pixels and a data spacing of 60 seconds
         keo = allskyKeo.new(dataset,start_time,end_time,33,3,60) 
     
         plot = allskyPlot.plot([keo]) #plot the keogram
 
-        show() #open the figure in an interactive plotting window    
-    
+        show() #open the figure in an interactive plotting window       
 """ 
 
 ################################################################################################################################################################
 
 import datetime
 import calendar
-import time
 import math
 import numpy
 import matplotlib
@@ -59,10 +56,8 @@ import warnings
 import Image
 import ImageChops
 import ImageFilter
-import ImageOps
-import ImageDraw
 
-from pylab import figure, imshow, title, MinuteLocator, NullLocator, DateFormatter, twinx, twiny, date2num, num2date, savefig, clf, FixedLocator, FuncFormatter, AutoLocator, FixedFormatter, MultipleLocator
+from pylab import MinuteLocator, DateFormatter, date2num, num2date, FixedLocator, FixedFormatter
 
 from PASKIL import allskyImage, allskyColour, allskyPlot, misc, stats
 
@@ -216,7 +211,7 @@ def new(data, angle, start_time=None, end_time=None, strip_width=5, data_spacing
         
         times = []
         fov_angles = []
-        radii =[]
+        radii = []
         mode = data[0].getMode()
         try:
             colour_table = data[0].getInfo()['processing']['applyColourTable']
@@ -370,7 +365,7 @@ def _putData(image, keo_pix, width, height, strip_width, angle, keo_fov_angle, s
             capture_time = datetime.datetime.strptime(current_image.getInfo()['header'] ['Creation Time'] + " GMT", "%d %b %Y %H:%M:%S %Z")
         capture_time_secs = calendar.timegm(capture_time.timetuple()) #convert to seconds since epoch
     except KeyError:
-        raise IOError, "Cannot read creation time from image " + filename
+        raise IOError, "Cannot read creation time from image " + current_image.getFilename()
     
     #calculate x pixel coordinate in keogram of where strip from current image should go
     strip_width_secs = (float((end_secs-start_secs))/float(width+1-strip_width)) * strip_width
@@ -390,22 +385,22 @@ def _putData(image, keo_pix, width, height, strip_width, angle, keo_fov_angle, s
     if im_fov_angle != keo_fov_angle:
        
         #change image fov by appending black pixels to it (the image fov will always be <= keo fov)
-        difference=((2*im_radius)*float(float(keo_fov_angle)/float(im_fov_angle)))-(2*im_radius)
+        difference = ((2*im_radius)*float(float(keo_fov_angle)/float(im_fov_angle)))-(2*im_radius)
         
-        if difference <=0:
+        if difference <= 0:
             raise RuntimeError, "Strip is longer than diameter of field of view - this shouldn't be possible, check the value you have used for 'Radius'"
         
         #define black for different image modes
         if mode in ("L", "I"):
-            black=0
+            black = 0
         elif mode == "RGB":
-            black =(0, 0, 0)
+            black = (0, 0, 0)
         else:
             raise ValueError, "Unknown image mode"
             
         for i in range(len(strip)):
             #create lists of black pixel values to prepend and append to the strip taken from the image
-            prepend=[black]*int(difference/2)
+            prepend = [black]*int(difference/2)
             
             if difference%2 !=0: #diffence is odd
                 append=[black]*(int(difference/2)+1)
@@ -540,6 +535,12 @@ def _interpolateData(data_list, image, mode, colour_table, strip_width, max_gap)
 ###################################################################################    
 
 class keoIntensitiesBase:
+    """
+    Base class for holding the intensity profiles through a keogram. This class is 
+    subclassed into keoTimeSlice and keoAngleSlice to deal with profiles in either
+    the time or angle direction. 
+    """
+    
     def __init__(self, positions, intensities, calib_factor):
         
         self._intensities = intensities
@@ -555,12 +556,21 @@ class keoIntensitiesBase:
             self.y_label = "Intensity (kR)"
     
     def getRawIntensities(self):
+        """
+        Returns a list of intensities (pixel values) across the profile.
+        """
         return self._intensities
     
     def _hasColourBar(self):
+        """
+        Required by the plotting interface (see allskyPlot)
+        """
         return False
     
     def getCalibratedIntensities(self):
+        """
+        Returns a list of calibrated intensities (Rayleighs) across the profile.
+        """
         calib_intensities = []
         
         for i in range(len(self._intensities)):
@@ -571,25 +581,34 @@ class keoIntensitiesBase:
 ###################################################################################
 
 class keoTimeSlice(keoIntensitiesBase):
+    """
+    Class to hold an intensity profile taken along the time axis (at constant 
+    angle).
+    """
     def __init__(self, positions, intensities, calib_factor):
         keoIntensitiesBase.__init__(self, positions, intensities, calib_factor)
         self.x_label = "Time (UT)"
         
     def getTimes(self):
+        """
+        Returns a list of datetime objects along the profile.
+        """
         return self._positions
     
     def _plot(self, subplot):
-                       
+        """
+        Required by the plotting interface (see allskyPlot)
+        """               
         #create tick marks for the x-axis
         time_span = self._positions[len(self._positions)-1] - self._positions[0]
         
         #decide on tick locations
         if time_span <= datetime.timedelta(hours=1):
             #if the keogram is less than an hour long - tick every 10 mins
-            x_ticks = range(0,70,10)
+            x_ticks = range(0, 70, 10)
         elif time_span < datetime.timedelta(hours=7):
             #if the keogram is less than 7 hours long - tick every 30 mins
-            x_ticks = [0,30]         
+            x_ticks = [0, 30]         
         else:
             #otherwise only tick every hour
             x_ticks = [0]
@@ -601,13 +620,13 @@ class keoTimeSlice(keoIntensitiesBase):
         
         #plot the data in the subplot
         if self._calib_factor is not None:
-            subplot.plot(self._positions,self.getCalibratedIntensities())
+            subplot.plot(self._positions, self.getCalibratedIntensities())
         else:
-            subplot.plot(self._positions,self.getRawIntensities())
+            subplot.plot(self._positions, self.getRawIntensities())
         subplot.xaxis.set_major_locator(MinuteLocator(x_ticks))
         subplot.xaxis.set_major_formatter(DateFormatter("%H:%M"))
         
-        subplot.xaxis.axes.set_xlim(date2num(self._positions[0]),date2num(self._positions[len(self._positions)-1]))
+        subplot.xaxis.axes.set_xlim(date2num(self._positions[0]), date2num(self._positions[len(self._positions)-1]))
         
         #set axis titles
         if self.y_label != None:
@@ -632,16 +651,22 @@ class keoAngleSlice(keoIntensitiesBase):
         self.x_label = "Scan Angle (degrees)"
     
     def getAngles(self):
+        """
+        Returns a list of angles (floats) along the profile
+        """
         return self._positions
     
     def _plot(self, subplot):
+        """
+        Required by the plotting interface (see allskyPlot)
+        """
         #plot the data in the subplot
         if self._calib_factor is not None:
-            subplot.plot(self._positions,self.getCalibratedIntensities())
+            subplot.plot(self._positions, self.getCalibratedIntensities())
         else:
-            subplot.plot(self._positions,self.getRawIntensities())
+            subplot.plot(self._positions, self.getRawIntensities())
         
-        subplot.xaxis.axes.set_xlim(self._positions[0],self._positions[len(self._positions)-1])
+        subplot.xaxis.axes.set_xlim(self._positions[0], self._positions[len(self._positions)-1])
         
         #set axis titles
         if self.y_label != None:
@@ -836,7 +861,6 @@ class keogram:
         
         new_colour_table=colour_table.colour_table
         new_image=new_image.convert("RGB")
-        new_mode="RGB"
         
         #create new keogram object
         new_keogram=keogram(new_image, new_colour_table, self.__start_time, self.__end_time, self.__angle, self.__fov_angle, self.__strip_width, new_intensities, self.__keo_type, self.__data_points, self.__data_spacing, self.__calib_factor)
@@ -866,7 +890,7 @@ class keogram:
                     strip_width = 1
                 
             positions, intensities = self._getHorizontalStrip(position, strip_width)
-            return keoTimeSlice(positions, intensities,self.__calib_factor)
+            return keoTimeSlice(positions, intensities, self.__calib_factor)
             
         elif isinstance(position, datetime.datetime):
             if strip_width is None:
@@ -874,7 +898,7 @@ class keogram:
                 strip_width = self.__strip_width
                 
             positions, intensities = self._getVerticalStrip(position, strip_width)
-            return keoAngleSlice(positions, intensities,self.__calib_factor)
+            return keoAngleSlice(positions, intensities, self.__calib_factor)
         else:
             raise TypeError, "Position must be either a float (angle) or a datetime object"
 
@@ -1119,139 +1143,6 @@ class keogram:
     
         if self.__colour_table is not None:
             allskyPlot.createColourbar(subplot, self.__colour_table, self.__calib_factor)
-#            #find the thresholds on the colour table - then we can just display
-#            #the interesting parts of the colour table.
-#            
-#            #first we find the lower threshold
-#            colour_table.reverse()
-#            offset = colour_table.index(colour_table[-1])
-#            lower_threshold = len(colour_table)- 1 - offset
-#            
-#            #now the upper threshold
-#            colour_table.reverse()
-#            upper_threshold = colour_table.index(colour_table[-1])
-#
-#            #if the image could contain values outside of the threshold
-#            #region (there is now no way to determine this for certain, since the
-#            #intensity data was lost when the colour table was applied) then put
-#            #arrow heads on the colour bar to indicate this
-#            lower_arrow = 0
-#            upper_arrow = 0
-#            if lower_threshold != 0:
-#                lower_arrow = 7 #size of the arrow head in pixels
-#            if upper_threshold != len(colour_table)- 1:
-#                upper_arrow = 7 #size of the arrow head in pixels
-#            
-#            #decide on the size of the colour bar image - what is important here is the aspect ratio
-#            if (upper_threshold - lower_threshold) >= 230: 
-#                #colour bar is very long - extend width to get correct aspect ratio        
-#                colour_bar_width = (upper_threshold - lower_threshold)/33 #33 is just an arbitrary number that works
-#                #the colour bar should be an odd number of pixels wide (to make drawing arrowheads easy)
-#                if colour_bar_width % 2 != 0:
-#                    colour_bar_width += 1
-#                colour_bar_height = (upper_threshold - lower_threshold) + 1 + upper_arrow + lower_arrow #+1 = counting from zero!
-#                cb_height_scaling = 1.0
-#            else:
-#                #colour bar is very short - extend height to get correct aspect ratio
-#                colour_bar_width = 7
-#                cb_height_scaling = 230.0 / float(upper_threshold - lower_threshold)
-#                colour_bar_height = 231 +  upper_arrow + lower_arrow
-#            
-#            #create a colour bar image
-#            colour_bar_image = Image.new("RGB", (colour_bar_width, colour_bar_height),(255,255,255))
-#            colour_bar_pix = colour_bar_image.load()
-#            
-#            #colour in the arrows (if there are any)
-#            for y in xrange(0, upper_arrow): #remember that image indexing starts at top left
-#                for x in xrange(colour_bar_width):
-#                    colour_bar_pix[x, y] = colour_table[upper_threshold]
-#            for y in xrange(0, lower_arrow):
-#                for x in xrange(colour_bar_width):
-#                    colour_bar_pix[x, colour_bar_height-y-1] = colour_table[lower_threshold]
-#                    
-#            #colour in the rest of the colour bar based on the colour table of the image
-#            for y in xrange(colour_bar_height - upper_arrow - lower_arrow):
-#                current_ct_index = upper_threshold - (int((y/float(colour_bar_height - upper_arrow - lower_arrow) * (upper_threshold-lower_threshold))+0.5))
-#                current_colour = colour_table[current_ct_index]
-#                for x in xrange(colour_bar_width):
-#                    colour_bar_pix[x, y + upper_arrow] = current_colour
-#            
-#            #if the image could contain values outside of the threshold
-#            #region (there is now no way to determine this for certain, since the
-#            #intensity data was lost when the colour table was applied) then put
-#            #arrow heads on the colour bar to indicate this
-#            if lower_threshold != 0:
-#                d = ImageDraw.Draw(colour_bar_image)
-#                y0 = colour_bar_height
-#                d.polygon([(0, y0), (0, y0-colour_bar_width), ((colour_bar_width-1)/2, y0-1), ((colour_bar_width-1), y0-colour_bar_width), ((colour_bar_width-1), y0)], fill='white')
-#            if upper_threshold != colour_bar_height-1:
-#                d = ImageDraw.Draw(colour_bar_image)
-#                y0 = 0#colour_bar_height - upper_threshold - colour_bar_width
-#                d.polygon([(0, y0), (0, y0+colour_bar_width), ((colour_bar_width-1)/2, y0+1), ((colour_bar_width-1), y0+colour_bar_width), ((colour_bar_width-1), y0)], fill='white')
-#            
-#            #create a fake colour table - this is used to get matplotlib to create the colourbar axes
-#            #which we then use to plot out colour bar image into
-#            fake_data = numpy.random.rand(2, 2)
-#            fake_colour_image = subplot.pcolor(fake_data)
-#            
-#            #create the matplotlib colour bar object
-#            if subplot.numCols > 1:
-#                colour_bar = matplotlib.pyplot.colorbar(fake_colour_image, ax=subplot,pad=0.15)
-#            else:
-#                colour_bar = matplotlib.pyplot.colorbar(fake_colour_image, ax=subplot)
-#            colour_bar.ax.axes.clear() #get rid of our fake colourbar data
-#            
-#            
-#            #calculate where the ticks on the y axis of the colour bar should go.
-#            #this is slightly tricky since we have three scales to consider:
-#            #the absolute pixel coordinates of the image, the CCD counts of the 
-#            #camera and the absolute calibrated intensities. The following code
-#            #attempts to put approx 7 ticks at whole numbers of either CCD counts or
-#            #kR. It is not very elegant!
-#            if self.__calib_factor is None:
-#                colour_bar.ax.axes.set_ylabel("CCD Counts")
-#                y_ticks = []
-#                ccd_step_size = ((upper_threshold - lower_threshold) / 7.0) #we want ~7 labels on the colour bar
-#                if ccd_step_size > 1:
-#                    ccd_step_size = int(ccd_step_size +0.5) #try to make the tick spacing an integer number
-#                 
-#                pix_step_size =  ccd_step_size * cb_height_scaling #take account of the colourbar height scaling (if any)
-#                
-#                for i in range(8):
-#                    y_ticks.append(lower_arrow +1 + i*pix_step_size)
-#                 
-#                colour_bar.ax.yaxis.set_major_locator(FixedLocator(y_ticks)) 
-#            else:
-#                colour_bar.ax.axes.set_ylabel("kR")
-#                y_ticks = []
-#                cal_step_size = ((upper_threshold - lower_threshold)*self.__calib_factor / 7.0) #we want ~7 labels on the colour bar
-#                if cal_step_size > 1:
-#                    cal_step_size = int(cal_step_size +0.5) #try to make the tick spacing an integer number
-#                 
-#                pix_step_size =  (cal_step_size / float(self.__calib_factor)) * cb_height_scaling #take account of the colourbar height scaling (if any)
-#                
-#                for i in range(8):
-#                    y_ticks.append(lower_arrow +1 + i*pix_step_size)
-#                 
-#                colour_bar.ax.yaxis.set_major_locator(FixedLocator(y_ticks))
-#            
-#            #plot the colourbar image into the axes
-#            colour_bar.ax.yaxis.set_label_position("left")
-#            colour_bar.ax.xaxis.set_major_locator(NullLocator())            
-#            colour_bar.ax.imshow(colour_bar_image, origin="top")
-#            colour_bar.ax.axes.set_ylim((0, colour_bar_height))
-#            colour_bar.ax.axes.set_xlim((-1, colour_bar_width-1))
-#            
-#            #create a formatter function for the y-axis based on the various scaling factors
-#            #that have been used. The lambda functions take a pixel coordinate in the colourbar
-#            #image and return its value in either kR or CCD counts
-#            if self.__calib_factor is not None:
-#                y_formatter = lambda x, pos: self.__calib_factor * (((x -colour_bar_width-1)  / cb_height_scaling) + lower_threshold)
-#            else:
-#                y_formatter = lambda x, pos: ((x -colour_bar_width-1)  / cb_height_scaling) + lower_threshold
-#            colour_bar.ax.yaxis.set_major_formatter(FuncFormatter(y_formatter))
-#            colour_bar.ax.yaxis.tick_right()
-        #Now we are done with the colourbar and we return to the main axes
          
         #create tick marks for the y-axis every 20 degrees
         y_ticks = [] #tick positions (in pixels)

@@ -151,15 +151,15 @@ class projection:
         lats=[]
         lons=[]
         for i in range(grid_size):
-                lats.append(start_lat+(i*lat_increment))
-                lons.append(start_lon+(i*lon_increment))
+            lats.append(start_lat+(i*lat_increment))
+            lons.append(start_lon+(i*lon_increment))
         
         #create array of x,y tuples for each lat and lon which is going to be sampled
         map_coords=numpy.empty((grid_size, grid_size, 2))
         
         for x in range(grid_size):
-                for y in range(grid_size):
-                    map_coords[x, y]=image_map(lons[x], lats[y])
+            for y in range(grid_size):
+                map_coords[x, y]=image_map(lons[x], lats[y])
         
         #create array of pixel values in a regular lat lon grid
         if self.__mode=='RGB':
@@ -168,24 +168,24 @@ class projection:
             self.__image_data=numpy.empty((grid_size, grid_size, 1), dtype=globals()['__data_types'][self.__mode])
         
         for x in range(grid_size):
-                for y in range(grid_size):
-                        #i and j are the array indices in the original image that correspond to the lats and lons contained in the map coords array at indices x and y.
-                        i=int(((map_coords[x, y, 0]-image_map.xmin)/(image_map.xmax-image_map.xmin))*im.getSize()[0])
+            for y in range(grid_size):
+                #i and j are the array indices in the original image that correspond to the lats and lons contained in the map coords array at indices x and y.
+                i=int(((map_coords[x, y, 0]-image_map.xmin)/(image_map.xmax-image_map.xmin))*im.getSize()[0])
+        
+                j=im.getSize()[1]-int(((map_coords[x, y, 1]-image_map.ymin)/(image_map.ymax-image_map.ymin))*im.getSize()[1])
                 
-                        j=im.getSize()[1]-int(((map_coords[x, y, 1]-image_map.ymin)/(image_map.ymax-image_map.ymin))*im.getSize()[1])
-                        
-                        #if the lat/lon coordinate is outside of the original image then fill it in with either black or white
-                        if i >= im_array.shape[0] or j >= im_array.shape[1] or j<0 or i<0:
-                                if self.__background == 'white':
-                                    if im.getMode()=="I":
-                                       self.__image_data[y, x, :]=65535 #white in 16bit image 
-                                    else:
-                                        self.__image_data[y, x, :]=255 #white in RGB and 8bit images
-                                else:
-                                    self.__image_data[y, x, :]=0
-
+                #if the lat/lon coordinate is outside of the original image then fill it in with either black or white
+                if i >= im_array.shape[0] or j >= im_array.shape[1] or j<0 or i<0:
+                    if self.__background == 'white':
+                        if im.getMode()=="I":
+                            self.__image_data[y, x, :]=65535 #white in 16bit image 
                         else:
-                            self.__image_data[y, x, :]=im_array[i, j, :]
+                            self.__image_data[y, x, :]=255 #white in RGB and 8bit images
+                    else:
+                        self.__image_data[y, x, :]=0
+
+                else:
+                    self.__image_data[y, x, :]=im_array[i, j, :]
 
         self.__image_lons=numpy.array(lons)
         self.__image_lats=numpy.array(lats)     
@@ -256,41 +256,13 @@ class projection:
         else:
             line_colour='white'
         
-        map=self.createMapProjection(projection='aeqd', lat_0=self.site_lat, lon_0=self.site_lon, resolution='h', width=3*self.fov_distance, height=3*self.fov_distance)
-        map.drawcoastlines(color=line_colour, linewidth=0.5)
-        map.drawmeridians(range(-180, 180, 10), color=line_colour)
-        map.drawparallels(range(-90, 90, 10), color=line_colour)
-        map.drawmapboundary(fill_color=self.__background)
+        _map=self.createMapProjection(projection='aeqd', lat_0=self.site_lat, lon_0=self.site_lon, resolution='h', width=3*self.fov_distance, height=3*self.fov_distance)
+        _map.drawcoastlines(color=line_colour, linewidth=0.5)
+        _map.drawmeridians(range(-180, 180, 10), color=line_colour)
+        _map.drawparallels(range(-90, 90, 10), color=line_colour)
+        _map.drawmapboundary(fill_color=self.__background)
         
-        return map
+        return _map
     
-    ###################################################################################    
-#    def overlaySuperDARN(self,SDARN_file):
-#        """
-#        Returns a PIL image object containing a SuperDARN convection plot with the allsky image
-#        projected onto it. The SDARN_file argument should be the filename of a SuperDARN convection
-#        plot image (these can be downloaded at http://superdarn.jhuapl.edu/archive.html).
-#        """
-#        
-#        #open SuperDarn plot as a PIL image
-#        SD_im=Image.open(SDARN_file)
-#        
-#        #find the radius (in pixels) of the map part of the image
-#        bw_im=SD_im.convert('L') #convert the image to black and white
-#        bw_im=ImageOps.invert(bw_im)
-#        bw_im.save("bwtest.png")
-#        
-#        bw_im_array=numpy.asarray(bw_im).copy()
-#        bw_im_array=bw_im_array.swapaxes(1, 0)
-#
-#        y=int(bw_im.size[1]/2.0) #look in the middle of the image
-#        
-#        
-#        arr=numpy.array(bw_im_array[:,y]) #copy the pixel values into an array
-#        
-#        radius=int((len(arr.nonzero()[0])/2.0)+0.5) #find the length of the non-zero part of the array
-#        
-#        print radius
-#        #
-    ###################################################################################        
+    ###################################################################################          
 ###################################################################################

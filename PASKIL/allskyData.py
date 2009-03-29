@@ -28,9 +28,11 @@ Example:
     The following example creates a dataset of all the png and jpg files in the directory "Allsky Images". 
     The recursive option is not used, so subfolders will not be included. Only images corresponding to a 
     wavelength of 630nm are included. A list of all the files between 18:30 and 19:30 on the 4/2/2003 is 
-    then printed to the screen.
+    then printed to the screen. The iterator protocol is then used to apply a binary mask to all the images
+    in the dataset.
 
         from PASKIL import allskyData
+        import datetime
 
         #create dataset object
         dataset=allskyData.new("Allsky Images","630",["png","jpg"],site_info_file="site_info.txt") 
@@ -55,9 +57,8 @@ Example:
 
 ################################################################################################################################################################
 
-from PASKIL import allskyImage,misc 
-import glob,datetime,cPickle,os #imports from other python modules
-import threading
+from PASKIL import allskyImage, misc 
+import glob, datetime, cPickle, os #imports from other python modules
 import os.path
 
 #Functions:
@@ -72,7 +73,7 @@ def combine(datasets):
     different filetypes and different site information files. Files which appear in more than one of the 
     datasets to be combined, will only appear once in the new dataset.
     """
-    for i in range(1,len(datasets)):
+    for i in range(1, len(datasets)):
         #check if datasets can be combined
         if ((datasets[0].getWavelength() != datasets[i].getWavelength()) or (datasets[0].getMode() != datasets[i].getMode()) or (datasets[0].getColour_table() != datasets[i].getColour_table()) or (datasets[0].getCalib_factor() != datasets[i].getCalib_factor())):
             raise ValueError, "Incompatible datasets"
@@ -86,7 +87,7 @@ def combine(datasets):
         filetypes=filetypes+datasets[i].filetypes()
         
         for j in range(len(datasets[i].getFilenames())):
-            tuple_list.append((datasets[i].getTimes()[j],datasets[i].getFilenames()[j],datasets[i].getSite_info_files()[j]))
+            tuple_list.append((datasets[i].getTimes()[j], datasets[i].getFilenames()[j], datasets[i].getSite_info_files()[j]))
         
         #get radii and fov angles
         radii.append(datasets[i].getRadii())
@@ -99,11 +100,11 @@ def combine(datasets):
     #remove duplicate entries from filetypes list
     filetypes=list(set(filetypes))
     
-    return dataset(tuple_list,datasets[0].getWavelength(),filetypes,datasets[0].getMode(),set(radii),set(fov_angles),datasets[0].getColour_table(),datasets[0].getCalib_factor())
+    return dataset(tuple_list, datasets[0].getWavelength(), filetypes, datasets[0].getMode(), set(radii), set(fov_angles), datasets[0].getColour_table(), datasets[0].getCalib_factor())
 
 ###################################################################################        
 
-def fromList(file_names,wavelength,filetype,site_info_file=""):
+def fromList(file_names, wavelength, filetype, site_info_file=""):
     """
     Creates a dataset from a list of filenames. The file_names argument should be a list of strings specifying
     the filenames of the files to be included. The wavelength argument should be a string that matches the 
@@ -125,7 +126,7 @@ def fromList(file_names,wavelength,filetype,site_info_file=""):
     
     #check that filetypes argument is a list - this is a common user error!
     if type(filetype) != type(list()):
-        raise TypeError,"Incorrect type for filetype argument. Expecting list."
+        raise TypeError, "Incorrect type for filetype argument. Expecting list."
     
     for filename in file_names:
         #check if file is of correct type
@@ -134,7 +135,7 @@ def fromList(file_names,wavelength,filetype,site_info_file=""):
         
         #attempt to create an allskyImage object, if there is no plugin for it, then skip this file
         try:    
-            current_image=allskyImage.new(filename,site_info_file) #create an allskyImage
+            current_image=allskyImage.new(filename, site_info_file) #create an allskyImage
         
         except TypeError:
             continue #skip file if PASKIL cannot open it
@@ -164,15 +165,15 @@ def fromList(file_names,wavelength,filetype,site_info_file=""):
             calib_factor = current_calib_factor
             
         if current_image.getMode() != mode:
-            print "Warning! allskyData.fromList(): Skipping file ",filename,". Incorrect image mode."
+            print "Warning! allskyData.fromList(): Skipping file ", filename, ". Incorrect image mode."
             continue
         
         if current_colour_table != colour_table:
-            print "Warning! allskyData.fromList(): Skipping file ",filename,". Incorrect colour table."
+            print "Warning! allskyData.fromList(): Skipping file ", filename, ". Incorrect colour table."
             continue
         
         if current_calib_factor != calib_factor:
-            print "Warning! allskyData.fromList(): Skipping file ",filename,". Incorrect absolute calibration factor."
+            print "Warning! allskyData.fromList(): Skipping file ", filename, ". Incorrect absolute calibration factor."
             continue
         
         #add radius of image to radii list    
@@ -185,21 +186,21 @@ def fromList(file_names,wavelength,filetype,site_info_file=""):
             fov_angles.append(fov)
         
         try:
-            time=datetime.datetime.strptime(current_image.getInfo()['header']['Creation Time'],"%d %b %Y %H:%M:%S %Z")#read creation time from header
+            time=datetime.datetime.strptime(current_image.getInfo()['header']['Creation Time'], "%d %b %Y %H:%M:%S %Z")#read creation time from header
         except ValueError:
-            time=datetime.datetime.strptime(current_image.getInfo()['header']['Creation Time']+"GMT","%d %b %Y %H:%M:%S %Z")#read creation time from header
+            time=datetime.datetime.strptime(current_image.getInfo()['header']['Creation Time']+"GMT", "%d %b %Y %H:%M:%S %Z")#read creation time from header
         
-        data.append((time,filename,site_info_file)) #store filename and creation time as a tuple in the data list
+        data.append((time, filename, site_info_file)) #store filename and creation time as a tuple in the data list
     
     #check to make sure the dataset is not empty
     if len(data) ==0:
-        raise ValueError,"No images were compatible with the dataset format, ensure you have imported the required plugins,that the wavelength string matches that in the image header, and that you have specified any relevant site info files. Images with the following wavelengths were found "+str(found_wavelengths)
+        raise ValueError, "No images were compatible with the dataset format, ensure you have imported the required plugins,that the wavelength string matches that in the image header, and that you have specified any relevant site info files. Images with the following wavelengths were found "+str(found_wavelengths)
     
     #sort the list into chronological order
     data.sort(misc.tupleCompare)
     
     #return a dataset object
-    return dataset(data,wavelength,[filetype],mode,radii,fov_angles,colour_table, calib_factor)    
+    return dataset(data, wavelength, [filetype], mode, radii, fov_angles, colour_table, calib_factor)    
 
     
 ###################################################################################    
@@ -208,12 +209,12 @@ def load(filename):
     """
     Loads a dataset object from a file. Dataset files can be produced using the save() method.
     """
-    f=open(filename,"rb")
+    f=open(filename, "rb")
     dataset=cPickle.load(f)
     f.close()
     
     #check that the all the files stored in the dataset still exist.    
-    for image_filename,site_info in dataset.getAll():
+    for image_filename, site_info in dataset.getAll():
         if not os.path.exists(image_filename):
             raise IOError, "allskyData.load(): The file \""+image_filename+"\" no longer exists. The dataset \""+filename+"\" is therefore not valid!"
     
@@ -221,7 +222,7 @@ def load(filename):
     
 ###################################################################################    
     
-def new(directory,wavelength,filetype,site_info_file=None,recursive=False):
+def new(directory, wavelength, filetype, site_info_file=None, recursive=False):
     """
     Returns a dataset object containing images of type filetype, taken at a wavelength of wavelength (needs
     to be the same value as in the image header under 'Wavelength' see allskyImagePlugins module for details), 
@@ -242,7 +243,7 @@ def new(directory,wavelength,filetype,site_info_file=None,recursive=False):
     
     #check that filetypes argument is a list - this is a common user error!
     if type(filetype) != type(list()):
-        raise TypeError,"Incorrect type for filetype argument. Expecting list."
+        raise TypeError, "Incorrect type for filetype argument. Expecting list."
     
     #expand the paths of the directory and site info file
     directory = os.path.normpath(directory)
@@ -261,7 +262,7 @@ def new(directory,wavelength,filetype,site_info_file=None,recursive=False):
     for i in range(len(filetype)):
         if recursive:
             #sweep the directory structure recursively
-            search_list=search_list+misc.findFiles(directory,"*."+filetype[i].lstrip("."))
+            search_list=search_list+misc.findFiles(directory, "*."+filetype[i].lstrip("."))
 
         else:
             #only look in current directory
@@ -271,7 +272,7 @@ def new(directory,wavelength,filetype,site_info_file=None,recursive=False):
     if len(search_list) == 0:
         raise ValueError, "Unable to locate any files with extensions: "+str(filetype)
     
-    return fromList(search_list,wavelength,filetype,site_info_file)
+    return fromList(search_list, wavelength, filetype, site_info_file)
         
 ###################################################################################
 
@@ -281,7 +282,7 @@ class dataset:
     Essentially the dataset class operates like a hash table, with times (datetime objects) as keys and 
     filenames of images and their corresponding site_info_files (if any) as values.
     """
-    def __init__(self,data,wavelength,filetype,mode,radii,fov_angles,colour_table, calib_factor):
+    def __init__(self, data, wavelength, filetype, mode, radii, fov_angles, colour_table, calib_factor):
         
         #check that the filetype argument is of the correct type - this is a common error to make
         if type(filetype) != type(list()):
@@ -395,7 +396,7 @@ class dataset:
       
     ###################################################################################    
     
-    def crop(self,start_time,end_time):
+    def crop(self, start_time, end_time):
         """
         Returns a new dataset object which only spans the time range between start_time and end_time.
         Both arguments should be datetime objects.
@@ -403,18 +404,18 @@ class dataset:
         cropped_data=[]
         
         #get selection of dataset
-        cropped_filenames=self.getFilenamesInRange(start_time,end_time)
+        cropped_filenames=self.getFilenamesInRange(start_time, end_time)
         
         for filename in cropped_filenames:
             #get index of name in list
             index=self.__filenames.index(filename[0])
             
             #create data entry
-            cropped_data.append((self.__times[index],filename[0],self.__site_info_files[index]))
+            cropped_data.append((self.__times[index], filename[0], self.__site_info_files[index]))
         
         if len(self.__radii)==1 and len(self.__fov_angles) == 1:
             #create new dataset
-            cropped_dataset=dataset(cropped_data,self.__wavelength,self.__filetype,self.__mode,self.__radii,self.__fov_angles,self.__colour_table,self.__calib_factor)
+            cropped_dataset=dataset(cropped_data, self.__wavelength, self.__filetype, self.__mode, self.__radii, self.__fov_angles, self.__colour_table, self.__calib_factor)
         else:
             raise ValueError, "Operation not permitted on a dataset containing different fov angles and radii"
         
@@ -429,13 +430,13 @@ class dataset:
         """
         tuple_list=[]
         for i in range(len(self.__filenames)):
-            tuple_list.append((self.__filenames[i],self.__site_info_files[i]))
+            tuple_list.append((self.__filenames[i], self.__site_info_files[i]))
         
         return tuple_list
         
     ###################################################################################            
     
-    def getFilenamesInRange(self,time1,time2):
+    def getFilenamesInRange(self, time1, time2):
         """
         Returns a list of tuples of strings containing the names of all the files in the dataset that 
         correspond to times between time1 and time2 inclusive and their corresponding site info files, 
@@ -455,9 +456,9 @@ class dataset:
             end_index=len(self.__times)-1
         
         filenames=[]
-        for i in range(start_index,end_index+1):
+        for i in range(start_index, end_index+1):
             if self.__times[i] >= time1 and self.__times[i] <= time2:
-                filenames.append((self.__filenames[i],self.__site_info_files[i]))
+                filenames.append((self.__filenames[i], self.__site_info_files[i]))
                 
         
         if filenames == []:
@@ -467,7 +468,7 @@ class dataset:
         
     ###################################################################################            
     
-    def getImage(self,time):
+    def getImage(self, time):
         """
         Returns an allskyImage object containing the image data for the specified time. If no image 
         exists for the specified time then None is returned. The time argument should be a datetime 
@@ -478,11 +479,11 @@ class dataset:
         except ValueError:
             return None
         
-        return allskyImage.new(self.__filenames[index],self.__site_info_files[index])
+        return allskyImage.new(self.__filenames[index], self.__site_info_files[index])
         
     ###################################################################################        
     
-    def getImagesInRange(self,time1,time2):
+    def getImagesInRange(self, time1, time2):
         """
         Returns a list of allskyImage objects containing all the images that correspond to times between
         time1 and time2 inclusive. The list will be ordered in chronological order. The time arguments 
@@ -500,9 +501,9 @@ class dataset:
             end_index=len(self.__times)-1
         
         images=[]
-        for i in range(start_index,end_index+1):
+        for i in range(start_index, end_index+1):
             if self.__times[i] >= time1 and self.__times[i] <= time2:
-                images.append(allskyImage.new(self.__filenames[i],self.__site_info_files[i]))
+                images.append(allskyImage.new(self.__filenames[i], self.__site_info_files[i]))
         
         if images == []:
             return None
@@ -511,7 +512,7 @@ class dataset:
         
     ###################################################################################    
     
-    def getNearest(self,time):
+    def getNearest(self, time):
         """
         Returns an allskyImage object corresponding to the image in the dataset which has a creation time 
         closest to the specified time. The time argument should be a datetime object. 
@@ -526,11 +527,11 @@ class dataset:
             if self.__times[index] - time > self.__times[index-1] - time:
                 index=index-1
                     
-        return allskyImage.new(self.__filenames[index],self.__site_info_files[index])
+        return allskyImage.new(self.__filenames[index], self.__site_info_files[index])
         
     ###################################################################################
     
-    def save(self,filename):
+    def save(self, filename):
         """
         Saves the dataset object in specified file. It can be retrieved at a later date using the load()
         function. However, be aware that changing the image files, the site information files or the 
@@ -539,10 +540,10 @@ class dataset:
         new dataset object using the new files.
         """
         #open file for writing
-        f=open(filename,"wb")
+        f=open(filename, "wb")
         
         #pickle the dataset object and save it to the file
-        cPickle.dump(self,f,cPickle.HIGHEST_PROTOCOL)
+        cPickle.dump(self, f, cPickle.HIGHEST_PROTOCOL)
         
         #close file
         f.close()
@@ -556,7 +557,7 @@ class datasetIterator:
     constructs for iterating over all images in a dataset.
     """
     
-    def __init__(self,filenames):
+    def __init__(self, filenames):
         self.__filenames = filenames
         self.__current_index = 0
         self.__largest_index = len(filenames)
@@ -580,7 +581,7 @@ class datasetIterator:
         #create the loading thread for the next element
         if self.__current_index < self.__largest_index:      
             
-            im = allskyImage.new(self.__filenames[self.__current_index][0],site_info_file=self.__filenames[self.__current_index][1])
+            im = allskyImage.new(self.__filenames[self.__current_index][0], site_info_file=self.__filenames[self.__current_index][1])
             self.__current_index += 1
                         
             #return image

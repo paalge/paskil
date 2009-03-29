@@ -1,3 +1,27 @@
+"""
+Introduction:
+
+    The allskyPlot module provides functionality for visualising many of the objects
+    used by PASKIL (for example allskyImage objects, allskyKeo objects). It is designed
+    to allow plotting of multiple objects (of different types) in a single figure. This
+    module is largely incomplete, untested and in need of some improvement. However,
+    the basic functionality is there and now it should just be a case of polishing it!
+    
+    
+Concepts:
+    
+    The main function is the plot function. This takes a list of objects and plots them
+    as subfigures in a matplotlib figure object. It is designed to work with any objects
+    that implement a plotting interface consisting of the following methods:
+    
+        _hasColourBar() - Returns True or False depending on whether the plot of the 
+                          object will have a colour bar next to it or not.
+                          
+        _plot(subplot)  - Returns the supplied subplot with the object plotted into it.
+
+"""
+
+
 import matplotlib
 import matplotlib.pyplot
 import math
@@ -7,8 +31,15 @@ import ImageDraw
 
 from pylab import NullLocator, FixedLocator, FuncFormatter
 
-def plot(objects,columns=1,size=None):
-
+def plot(objects, columns=1, size=None):
+    """
+    Plots a list of objects implementing the plotting interface. Objects is a list of
+    objects to be plotted. Columns specifies how many columns of subplots to include 
+    in the final plot, default is one in which case all objects will be plotted below
+    each other. Size is a tuple (width,height) of the size in inches of the final 
+    figure, default isa None in which case the default value for matplotlib is used.
+    """
+    
     fig = matplotlib.pyplot.figure()
     
     if size is not None:
@@ -25,8 +56,8 @@ def plot(objects,columns=1,size=None):
     #alignments will get messed up. Here we check if any of the objects at all have
     #colour bars, so that we can correct for it as we plot them
     cb_correct = False
-    for object in objects:
-        if object._hasColourBar():
+    for _object in objects:
+        if _object._hasColourBar():
             cb_correct = True
             break
        
@@ -34,24 +65,24 @@ def plot(objects,columns=1,size=None):
     #if len(objects) > 1:
     #    fig.subplotpars.hspace = 0.4
     
-    for object in objects:
+    for _object in objects:
         #create a new subplot object
 
-        s = matplotlib.pylab.subplot(rows,columns,i)
+        s = matplotlib.pylab.subplot(rows, columns, i)
 
         
-        if (cb_correct and (not object._hasColourBar())):
+        if (cb_correct and (not _object._hasColourBar())):
             #create an invisible colour bar so that the sizes of the objects will be the same
             fake_data = numpy.random.rand(2, 2)
             fake_colour_image = s.pcolor(fake_data)
             if s.numCols > 1:
-                colour_bar = matplotlib.pyplot.colorbar(fake_colour_image, ax=s,pad=0.15)
+                colour_bar = matplotlib.pyplot.colorbar(fake_colour_image, ax=s, pad=0.15)
             else:
                 colour_bar = matplotlib.pyplot.colorbar(fake_colour_image, ax=s)
             colour_bar.ax.axes.set_visible(False)
         
         #add the object to the figure
-        s = object._plot(s)
+        s = _object._plot(s)
         
         fig.add_subplot(s)
 
@@ -115,7 +146,7 @@ def createColourbar(subplot, colour_table, calib_factor):
         colour_bar_height = 231 +  upper_arrow + lower_arrow
     
     #create a colour bar image
-    colour_bar_image = Image.new("RGB", (colour_bar_width, colour_bar_height),(255,255,255))
+    colour_bar_image = Image.new("RGB", (colour_bar_width, colour_bar_height), (255, 255, 255))
     colour_bar_pix = colour_bar_image.load()
     
     #colour in the arrows (if there are any)
@@ -153,7 +184,7 @@ def createColourbar(subplot, colour_table, calib_factor):
     
     #create the matplotlib colour bar object
     if subplot.numCols > 1:
-        colour_bar = matplotlib.pyplot.colorbar(fake_colour_image, ax=subplot,pad=0.15)
+        colour_bar = matplotlib.pyplot.colorbar(fake_colour_image, ax=subplot, pad=0.15)
     else:
         colour_bar = matplotlib.pyplot.colorbar(fake_colour_image, ax=subplot)
     colour_bar.ax.axes.clear() #get rid of our fake colourbar data
@@ -208,7 +239,7 @@ def createColourbar(subplot, colour_table, calib_factor):
     #that have been used. The lambda functions take a pixel coordinate in the colourbar
     #image and return its value in either kR or CCD counts
     if calib_factor is not None:
-        y_formatter = lambda x, pos: round((calib_factor * (((x -lower_arrow-1)  / cb_height_scaling) + lower_threshold)),2)
+        y_formatter = lambda x, pos: round((calib_factor * (((x -lower_arrow-1)  / cb_height_scaling) + lower_threshold)), 2)
     else:
         y_formatter = lambda x, pos: ((x -lower_arrow-1)  / cb_height_scaling) + lower_threshold
     colour_bar.ax.yaxis.set_major_formatter(FuncFormatter(y_formatter))

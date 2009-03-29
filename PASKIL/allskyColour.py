@@ -60,9 +60,7 @@ Example:
 
 
 from PIL import Image #imports from PIL
-import warnings
 import matplotlib
-
 
 #Functions
 
@@ -74,18 +72,18 @@ def convertToMplColormap(colour_table):
     to produce colour bars on plots.
     """
     
-    segment_data = {'red':[],'green':[],'blue':[]}
+    segment_data = {'red':[], 'green':[], 'blue':[]}
     N = len(colour_table.colour_table)
     
     for intensity in range(N):
         
         #convert intensity into range 0-1
-        x = double(intensity)/double(N-1)
+        x = float(intensity)/float(N-1)
         
         #set transformation rules
-        red_transform = double(colour_table.colour_table[intensity][0]) / double(255)
-        green_transform = double(colour_table.colour_table[intensity][1]) / double(255)
-        blue_transform = double(colour_table.colour_table[intensity][2]) / double(255)
+        red_transform = float(colour_table.colour_table[intensity][0]) / float(255)
+        green_transform = float(colour_table.colour_table[intensity][1]) / float(255)
+        blue_transform = float(colour_table.colour_table[intensity][2]) / float(255)
         
         #populate segment data with (x,y0,y1) tuples describing transformation
         #Each tuple represents how a value with values between 0 and 1
@@ -96,16 +94,16 @@ def convertToMplColormap(colour_table):
         #<= to that given, and y1 is the value to be used for x > than
         #that given). 
         
-        segment_data['red'].append((x,red_transform,red_transform))
-        segment_data['green'].append((x,green_transform,green_transform))
-        segment_data['blue'].append((x,blue_transform,blue_transform))
+        segment_data['red'].append((x, red_transform, red_transform))
+        segment_data['green'].append((x, green_transform, green_transform))
+        segment_data['blue'].append((x, blue_transform, blue_transform))
     
     #create matplotlib color map object
-    return matplotlib.colors.LinearSegmentedColormap('PASKIL-custom',segment_data,N=N)
+    return matplotlib.colors.LinearSegmentedColormap('PASKIL-custom', segment_data, N=N)
     
 ###################################################################################
 
-def createSegment(length,start_RGB,end_RGB):
+def createSegment(length, start_RGB, end_RGB):
     """
     Creates a new segment object. The length argument should be an integer defining the range of the segment 
     (the number of colours it contains). The start_RGB and end_RGB are RGB tuples (R,G,B) defining the colour 
@@ -115,11 +113,11 @@ def createSegment(length,start_RGB,end_RGB):
     function to see how segments can be used to build up palettes spanning a large range of colours.
     """
     
-    return segment(length,start_RGB,end_RGB)
+    return segment(length, start_RGB, end_RGB)
 
 ###################################################################################
 
-def default(histogram,thresholds):
+def default(histogram, thresholds):
     """
     Returns a colourTable object which uses a default palette (black to blue to red) consisting of five 
     segments. The histogram argument should be a list of integers representing the pixel count of their
@@ -131,13 +129,13 @@ def default(histogram,thresholds):
     to the lowest (black for the default)
     """
     segments=range(5)        
-    segments[0]=segment(256,(0,0,0),(0,0,255))
-    segments[1]=segment(256,(0,0,255),(0,255,255))
-    segments[2]=segment(256,(0,255,255),(0,255,0))
-    segments[3]=segment(256,(0,255,0),(255,255,0))
-    segments[4]=segment(256,(255,255,0),(255,0,0))
+    segments[0]=segment(256, (0, 0, 0), (0, 0, 255))
+    segments[1]=segment(256, (0, 0, 255), (0, 255, 255))
+    segments[2]=segment(256, (0, 255, 255), (0, 255, 0))
+    segments[3]=segment(256, (0, 255, 0), (255, 255, 0))
+    segments[4]=segment(256, (255, 255, 0), (255, 0, 0))
     
-    return fromList(segments,histogram,thresholds)
+    return fromList(segments, histogram, thresholds)
     
 ###################################################################################
 
@@ -170,11 +168,11 @@ def histogram(dataset):
             
             im_pix=current_image.load() #load pixel values
             
-            width,height=current_image.size
+            width, height=current_image.size
             
             for x in range(width):
                 for y in range(height):
-                    current_histogram[im_pix[x,y]]+=1
+                    current_histogram[im_pix[x, y]]+=1
             
         for i in range(size):
             total_histogram[i]+=current_histogram[i]
@@ -186,26 +184,26 @@ def histogram(dataset):
 
 ###################################################################################
 
-def fromImage(filename,histogram,thresholds):
+def fromImage(filename, histogram, thresholds):
     """
     Function returns a colourTable object which uses the palette contained in the image specified by the 
     filename argument. Such palette files can be produced using the colourTable.savePalette() method. Other 
     arguments are the same as for default().
     """
     #open palette image and store the first line of pixel values as the colour_table
-    im=Image.open(filename)
-    width,height=im.size
+    im = Image.open(filename)
+    width = im.size[0]
     
-    palette=list(im.getdata())[0:width]
+    palette = list(im.getdata())[0:width]
     
     #create a colourTable object to hold the data
-    colour_table = colourTable(palette,histogram,thresholds)
+    colour_table = colourTable(palette, histogram, thresholds)
     
     return colour_table
     
 ###################################################################################    
 
-def fromList(segments,histogram,thresholds):
+def fromList(segments, histogram, thresholds):
     """
     Function returns a colourTable object which uses a palette defined by a list of segment objects passed 
     as the segments argument. The list must contain at least one entry. See the segments class for details. 
@@ -220,7 +218,7 @@ def fromList(segments,histogram,thresholds):
         palette=palette+segments[i].tolist()
         
     #create a colourTable object to hold the data
-    colour_table = colourTable(palette,histogram,thresholds)
+    colour_table = colourTable(palette, histogram, thresholds)
     
     return colour_table
     
@@ -232,7 +230,7 @@ def loadHistogram(filename):
     argument. This function reads files produced by the histogram.save() method.
     """
     #open histogram file for reading
-    fp=open(filename,"r")
+    fp=open(filename, "r")
     histogram=[]
     index=[]
     for line in fp:
@@ -264,7 +262,7 @@ class basicColourTable:
     histogram data. This class is mostly used internally by PASKIL for storing colour table data in saved
     images.
     """
-    def __init__(self,colour_table):
+    def __init__(self, colour_table):
         self.colour_table=colour_table
     
     def getColourTable(self):
@@ -275,7 +273,7 @@ class basicColourTable:
         list_colour_table=range(3*len(self.colour_table))
         j=0    
         for i in range(len(self.colour_table)):
-            list_colour_table[j],list_colour_table[j+1],list_colour_table[j+2]=self.colour_table[i]
+            list_colour_table[j], list_colour_table[j+1], list_colour_table[j+2]=self.colour_table[i]
             j+=3
         
         return list_colour_table 
@@ -286,23 +284,23 @@ class colourTable:
     """
     Container class for histogram, palette and colour table data.
     """
-    def __init__(self,palette,histogram,thresholds):
+    def __init__(self, palette, histogram, thresholds):
         
         #check that thresholds are within range of image
-        if thresholds[1]>=len(histogram):
+        if thresholds[1] >= len(histogram):
             raise ValueError, "Max threshold is outside of image pixel value range"
         
         #set class attributes
-        self.__palette=palette
-        self.__histogram=histogram
+        self.__palette = palette
+        self.__histogram = histogram
         
         #create colour table from palette and histogram
-        self.colour_table=[] 
+        self.colour_table = [] 
     
         #find total number of counts in histogram between thresholds
-        total_counts=0
-        for i in range(thresholds[0],thresholds[1]):
-            total_counts+=histogram[i]
+        total_counts = 0
+        for i in range(thresholds[0], thresholds[1]):
+            total_counts += histogram[i]
         
         #set values below min_threshold to first value in colour table
         for i in range(thresholds[0]):
@@ -310,22 +308,22 @@ class colourTable:
         
         #set values between threshold to colours, with a step size based on the histogram.
         #This gives widest colour variation at intensities with high pixel counts
-        place_holder=0
-        float_place_holder=0.0
-        count=0
-        for i in range(thresholds[0],thresholds[1]):
+        place_holder = 0
+        float_place_holder = 0.0
+        count = 0
+        for i in range(thresholds[0], thresholds[1]):
             self.colour_table.append(palette[place_holder])
             
             #calculate current count
-            count=count+histogram[i]
-            float_place_holder=(float(len(palette))*float(count))/float(total_counts)
-            place_holder=int(float_place_holder+0.5)
+            count = count + histogram[i]
+            float_place_holder = (float(len(palette)) * float(count)) / float(total_counts)
+            place_holder = int(float_place_holder + 0.5)
             
             if place_holder >= len(palette):
-                place_holder=len(palette)-1
+                place_holder = len(palette)-1
             
         #set values above max_threshold to last value in colour table
-        for i in range(thresholds[1],len(histogram)):
+        for i in range(thresholds[1], len(histogram)):
             self.colour_table.append(palette[len(palette)-1])
 
     ###################################################################################
@@ -338,14 +336,14 @@ class colourTable:
         list_colour_table=range(3*len(self.__histogram))
         j=0    
         for i in range(len(self.__histogram)):
-            list_colour_table[j],list_colour_table[j+1],list_colour_table[j+2]=self.colour_table[i]
+            list_colour_table[j], list_colour_table[j+1], list_colour_table[j+2]=self.colour_table[i]
             j+=3
         
         return list_colour_table
     
     ###################################################################################
 
-    def saveColourTable(self,filename):
+    def saveColourTable(self, filename):
         """
         Saves a quicklook image of the colour_table. The file type should be specified in the filename 
         argument e.g. saveColourTable(``my_colours.png'').
@@ -355,24 +353,24 @@ class colourTable:
             image_string=image_string+self.colour_table #give the image a larger height than one pixel
 
 
-        im=Image.new(mode="RGB",size=(len(self.colour_table),50))
+        im=Image.new(mode="RGB", size=(len(self.colour_table), 50))
         im.putdata(image_string)
         im.save(filename)
 
     ###################################################################################
     
-    def saveHistogram(self,filename):
+    def saveHistogram(self, filename):
         """
         Saves the histogram data as a text file. This can be useful for plotting the histogram if desired.
         """
-        output_file=open(filename,"w")        
+        output_file=open(filename, "w")        
         for i in range(len(self.__histogram)-1):    
             output_file.write(str(i)+" "+str(self.__histogram[i])+"\n")
         output_file.close()    
         
     ###################################################################################
             
-    def savePalette(self,filename):
+    def savePalette(self, filename):
         """
         Saves a quicklook image of the palette. The file type should be specified in the filename 
         argument e.g. savePalette(``my_palette.png'').
@@ -382,7 +380,7 @@ class colourTable:
             image_string=image_string+self.__palette #give the image a larger height than one pixel
 
 
-        im=Image.new(mode="RGB",size=(len(self.__palette),50))
+        im=Image.new(mode="RGB", size=(len(self.__palette), 50))
         im.putdata(image_string)
         im.save(filename)
 
@@ -394,10 +392,10 @@ class segment:
     Class to contain a linear colour range. Lists of segment objects can be used to create complex palettes
     spanning large colour ranges using the fromList() function.
     """
-    def __init__(self,length,start_RGB,end_RGB):
+    def __init__(self, length, start_RGB, end_RGB):
         self.__length=length
-        self.__start_Red,self.__start_Green,self.__start_Blue=start_RGB
-        self.__end_Red,self.__end_Green,self.__end_Blue=end_RGB
+        self.__start_Red, self.__start_Green, self.__start_Blue=start_RGB
+        self.__end_Red, self.__end_Green, self.__end_Blue=end_RGB
         
     ###################################################################################    
         
@@ -416,7 +414,7 @@ class segment:
             R=self.__start_Red+(float(i)*grad_R)
             G=self.__start_Green+(float(i)*grad_G)
             B=self.__start_Blue+(float(i)*grad_B)
-            RGB=tuple((int(R+0.5),int(G+0.5),int(B+0.5)))
+            RGB=tuple((int(R+0.5), int(G+0.5), int(B+0.5)))
             colour_table.append(RGB)
                         
         return colour_table

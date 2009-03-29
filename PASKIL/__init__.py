@@ -72,6 +72,9 @@ Using PASKIL:
                               metadata is required by PASKIL, how to input it and how to write your own plugins.
 
         allskyKeo        -    This module is used to create keograms from sets of all-sky images.
+        
+        allskyPlot       -    Provides plotting routines for all-sky images, keoagrams and other objects that
+                              implement the plotting interface.
 
         allskyProj       -    Deals with projecting all-sky images onto maps.
         
@@ -112,4 +115,4 @@ Bugs and comments:
 """
 #Define a list of all modules in PASKIL package.
 __all__ = ["allskyCalib", "allskyColour", "allskyData", "allskyImage", "allskyImagePlugins", "allskyPlot","allskyProj", "allskyKeo", "allskyRaw","misc", "stats", "plugins"]
-__version__ = '3.1.4'
+__version__ = '3.2'

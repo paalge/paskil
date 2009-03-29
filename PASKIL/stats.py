@@ -16,7 +16,7 @@ def variance_mean(data):
     mean = sum_x/float(len(data))
     mean_of_squares = sum_sqd_x/float(len(data))
     
-    return (mean_of_squares-(mean*mean),mean)
+    return (mean_of_squares-(mean*mean), mean)
     
 def variance(data):
     """
