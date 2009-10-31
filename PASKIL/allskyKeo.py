@@ -163,6 +163,8 @@ def load(filename):
         calib_factor = float(image.info['calib_factor'])
     except ValueError:
         calib_factor = None
+    except KeyError:
+        calib_factor = None
     
     #clear image header data
     image.info={}
