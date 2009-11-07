@@ -221,7 +221,7 @@ def new(data, angle, start_time=None, end_time=None, strip_width=5, data_spacing
             colour_table = None
         
         try:
-            calib_factor = data[0].getInfo['processing']['absoluteCalibration']
+            calib_factor = data[0].getInfo()['processing']['absoluteCalibration']
         except KeyError:
             calib_factor = None
         
@@ -434,7 +434,12 @@ def _putData(image, keo_pix, width, height, strip_width, angle, keo_fov_angle, s
         for i in range(height):
             for j in range(-strip_width/2+1, strip_width/2+1):
                 try:
-                    keo_pix[x_coordinate+j, i]=strip[strip_width/2+j][i]
+                    #need to convert values to tuples before passing them to PIL
+                    #otherwise it can't cope
+                    if mode == "RGB":
+                        keo_pix[x_coordinate+j, i]=tuple(strip[strip_width/2+j][i])
+                    else:
+                        keo_pix[x_coordinate+j, i]=strip[strip_width/2+j][i]
                 except Exception, ex:
                     raise ex
     elif keo_type == "Average":
@@ -1240,7 +1245,11 @@ class keogram:
             
             #read time data from image
             try:
-                capture_time=datetime.datetime.strptime(im.getInfo()['header'] ['Creation Time'], "%d %b %Y %H:%M:%S %Z")
+                capture_time=datetime.datetime.strptime(im.getInfo()['header'] ['Creation Time'].lstrip().rstrip(), "%d %b %Y %H:%M:%S %Z")
+            
+            except ValueError:
+                capture_time=datetime.datetime.strptime(im.getInfo()['header'] ['Creation Time'].lstrip().rstrip(), "%d %b %Y %H:%M:%S")
+            
             except KeyError:
                 raise IOError, "Cannot read creation time from image "+im.getFilename()
             
@@ -1345,7 +1354,8 @@ class keogram:
             _interpolateData(new_data_points, image, self.__mode, self.__colour_table, 1, 1.5*(self.__data_spacing+5)) #+5 is effective strip width used when calculating keogram width
         
         #create new keogram object
-        new_keogram=keogram(image, None, start_time, end_time, self.__angle, self.__fov_angle, [], self.__strip_width, self.__intensities, self.__keo_type, self.__data_points, self.__data_spacing, self.__calib_factor)
+                           
+        new_keogram=keogram(image, None, start_time, end_time, self.__angle, self.__fov_angle, self.__strip_width, self.__intensities, self.__keo_type, self.__data_points, self.__data_spacing, self.__calib_factor)
         
         #if the original keogram had a colour table applied, then re-apply it now
         if self.__colour_table != None:
