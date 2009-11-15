@@ -1,4 +1,24 @@
 /*
+Copyright 1997-2009 by Dave Coffin, dcoffin a cybercom o net
+Copyright (C) Nial Peters 2009
+
+This file is part of PASKIL.
+
+PASKIL is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+PASKIL is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with PASKIL.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
  * This extension module is a slightly modified version of 
  * Dave Coffin's dcraw.c raw photo decoder. Changes have been
  * made to allow it to be compiled as a Python extension
