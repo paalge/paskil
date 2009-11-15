@@ -1,3 +1,19 @@
+#Copyright (C) Nial Peters 2009
+#
+#This file is part of PASKIL.
+#
+#PASKIL is free software: you can redistribute it and/or modify
+#it under the terms of the GNU General Public License as published by
+#the Free Software Foundation, either version 3 of the License, or
+#(at your option) any later version.
+#
+#PASKIL is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#GNU General Public License for more details.
+#
+#You should have received a copy of the GNU General Public License
+#along with PASKIL.  If not, see <http://www.gnu.org/licenses/>.
 """
 This package contains a few plugins that I wrote during the course of developing PASKIL. If you are
 lucky enough to be using the same all-sky cameras as me, then you can use the same plugins and save

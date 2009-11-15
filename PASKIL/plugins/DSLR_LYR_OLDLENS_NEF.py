@@ -15,49 +15,36 @@
 #You should have received a copy of the GNU General Public License
 #along with PASKIL.  If not, see <http://www.gnu.org/licenses/>.
 """
-Plugin for loading images taken using the Nikon D80 DSLR allsky camera at KHO. 
+Plugin for loading images taken using the Nikon D80 DSLR allsky camera at KHO using the old 
+diagonal fish-eye lens. This plugin is for opening the raw NEF files.
 """
 from __future__ import with_statement
-from PASKIL import allskyImage, allskyImagePlugins
+from PASKIL import allskyImage, allskyImagePlugins, allskyRaw
 import sys,datetime
 import Image
 
-class DSLR_LYR_JPG:
+class DSLR_LYR_OL_NEF:
 
     def __init__(self):
-        self.name = "Jeff and Nial's DSLR camera at KHO"
+        self.name = ""
         
     ###################################################################################    
     
     def test(self, image_filename, info_filename):
         
-        try:
-            image = Image.open(image_filename)
-        except:
-            return False
-        
-        if image.format == "JPEG":
-            try:
-                filename = image.filename
-                filename=filename.split("/")
-                filename=filename[len(filename)-1]
-                datetime.datetime.strptime(filename.rstrip(".JPG"), "LYR-SLR-%Y%m%d_%H%M%S")
-            except ValueError:
-                return False
+        if image_filename.endswith(".NEF"):
             return True
-        else:
-            return False
+        
+        return False
             
     ###################################################################################
         
     def open(self,image_filename, info_filename):
         
-        image = Image.open(image_filename)
-        
         #Read site info file
         camera={}
         processing={}
-        header=image.info
+        header={}
         
         with open(info_filename,"r") as info_file:
             for line in info_file: #read file line by line
@@ -72,20 +59,20 @@ class DSLR_LYR_JPG:
                 camera[words[0].lstrip().rstrip()] = words[1].lstrip().rstrip() #store the values (minus white space) in a dictionary
             
         #Read creation time from filename
-        filename = image.filename
+        filename = image_filename
         filename=filename.split("/")
         filename=filename[len(filename)-1]
-        creation_time=datetime.datetime.strptime(filename.rstrip(".JPG"), "LYR-SLR-%Y%m%d_%H%M%S")
+        creation_time=datetime.datetime.strptime(filename.rstrip(".NEF"), "LYR-SLR-%Y%m%d_%H%M%S")
         
         creation_time=creation_time.strftime("%d %b %Y %H:%M:%S %Z")
-        header = {'Wavelength':"Visible",'Creation Time': creation_time}
+        header = {'Wavelength':"RGGB",'Creation Time': creation_time}
         
         info={'header':header,'camera':camera,'processing':processing}
         
         #return new allskyImage object
-        return allskyImage.allskyImage(image,image.filename,info)
+        return allskyRaw.rawImage(image_filename,info)
         
     ###################################################################################
 ###################################################################################
 
-allskyImagePlugins.register(DSLR_LYR_JPG())
+allskyImagePlugins.register(DSLR_LYR_OL_NEF())
