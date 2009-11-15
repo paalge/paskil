@@ -1,0 +1,245 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module PASKIL.allskyImage</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="PASKIL.html"><font color="#ffffff">PASKIL</font></a>.allskyImage</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/nialp/workspace/PASKIL/docs/PASKIL/allskyImage.py">/home/nialp/workspace/PASKIL/docs/PASKIL/allskyImage.py</a></font></td></tr></table>
+    <p><tt>Introduction:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;<a href="#allskyImage">allskyImage</a>&nbsp;module&nbsp;provides&nbsp;a&nbsp;class&nbsp;of&nbsp;the&nbsp;same&nbsp;name&nbsp;which&nbsp;is&nbsp;used&nbsp;to&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;represent&nbsp;an&nbsp;all-sky&nbsp;image.&nbsp;The&nbsp;class&nbsp;contains&nbsp;methods&nbsp;for&nbsp;performing&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;various&nbsp;manipulations&nbsp;of&nbsp;the&nbsp;image&nbsp;including&nbsp;aligning&nbsp;it&nbsp;with&nbsp;North&nbsp;and&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;applying&nbsp;a&nbsp;false&nbsp;colour&nbsp;scale.&nbsp;PASKIL&nbsp;supports&nbsp;both&nbsp;16bit&nbsp;and&nbsp;8bit&nbsp;images,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;however,&nbsp;the&nbsp;routines&nbsp;for&nbsp;8bit&nbsp;images&nbsp;are&nbsp;considerably&nbsp;faster.<br>
+&nbsp;<br>
+&nbsp;<br>
+Concepts:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;<a href="#allskyImage">allskyImage</a>&nbsp;object&nbsp;has&nbsp;two&nbsp;major&nbsp;constituents,&nbsp;a&nbsp;Python&nbsp;Image&nbsp;Library&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(PIL)&nbsp;image&nbsp;object&nbsp;which&nbsp;holds&nbsp;the&nbsp;image&nbsp;data&nbsp;itself,&nbsp;and&nbsp;a&nbsp;hash&nbsp;table&nbsp;(or<br>
+&nbsp;&nbsp;&nbsp;&nbsp;dictionary&nbsp;as&nbsp;it&nbsp;is&nbsp;known&nbsp;in&nbsp;Python)&nbsp;containing&nbsp;the&nbsp;image&nbsp;metadata.&nbsp;For&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;details&nbsp;of&nbsp;what&nbsp;metadata&nbsp;is&nbsp;required,&nbsp;and&nbsp;how&nbsp;to&nbsp;load&nbsp;it&nbsp;into&nbsp;PASKIL&nbsp;see&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;allskyImagePlugins&nbsp;module.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+Example:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;following&nbsp;example&nbsp;code&nbsp;opens&nbsp;the&nbsp;image&nbsp;file&nbsp;"test.png"&nbsp;using&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;information&nbsp;in&nbsp;"site_info.txt".&nbsp;It&nbsp;then&nbsp;converts&nbsp;the&nbsp;image&nbsp;to&nbsp;8bit,&nbsp;applies<br>
+&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;binary&nbsp;mask&nbsp;giving&nbsp;a&nbsp;70&nbsp;degree&nbsp;field&nbsp;of&nbsp;view,&nbsp;centres&nbsp;the&nbsp;image,&nbsp;aligns&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;top&nbsp;of&nbsp;the&nbsp;image&nbsp;with&nbsp;geomagnetic&nbsp;north&nbsp;and&nbsp;saves&nbsp;it&nbsp;as&nbsp;"testout.png".&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Note&nbsp;that&nbsp;you&nbsp;will&nbsp;also&nbsp;need&nbsp;to&nbsp;import&nbsp;the&nbsp;relevant&nbsp;plugin:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;from&nbsp;PASKIL&nbsp;import&nbsp;<a href="#allskyImage">allskyImage</a>&nbsp;#import&nbsp;the&nbsp;<a href="#allskyImage">allskyImage</a>&nbsp;module<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#create&nbsp;a&nbsp;new&nbsp;<a href="#allskyImage">allskyImage</a>&nbsp;object<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;im=<a href="#allskyImage">allskyImage</a>.<a href="#-new">new</a>("test.png",&nbsp;site_info_file="site_info.txt")<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;im=im.convertTo8bit()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;im=im.binaryMask(70)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;im=im.centerImage()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;im=im.alignNorth(north='geomagnetic',&nbsp;orientation='NWSE')<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;im.save("testout.png")</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="Image.html">Image</a><br>
+<a href="ImageChops.html">ImageChops</a><br>
+<a href="ImageDraw.html">ImageDraw</a><br>
+<a href="ImageFilter.html">ImageFilter</a><br>
+<a href="ImageFont.html">ImageFont</a><br>
+</td><td width="25%" valign=top><a href="ImageOps.html">ImageOps</a><br>
+<a href="PASKIL.allskyImagePlugins.html">PASKIL.allskyImagePlugins</a><br>
+<a href="PASKIL.allskyPlot.html">PASKIL.allskyPlot</a><br>
+<a href="PASKIL.allskyProj.html">PASKIL.allskyProj</a><br>
+<a href="datetime.html">datetime</a><br>
+</td><td width="25%" valign=top><a href="math.html">math</a><br>
+<a href="matplotlib.html">matplotlib</a><br>
+<a href="PASKIL.misc.html">PASKIL.misc</a><br>
+<a href="numpy.html">numpy</a><br>
+<a href="os.html">os</a><br>
+</td><td width="25%" valign=top><a href="pyexiv2.html">pyexiv2</a><br>
+<a href="pyfits.html">pyfits</a><br>
+<a href="sys.html">sys</a><br>
+<a href="warnings.html">warnings</a><br>
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="PASKIL.allskyImage.html#allskyImage">allskyImage</a>
+</font></dt></dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="allskyImage">class <strong>allskyImage</strong></a></font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Holds&nbsp;both&nbsp;the&nbsp;image&nbsp;data&nbsp;and&nbsp;the&nbsp;image&nbsp;metadata&nbsp;associated&nbsp;with&nbsp;an&nbsp;all-sky&nbsp;image.&nbsp;Provides&nbsp;methods<br>
+for&nbsp;manipulating&nbsp;both.&nbsp;Unless&nbsp;stated&nbsp;otherwise,&nbsp;all&nbsp;methods&nbsp;return&nbsp;a&nbsp;new&nbsp;<a href="#allskyImage">allskyImage</a>&nbsp;object.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="allskyImage-__init__"><strong>__init__</strong></a>(self, image, image_file, info)</dt></dl>
+
+<dl><dt><a name="allskyImage-absoluteCalibration"><strong>absoluteCalibration</strong></a>(self, spectral_responsivity, exposure_time, const_factor<font color="#909090">=1.0</font>)</dt><dd><tt>Returns&nbsp;a&nbsp;new&nbsp;<a href="#allskyImage">allskyImage</a>&nbsp;object&nbsp;which&nbsp;has&nbsp;been&nbsp;calibrated&nbsp;to&nbsp;kR.&nbsp;This&nbsp;is&nbsp;a&nbsp;lazy<br>
+operation&nbsp;in&nbsp;that&nbsp;the&nbsp;actual&nbsp;pixel&nbsp;values&nbsp;are&nbsp;not&nbsp;changed.&nbsp;Instead,&nbsp;the&nbsp;scaling&nbsp;<br>
+on&nbsp;the&nbsp;colour&nbsp;bar&nbsp;will&nbsp;be&nbsp;changed&nbsp;when&nbsp;the&nbsp;image&nbsp;is&nbsp;plotted.&nbsp;The&nbsp;spectral&nbsp;<br>
+responsivity&nbsp;should&nbsp;be&nbsp;in&nbsp;Counts&nbsp;per&nbsp;second&nbsp;per&nbsp;pixel&nbsp;per&nbsp;Rayleigh.&nbsp;Exposure<br>
+time&nbsp;should&nbsp;be&nbsp;in&nbsp;seconds.&nbsp;The&nbsp;constant&nbsp;factor&nbsp;option&nbsp;allows&nbsp;a&nbsp;fixed&nbsp;scaling&nbsp;<br>
+factor&nbsp;to&nbsp;be&nbsp;applied,&nbsp;for&nbsp;example&nbsp;if&nbsp;transmission&nbsp;through&nbsp;the&nbsp;instrument&nbsp;dome<br>
+is&nbsp;96%,&nbsp;then&nbsp;const_factor=1.04&nbsp;will&nbsp;account&nbsp;for&nbsp;this.</tt></dd></dl>
+
+<dl><dt><a name="allskyImage-addTimeStamp"><strong>addTimeStamp</strong></a>(self, format, colour<font color="#909090">='black'</font>, fontsize<font color="#909090">=20</font>)</dt><dd><tt>Prints&nbsp;the&nbsp;creation&nbsp;time&nbsp;(as&nbsp;specified&nbsp;in&nbsp;info[`header'][`Creation&nbsp;Time'])&nbsp;on&nbsp;the&nbsp;image&nbsp;in&nbsp;<br>
+a&nbsp;format&nbsp;specified&nbsp;by&nbsp;the&nbsp;format&nbsp;argument.&nbsp;The&nbsp;format&nbsp;string&nbsp;is&nbsp;the&nbsp;same&nbsp;as&nbsp;for&nbsp;time.strftime()&nbsp;<br>
+see&nbsp;<a href="http://docs.python.org/lib/module-time.html">http://docs.python.org/lib/module-time.html</a>.&nbsp;Applying&nbsp;a&nbsp;time&nbsp;stamp&nbsp;before&nbsp;a&nbsp;colour&nbsp;table&nbsp;<br>
+has&nbsp;been&nbsp;applied&nbsp;will&nbsp;mean&nbsp;that&nbsp;the&nbsp;colour&nbsp;table&nbsp;will&nbsp;be&nbsp;applied&nbsp;to&nbsp;the&nbsp;time&nbsp;stamp&nbsp;as&nbsp;well.&nbsp;<br>
+A&nbsp;time&nbsp;stamp&nbsp;will&nbsp;also&nbsp;affect&nbsp;any&nbsp;statistical&nbsp;operations&nbsp;performed&nbsp;on&nbsp;the&nbsp;image&nbsp;(for&nbsp;example&nbsp;<br>
+producing&nbsp;a&nbsp;histogram).&nbsp;It&nbsp;is&nbsp;therefore&nbsp;recommended&nbsp;to&nbsp;apply&nbsp;the&nbsp;time&nbsp;stamp&nbsp;as&nbsp;a&nbsp;final&nbsp;step&nbsp;in&nbsp;<br>
+processing.</tt></dd></dl>
+
+<dl><dt><a name="allskyImage-alignNorth"><strong>alignNorth</strong></a>(self, north<font color="#909090">='geographic'</font>, orientation<font color="#909090">='NESW'</font>)</dt><dd><tt>Aligns&nbsp;the&nbsp;top&nbsp;of&nbsp;the&nbsp;image&nbsp;with&nbsp;either&nbsp;geographic&nbsp;or&nbsp;geomagnetic&nbsp;north&nbsp;depending&nbsp;on&nbsp;the&nbsp;value&nbsp;of&nbsp;<br>
+the&nbsp;north&nbsp;argument.&nbsp;Default&nbsp;is&nbsp;"geographic",&nbsp;can&nbsp;also&nbsp;be&nbsp;set&nbsp;to&nbsp;"geomagnetic".&nbsp;The&nbsp;right&nbsp;hand&nbsp;edge&nbsp;<br>
+of&nbsp;the&nbsp;image&nbsp;will&nbsp;be&nbsp;aligned&nbsp;with&nbsp;East.&nbsp;The&nbsp;returned&nbsp;all-sky&nbsp;image&nbsp;will&nbsp;be&nbsp;in&nbsp;a&nbsp;NESW&nbsp;orientation&nbsp;by&nbsp;<br>
+default&nbsp;but&nbsp;this&nbsp;can&nbsp;be&nbsp;changed&nbsp;to&nbsp;'NWSE'&nbsp;using&nbsp;the&nbsp;orientation&nbsp;argument.&nbsp;<br>
+The&nbsp;image&nbsp;must&nbsp;be&nbsp;centered&nbsp;before&nbsp;it&nbsp;can&nbsp;be&nbsp;aligned&nbsp;with&nbsp;North.&nbsp;It&nbsp;is&nbsp;expected&nbsp;that&nbsp;the&nbsp;images&nbsp;are<br>
+in&nbsp;a&nbsp;NWSE&nbsp;orientation&nbsp;before&nbsp;they&nbsp;are&nbsp;processed&nbsp;by&nbsp;PASKIL&nbsp;(i.e.&nbsp;looking&nbsp;upwards).</tt></dd></dl>
+
+<dl><dt><a name="allskyImage-applyColourTable"><strong>applyColourTable</strong></a>(self, colour_table)</dt><dd><tt>Applies&nbsp;a&nbsp;colour&nbsp;table&nbsp;to&nbsp;the&nbsp;image,&nbsp;converting&nbsp;the&nbsp;image&nbsp;mode&nbsp;from&nbsp;``L''&nbsp;to&nbsp;``RGB''.&nbsp;<br>
+The&nbsp;colour_table&nbsp;argument&nbsp;should&nbsp;be&nbsp;a&nbsp;colourTable&nbsp;object&nbsp;as&nbsp;defined&nbsp;in&nbsp;the&nbsp;allskyColour&nbsp;<br>
+module.</tt></dd></dl>
+
+<dl><dt><a name="allskyImage-binaryMask"><strong>binaryMask</strong></a>(self, fov_angle, inverted<font color="#909090">=False</font>)</dt><dd><tt>Applies&nbsp;a&nbsp;binary&nbsp;mask&nbsp;to&nbsp;the&nbsp;image,&nbsp;setting&nbsp;pixels&nbsp;outside&nbsp;of&nbsp;the&nbsp;field&nbsp;of&nbsp;view&nbsp;to&nbsp;black.&nbsp;<br>
+The&nbsp;fov_angle&nbsp;argument&nbsp;should&nbsp;be&nbsp;the&nbsp;field&nbsp;of&nbsp;view&nbsp;in&nbsp;degrees&nbsp;from&nbsp;the&nbsp;centre.&nbsp;The&nbsp;inverted<br>
+options&nbsp;controls&nbsp;whether&nbsp;the&nbsp;mask&nbsp;is&nbsp;black&nbsp;or&nbsp;white,&nbsp;default&nbsp;is&nbsp;False&nbsp;=&nbsp;black.</tt></dd></dl>
+
+<dl><dt><a name="allskyImage-centerImage"><strong>centerImage</strong></a>(self)</dt><dd><tt>Resizes&nbsp;and&nbsp;centres&nbsp;the&nbsp;image&nbsp;about&nbsp;the&nbsp;field&nbsp;of&nbsp;view,&nbsp;finding&nbsp;the&nbsp;best&nbsp;fit&nbsp;for&nbsp;the&nbsp;circular&nbsp;<br>
+field&nbsp;of&nbsp;view&nbsp;in&nbsp;a&nbsp;rectangular&nbsp;image.&nbsp;The&nbsp;image&nbsp;returned&nbsp;will&nbsp;be&nbsp;square,&nbsp;with&nbsp;dimensions&nbsp;of<br>
+RadiusxRadius.</tt></dd></dl>
+
+<dl><dt><a name="allskyImage-convertTo8bit"><strong>convertTo8bit</strong></a>(self)</dt><dd><tt>Converts&nbsp;an&nbsp;"I"&nbsp;mode&nbsp;image&nbsp;into&nbsp;an&nbsp;"L"&nbsp;mode&nbsp;image.</tt></dd></dl>
+
+<dl><dt><a name="allskyImage-createQuicklook"><strong>createQuicklook</strong></a>(self, size<font color="#909090">=(480, 640)</font>, timestamp<font color="#909090">='%a %b %d %Y, %H:%M:%S %Z'</font>, fontsize<font color="#909090">=16</font>)</dt><dd><tt>Returns&nbsp;an&nbsp;PIL&nbsp;Image&nbsp;object&nbsp;which&nbsp;contains&nbsp;a&nbsp;thumbnail&nbsp;image&nbsp;with&nbsp;a&nbsp;timestamp&nbsp;appended&nbsp;to<br>
+the&nbsp;bottom&nbsp;of&nbsp;it.&nbsp;The&nbsp;size&nbsp;option&nbsp;should&nbsp;be&nbsp;a&nbsp;tuple&nbsp;specifying&nbsp;the&nbsp;thumbnail&nbsp;size&nbsp;in&nbsp;<br>
+pixels.&nbsp;Note&nbsp;that&nbsp;the&nbsp;actual&nbsp;thumbnail&nbsp;produced&nbsp;will&nbsp;be&nbsp;24&nbsp;pixels&nbsp;higher&nbsp;due&nbsp;to&nbsp;the&nbsp;size&nbsp;of<br>
+the&nbsp;timestamp.&nbsp;This&nbsp;method&nbsp;also&nbsp;preserves&nbsp;the&nbsp;aspect&nbsp;ratio&nbsp;of&nbsp;the&nbsp;image,&nbsp;so&nbsp;the&nbsp;thumbnail&nbsp;<br>
+may&nbsp;have&nbsp;a&nbsp;different&nbsp;ratio&nbsp;to&nbsp;the&nbsp;one&nbsp;specified.&nbsp;The&nbsp;timestamp&nbsp;option&nbsp;should&nbsp;be&nbsp;a&nbsp;string&nbsp;<br>
+specifying&nbsp;the&nbsp;format&nbsp;of&nbsp;the&nbsp;timestamp&nbsp;(see&nbsp;<a href="http://docs.python.org/lib/module-time.html">http://docs.python.org/lib/module-time.html</a>).<br>
+The&nbsp;fontsize&nbsp;option&nbsp;should&nbsp;be&nbsp;an&nbsp;integer&nbsp;specifying&nbsp;the&nbsp;font&nbsp;size.</tt></dd></dl>
+
+<dl><dt><a name="allskyImage-flatFieldCorrection"><strong>flatFieldCorrection</strong></a>(self, calibration)</dt><dd><tt>Applies&nbsp;a&nbsp;flat&nbsp;field&nbsp;correction&nbsp;to&nbsp;the&nbsp;image.&nbsp;This&nbsp;is&nbsp;needed&nbsp;due&nbsp;to&nbsp;the&nbsp;angular&nbsp;<br>
+dependance&nbsp;of&nbsp;the&nbsp;transmission&nbsp;through&nbsp;the&nbsp;lens.&nbsp;The&nbsp;calibration&nbsp;argument&nbsp;should&nbsp;<br>
+be&nbsp;an&nbsp;allskyCalib.calibration&nbsp;object.</tt></dd></dl>
+
+<dl><dt><a name="allskyImage-getExif"><strong>getExif</strong></a>(self)</dt><dd><tt>Returns&nbsp;a&nbsp;dictionary&nbsp;object&nbsp;containing&nbsp;the&nbsp;exif&nbsp;data&nbsp;associated&nbsp;with&nbsp;the&nbsp;image.<br>
+Note&nbsp;that&nbsp;this&nbsp;data&nbsp;is&nbsp;copied&nbsp;from&nbsp;the&nbsp;original&nbsp;image&nbsp;used&nbsp;to&nbsp;create&nbsp;the&nbsp;all-sky<br>
+image&nbsp;and&nbsp;is&nbsp;NOT&nbsp;kept&nbsp;up&nbsp;to&nbsp;date&nbsp;by&nbsp;PASKIL.&nbsp;It&nbsp;is&nbsp;therefore&nbsp;likely&nbsp;that&nbsp;exif&nbsp;<br>
+tags&nbsp;such&nbsp;as&nbsp;size/orientation&nbsp;etc.&nbsp;will&nbsp;be&nbsp;incorrect&nbsp;with&nbsp;respect&nbsp;to&nbsp;the&nbsp;current<br>
+image&nbsp;data.</tt></dd></dl>
+
+<dl><dt><a name="allskyImage-getFilename"><strong>getFilename</strong></a>(self)</dt><dd><tt>Returns&nbsp;a&nbsp;string&nbsp;containg&nbsp;the&nbsp;filename&nbsp;of&nbsp;the&nbsp;image.&nbsp;This&nbsp;will&nbsp;be&nbsp;the&nbsp;same&nbsp;as&nbsp;the&nbsp;image_file<br>
+argument&nbsp;passed&nbsp;to&nbsp;the&nbsp;constructor</tt></dd></dl>
+
+<dl><dt><a name="allskyImage-getImage"><strong>getImage</strong></a>(self)</dt><dd><tt>Returns&nbsp;a&nbsp;PIL&nbsp;image&nbsp;object&nbsp;which&nbsp;is&nbsp;a&nbsp;copy&nbsp;of&nbsp;the&nbsp;all-sky&nbsp;image</tt></dd></dl>
+
+<dl><dt><a name="allskyImage-getInfo"><strong>getInfo</strong></a>(self)</dt><dd><tt>Returns&nbsp;a&nbsp;dictionary&nbsp;object&nbsp;containing&nbsp;four&nbsp;dictionaries&nbsp;('header','camera',&nbsp;'processing',&nbsp;'exif')<br>
+which&nbsp;contain&nbsp;a&nbsp;copy&nbsp;of&nbsp;the&nbsp;image&nbsp;metadata</tt></dd></dl>
+
+<dl><dt><a name="allskyImage-getMode"><strong>getMode</strong></a>(self)</dt><dd><tt>Returns&nbsp;a&nbsp;string&nbsp;containing&nbsp;the&nbsp;mode&nbsp;of&nbsp;the&nbsp;image&nbsp;("RGB","L"&nbsp;etc...).&nbsp;See&nbsp;PIL&nbsp;handbook&nbsp;for&nbsp;<br>
+details&nbsp;of&nbsp;different&nbsp;image&nbsp;modes</tt></dd></dl>
+
+<dl><dt><a name="allskyImage-getSize"><strong>getSize</strong></a>(self)</dt><dd><tt>Returns&nbsp;a&nbsp;tuple&nbsp;(width,height)&nbsp;containing&nbsp;the&nbsp;size&nbsp;in&nbsp;pixels&nbsp;of&nbsp;the&nbsp;image&nbsp;(equivalent&nbsp;to&nbsp;<br>
+<a href="#allskyImage-getImage">getImage</a>().size)</tt></dd></dl>
+
+<dl><dt><a name="allskyImage-getStrip"><strong>getStrip</strong></a>(self, angle, strip_width)</dt><dd><tt>Returns&nbsp;a&nbsp;list&nbsp;of&nbsp;lists&nbsp;(Python's&nbsp;equivalent&nbsp;of&nbsp;a&nbsp;2D&nbsp;array,&nbsp;elements&nbsp;are&nbsp;accessed&nbsp;by&nbsp;<br>
+list[i][j])&nbsp;containing&nbsp;pixel&nbsp;values&nbsp;in&nbsp;a&nbsp;strip&nbsp;through&nbsp;the&nbsp;centre&nbsp;of&nbsp;the&nbsp;image.&nbsp;The&nbsp;<br>
+angle&nbsp;argument&nbsp;controls&nbsp;the&nbsp;angle&nbsp;from&nbsp;geographic&nbsp;north&nbsp;that&nbsp;the&nbsp;strip&nbsp;is&nbsp;taken.&nbsp;The&nbsp;<br>
+strip_width&nbsp;argument&nbsp;controls&nbsp;the&nbsp;width&nbsp;of&nbsp;the&nbsp;strip&nbsp;in&nbsp;pixels.&nbsp;The&nbsp;image&nbsp;must&nbsp;be&nbsp;<br>
+aligned&nbsp;with&nbsp;North&nbsp;before&nbsp;this&nbsp;method&nbsp;can&nbsp;be&nbsp;used.&nbsp;The&nbsp;list&nbsp;returned&nbsp;will&nbsp;always&nbsp;have&nbsp;a<br>
+length&nbsp;equal&nbsp;to&nbsp;the&nbsp;'Radius'&nbsp;of&nbsp;the&nbsp;field&nbsp;of&nbsp;view&nbsp;of&nbsp;the&nbsp;image.</tt></dd></dl>
+
+<dl><dt><a name="allskyImage-histogram"><strong>histogram</strong></a>(self)</dt><dd><tt>Returns&nbsp;a&nbsp;histogram&nbsp;of&nbsp;the&nbsp;image.&nbsp;For&nbsp;'L'&nbsp;mode&nbsp;images&nbsp;this&nbsp;will&nbsp;be&nbsp;a&nbsp;list&nbsp;of&nbsp;<br>
+length&nbsp;256,&nbsp;for&nbsp;'I'&nbsp;mode&nbsp;images&nbsp;it&nbsp;will&nbsp;be&nbsp;a&nbsp;list&nbsp;of&nbsp;length&nbsp;65536.&nbsp;The&nbsp;histogram<br>
+method&nbsp;cannot&nbsp;be&nbsp;used&nbsp;for&nbsp;RGB&nbsp;images.</tt></dd></dl>
+
+<dl><dt><a name="allskyImage-medianFilter"><strong>medianFilter</strong></a>(self, n)</dt><dd><tt>This&nbsp;is&nbsp;a&nbsp;thin&nbsp;wrapper&nbsp;function&nbsp;for&nbsp;the&nbsp;median&nbsp;filter&nbsp;provided&nbsp;by&nbsp;PIL.&nbsp;It&nbsp;replaces&nbsp;each&nbsp;<br>
+pixel&nbsp;by&nbsp;the&nbsp;median&nbsp;value&nbsp;of&nbsp;the&nbsp;pixels&nbsp;in&nbsp;an&nbsp;nxn&nbsp;square&nbsp;around&nbsp;it&nbsp;(where&nbsp;n&nbsp;is&nbsp;an&nbsp;odd&nbsp;integer).</tt></dd></dl>
+
+<dl><dt><a name="allskyImage-projectToHeight"><strong>projectToHeight</strong></a>(self, height, grid_size<font color="#909090">=300</font>, background<font color="#909090">='black'</font>)</dt><dd><tt>Returns&nbsp;a&nbsp;projection&nbsp;object&nbsp;which&nbsp;can&nbsp;be&nbsp;used&nbsp;to&nbsp;create&nbsp;map&nbsp;projections&nbsp;of&nbsp;the&nbsp;allsky&nbsp;image.<br>
+See&nbsp;the&nbsp;allskyProj&nbsp;module&nbsp;for&nbsp;details.&nbsp;The&nbsp;height&nbsp;argument&nbsp;should&nbsp;be&nbsp;the&nbsp;altitude&nbsp;in&nbsp;meters<br>
+of&nbsp;the&nbsp;contents&nbsp;of&nbsp;the&nbsp;image.&nbsp;The&nbsp;grid_size&nbsp;option&nbsp;determines&nbsp;the&nbsp;dimensions&nbsp;of&nbsp;the&nbsp;lat,lon<br>
+grid&nbsp;that&nbsp;the&nbsp;image&nbsp;is&nbsp;split&nbsp;into.&nbsp;A&nbsp;larger&nbsp;grid&nbsp;size&nbsp;will&nbsp;result&nbsp;in&nbsp;a&nbsp;less&nbsp;grainy&nbsp;image&nbsp;but&nbsp;<br>
+longer&nbsp;computation&nbsp;times&nbsp;and&nbsp;higher&nbsp;memory&nbsp;usage.&nbsp;Projections&nbsp;are&nbsp;done&nbsp;using&nbsp;a&nbsp;curved&nbsp;<br>
+atmosphere&nbsp;model&nbsp;assuming&nbsp;a&nbsp;spherical&nbsp;Earth&nbsp;with&nbsp;a&nbsp;radius&nbsp;of&nbsp;6.37E6&nbsp;meters.&nbsp;It&nbsp;should&nbsp;be&nbsp;<br>
+noted&nbsp;that&nbsp;projected&nbsp;images&nbsp;have&nbsp;1&nbsp;degree&nbsp;less&nbsp;field&nbsp;of&nbsp;view&nbsp;than&nbsp;their&nbsp;corresponding&nbsp;all-<br>
+sky&nbsp;images.&nbsp;The&nbsp;background&nbsp;option&nbsp;controls&nbsp;the&nbsp;background&nbsp;colour&nbsp;of&nbsp;the&nbsp;map&nbsp;projection,<br>
+default&nbsp;is&nbsp;black.</tt></dd></dl>
+
+<dl><dt><a name="allskyImage-resize"><strong>resize</strong></a>(self, size)</dt><dd><tt>Resizes&nbsp;the&nbsp;image.&nbsp;The&nbsp;size&nbsp;argument&nbsp;should&nbsp;be&nbsp;a&nbsp;tuple&nbsp;(width,height)&nbsp;where&nbsp;the&nbsp;dimensions<br>
+are&nbsp;in&nbsp;pixels.&nbsp;This&nbsp;method&nbsp;preserves&nbsp;the&nbsp;aspect&nbsp;ratio&nbsp;of&nbsp;the&nbsp;image,&nbsp;so&nbsp;while&nbsp;the&nbsp;returned<br>
+image&nbsp;will&nbsp;always&nbsp;have&nbsp;the&nbsp;specified&nbsp;width,&nbsp;the&nbsp;height&nbsp;may&nbsp;be&nbsp;adjusted.</tt></dd></dl>
+
+<dl><dt><a name="allskyImage-save"><strong>save</strong></a>(self, filename, format<font color="#909090">='png'</font>)</dt><dd><tt>Save&nbsp;the&nbsp;image&nbsp;and&nbsp;the&nbsp;meta-data&nbsp;as&nbsp;"filename".&nbsp;The&nbsp;format&nbsp;argument&nbsp;can&nbsp;be:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;"png":&nbsp;&nbsp;a&nbsp;png&nbsp;image&nbsp;containing&nbsp;all&nbsp;the&nbsp;metadata&nbsp;in&nbsp;the&nbsp;image&nbsp;header<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;"jpg":&nbsp;a&nbsp;jpeg&nbsp;image&nbsp;containing&nbsp;all&nbsp;the&nbsp;metadata&nbsp;in&nbsp;the&nbsp;UserComment&nbsp;tag<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;of&nbsp;the&nbsp;exif&nbsp;data.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;"fits":&nbsp;a&nbsp;flexible&nbsp;image&nbsp;transport&nbsp;system&nbsp;file&nbsp;with&nbsp;one&nbsp;hdu&nbsp;per&nbsp;image&nbsp;channel<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(RGB&nbsp;images&nbsp;that&nbsp;are&nbsp;greyscale&nbsp;images&nbsp;which&nbsp;have&nbsp;been&nbsp;mapped&nbsp;through&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;colour&nbsp;table&nbsp;are&nbsp;stored&nbsp;as&nbsp;a&nbsp;single&nbsp;channel&nbsp;and&nbsp;are&nbsp;converted&nbsp;back<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;to&nbsp;RGB&nbsp;on&nbsp;loading)&nbsp;and&nbsp;three&nbsp;hdus&nbsp;containing&nbsp;metadata.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+The&nbsp;default&nbsp;format&nbsp;is&nbsp;"png".&nbsp;Although&nbsp;the&nbsp;format&nbsp;can&nbsp;also&nbsp;be&nbsp;read&nbsp;from&nbsp;the&nbsp;filename,<br>
+"myimage.fits"&nbsp;will&nbsp;be&nbsp;saved&nbsp;as&nbsp;a&nbsp;fits&nbsp;image,&nbsp;not&nbsp;a&nbsp;png.</tt></dd></dl>
+
+<dl><dt><a name="allskyImage-subtractBackgroundImage"><strong>subtractBackgroundImage</strong></a>(self, background)</dt><dd><tt>Returns&nbsp;a&nbsp;new&nbsp;<a href="#allskyImage">allskyImage</a>&nbsp;object&nbsp;with&nbsp;the&nbsp;specified&nbsp;background&nbsp;image&nbsp;subtracted.<br>
+The&nbsp;background&nbsp;argument&nbsp;should&nbsp;be&nbsp;an&nbsp;<a href="#allskyImage">allskyImage</a>&nbsp;object&nbsp;containing&nbsp;the&nbsp;<br>
+background&nbsp;image&nbsp;data.<br>
+&nbsp;<br>
+If&nbsp;the&nbsp;image&nbsp;which&nbsp;the&nbsp;background&nbsp;is&nbsp;being&nbsp;subtracted&nbsp;from&nbsp;has&nbsp;had&nbsp;some&nbsp;processing<br>
+already&nbsp;applied&nbsp;to&nbsp;it&nbsp;(e.g.&nbsp;binaryMask,&nbsp;alignNorth&nbsp;etc.)&nbsp;then&nbsp;it&nbsp;is&nbsp;important&nbsp;that&nbsp;<br>
+the&nbsp;background&nbsp;image&nbsp;is&nbsp;loaded&nbsp;with&nbsp;the&nbsp;correct&nbsp;parameters&nbsp;in&nbsp;the&nbsp;site&nbsp;info&nbsp;file.&nbsp;<br>
+Otherwise&nbsp;it&nbsp;may&nbsp;be&nbsp;subtracted&nbsp;from&nbsp;the&nbsp;image&nbsp;at&nbsp;an&nbsp;incorrect&nbsp;angle/position.</tt></dd></dl>
+
+<dl><dt><a name="allskyImage-xy2angle"><strong>xy2angle</strong></a>(self, x, y)</dt><dd><tt>Converts&nbsp;x&nbsp;and&nbsp;y&nbsp;pixel&nbsp;coordinates&nbsp;into&nbsp;an&nbsp;angle&nbsp;from&nbsp;the&nbsp;zenith&nbsp;(from&nbsp;the&nbsp;Z&nbsp;axis).<br>
+The&nbsp;angle&nbsp;returned&nbsp;is&nbsp;in&nbsp;degrees.&nbsp;Note&nbsp;that&nbsp;(x,y)=(0,0)&nbsp;is&nbsp;the&nbsp;top&nbsp;left&nbsp;corner&nbsp;of<br>
+the&nbsp;image.</tt></dd></dl>
+
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-new"><strong>new</strong></a>(image_filename, site_info_file<font color="#909090">=None</font>, force<font color="#909090">=False</font>)</dt><dd><tt>Creates&nbsp;a&nbsp;new&nbsp;<a href="#allskyImage">allskyImage</a>&nbsp;object.&nbsp;The&nbsp;image_filename&nbsp;argument&nbsp;specifies&nbsp;the&nbsp;image&nbsp;to&nbsp;be&nbsp;read.&nbsp;The&nbsp;site_info_file&nbsp;<br>
+option&nbsp;should&nbsp;be&nbsp;the&nbsp;filename&nbsp;of&nbsp;the&nbsp;site&nbsp;information&nbsp;file&nbsp;(if&nbsp;one&nbsp;is&nbsp;required).&nbsp;This&nbsp;is&nbsp;an&nbsp;optional&nbsp;file&nbsp;<br>
+containing&nbsp;image&nbsp;metadata.&nbsp;The&nbsp;filename&nbsp;of&nbsp;this&nbsp;file&nbsp;is&nbsp;passed&nbsp;to&nbsp;the&nbsp;allskyImagePlugin&nbsp;open&nbsp;method,&nbsp;see<br>
+the&nbsp;allskyImagePlugins&nbsp;module&nbsp;for&nbsp;details.&nbsp;The&nbsp;default&nbsp;value&nbsp;is&nbsp;None,&nbsp;no&nbsp;site_info_file.&nbsp;The&nbsp;force&nbsp;option<br>
+allows&nbsp;you&nbsp;to&nbsp;force&nbsp;PASKIL&nbsp;to&nbsp;use&nbsp;an&nbsp;external&nbsp;plugin&nbsp;for&nbsp;opening&nbsp;the&nbsp;file.&nbsp;This&nbsp;can&nbsp;be&nbsp;useful&nbsp;for&nbsp;overwriting<br>
+incorrect&nbsp;image&nbsp;metadata.&nbsp;The&nbsp;default&nbsp;is&nbsp;False,&nbsp;which&nbsp;means&nbsp;that&nbsp;where&nbsp;possible&nbsp;the&nbsp;image&nbsp;metadata&nbsp;will&nbsp;be&nbsp;read<br>
+from&nbsp;the&nbsp;image&nbsp;header,&nbsp;rather&nbsp;than&nbsp;an&nbsp;external&nbsp;source.</tt></dd></dl>
+</td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#55aa55">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><strong>__warningregistry__</strong> = {}<br>
+<strong>use_psyco</strong> = False</td></tr></table>
+</body></html>

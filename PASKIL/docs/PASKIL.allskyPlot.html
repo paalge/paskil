@@ -1,0 +1,60 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module PASKIL.allskyPlot</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="PASKIL.html"><font color="#ffffff">PASKIL</font></a>.allskyPlot</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/nialp/workspace/PASKIL/docs/PASKIL/allskyPlot.py">/home/nialp/workspace/PASKIL/docs/PASKIL/allskyPlot.py</a></font></td></tr></table>
+    <p><tt>Introduction:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;allskyPlot&nbsp;module&nbsp;provides&nbsp;functionality&nbsp;for&nbsp;visualising&nbsp;many&nbsp;of&nbsp;the&nbsp;objects<br>
+&nbsp;&nbsp;&nbsp;&nbsp;used&nbsp;by&nbsp;PASKIL&nbsp;(for&nbsp;example&nbsp;allskyImage&nbsp;objects,&nbsp;allskyKeo&nbsp;objects).&nbsp;It&nbsp;is&nbsp;designed<br>
+&nbsp;&nbsp;&nbsp;&nbsp;to&nbsp;allow&nbsp;plotting&nbsp;of&nbsp;multiple&nbsp;objects&nbsp;(of&nbsp;different&nbsp;types)&nbsp;in&nbsp;a&nbsp;single&nbsp;figure.&nbsp;This<br>
+&nbsp;&nbsp;&nbsp;&nbsp;module&nbsp;is&nbsp;largely&nbsp;incomplete,&nbsp;untested&nbsp;and&nbsp;in&nbsp;need&nbsp;of&nbsp;some&nbsp;improvement.&nbsp;However,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;basic&nbsp;functionality&nbsp;is&nbsp;there&nbsp;and&nbsp;now&nbsp;it&nbsp;should&nbsp;just&nbsp;be&nbsp;a&nbsp;case&nbsp;of&nbsp;polishing&nbsp;it!<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+Concepts:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;main&nbsp;function&nbsp;is&nbsp;the&nbsp;plot&nbsp;function.&nbsp;This&nbsp;takes&nbsp;a&nbsp;list&nbsp;of&nbsp;objects&nbsp;and&nbsp;plots&nbsp;them<br>
+&nbsp;&nbsp;&nbsp;&nbsp;as&nbsp;subfigures&nbsp;in&nbsp;a&nbsp;matplotlib&nbsp;figure&nbsp;object.&nbsp;It&nbsp;is&nbsp;designed&nbsp;to&nbsp;work&nbsp;with&nbsp;any&nbsp;objects<br>
+&nbsp;&nbsp;&nbsp;&nbsp;that&nbsp;implement&nbsp;a&nbsp;plotting&nbsp;interface&nbsp;consisting&nbsp;of&nbsp;the&nbsp;following&nbsp;methods:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;_hasColourBar()&nbsp;-&nbsp;Returns&nbsp;True&nbsp;or&nbsp;False&nbsp;depending&nbsp;on&nbsp;whether&nbsp;the&nbsp;plot&nbsp;of&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;object&nbsp;will&nbsp;have&nbsp;a&nbsp;colour&nbsp;bar&nbsp;next&nbsp;to&nbsp;it&nbsp;or&nbsp;not.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;_plot(subplot)&nbsp;&nbsp;-&nbsp;Returns&nbsp;the&nbsp;supplied&nbsp;subplot&nbsp;with&nbsp;the&nbsp;object&nbsp;plotted&nbsp;into&nbsp;it.</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="Image.html">Image</a><br>
+<a href="ImageDraw.html">ImageDraw</a><br>
+</td><td width="25%" valign=top><a href="math.html">math</a><br>
+<a href="matplotlib.html">matplotlib</a><br>
+</td><td width="25%" valign=top><a href="numpy.html">numpy</a><br>
+</td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-createColourbar"><strong>createColourbar</strong></a>(subplot, colour_table, calib_factor)</dt><dd><tt>Function&nbsp;draws&nbsp;a&nbsp;colour&nbsp;bar&nbsp;in&nbsp;the&nbsp;specified&nbsp;subplot.&nbsp;The&nbsp;colour_table&nbsp;argument&nbsp;should<br>
+be&nbsp;a&nbsp;list&nbsp;of&nbsp;RGB&nbsp;values&nbsp;(i.e.&nbsp;use&nbsp;the&nbsp;colourTable.getColourTable()&nbsp;method).&nbsp;The&nbsp;calib_factor<br>
+is&nbsp;the&nbsp;multiplier&nbsp;that&nbsp;converts&nbsp;between&nbsp;pixel&nbsp;values&nbsp;and&nbsp;kR.&nbsp;In&nbsp;general&nbsp;this&nbsp;function&nbsp;should<br>
+only&nbsp;be&nbsp;called&nbsp;by&nbsp;an&nbsp;object's&nbsp;_plot()&nbsp;method.</tt></dd></dl>
+ <dl><dt><a name="-plot"><strong>plot</strong></a>(objects, columns<font color="#909090">=1</font>, size<font color="#909090">=None</font>)</dt><dd><tt>Plots&nbsp;a&nbsp;list&nbsp;of&nbsp;objects&nbsp;implementing&nbsp;the&nbsp;plotting&nbsp;interface.&nbsp;Objects&nbsp;is&nbsp;a&nbsp;list&nbsp;of<br>
+objects&nbsp;to&nbsp;be&nbsp;plotted.&nbsp;Columns&nbsp;specifies&nbsp;how&nbsp;many&nbsp;columns&nbsp;of&nbsp;subplots&nbsp;to&nbsp;include&nbsp;<br>
+in&nbsp;the&nbsp;final&nbsp;plot,&nbsp;default&nbsp;is&nbsp;one&nbsp;in&nbsp;which&nbsp;case&nbsp;all&nbsp;objects&nbsp;will&nbsp;be&nbsp;plotted&nbsp;below<br>
+each&nbsp;other.&nbsp;Size&nbsp;is&nbsp;a&nbsp;tuple&nbsp;(width,height)&nbsp;of&nbsp;the&nbsp;size&nbsp;in&nbsp;inches&nbsp;of&nbsp;the&nbsp;final&nbsp;<br>
+figure,&nbsp;default&nbsp;isa&nbsp;None&nbsp;in&nbsp;which&nbsp;case&nbsp;the&nbsp;default&nbsp;value&nbsp;for&nbsp;matplotlib&nbsp;is&nbsp;used.</tt></dd></dl>
+</td></tr></table>
+</body></html>

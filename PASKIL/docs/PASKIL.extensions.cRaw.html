@@ -1,0 +1,33 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module PASKIL.extensions.cRaw</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="PASKIL.html"><font color="#ffffff">PASKIL</font></a>.<a href="PASKIL.extensions.html"><font color="#ffffff">extensions</font></a>.cRaw</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/nialp/workspace/PASKIL/docs/PASKIL/extensions/cRaw.so">/home/nialp/workspace/PASKIL/docs/PASKIL/extensions/cRaw.so</a></font></td></tr></table>
+    <p><tt>The&nbsp;cRaw&nbsp;extension&nbsp;module&nbsp;provides&nbsp;functionality&nbsp;for&nbsp;reading&nbsp;the&nbsp;many&nbsp;varieties&nbsp;of&nbsp;raw&nbsp;image&nbsp;formats<br>
+used&nbsp;by&nbsp;commercial&nbsp;digital&nbsp;cameras.&nbsp;It&nbsp;is&nbsp;based&nbsp;entirely&nbsp;on&nbsp;the&nbsp;dcraw&nbsp;program&nbsp;written&nbsp;by&nbsp;Dave&nbsp;Coffin.<br>
+The&nbsp;dcraw&nbsp;code&nbsp;has&nbsp;been&nbsp;modified&nbsp;to&nbsp;allow&nbsp;it&nbsp;to&nbsp;be&nbsp;implemented&nbsp;as&nbsp;a&nbsp;library,&nbsp;primarily&nbsp;this&nbsp;involved<br>
+removing&nbsp;the&nbsp;original&nbsp;code's&nbsp;dependence&nbsp;on&nbsp;global&nbsp;variables.&nbsp;This&nbsp;has&nbsp;been&nbsp;done&nbsp;by&nbsp;introducing&nbsp;a&nbsp;global<br>
+variables&nbsp;structure.&nbsp;Macros&nbsp;are&nbsp;used&nbsp;to&nbsp;redefine&nbsp;function&nbsp;calls&nbsp;to&nbsp;include&nbsp;a&nbsp;pointer&nbsp;to&nbsp;this&nbsp;structure<br>
+as&nbsp;an&nbsp;argument,&nbsp;and&nbsp;also&nbsp;to&nbsp;redefine&nbsp;the&nbsp;name&nbsp;of&nbsp;global&nbsp;variables&nbsp;to&nbsp;correspond&nbsp;to&nbsp;variables&nbsp;in&nbsp;the&nbsp;structure<br>
+(this&nbsp;is&nbsp;done&nbsp;in&nbsp;the&nbsp;header&nbsp;file).&nbsp;In&nbsp;some&nbsp;cases,&nbsp;local&nbsp;variables&nbsp;had&nbsp;to&nbsp;be&nbsp;renamed&nbsp;in&nbsp;order&nbsp;not&nbsp;to&nbsp;clash<br>
+with&nbsp;globals.&nbsp;In&nbsp;short,&nbsp;this&nbsp;code&nbsp;is&nbsp;a&nbsp;mess!&nbsp;However,&nbsp;keeping&nbsp;most&nbsp;of&nbsp;the&nbsp;dcraw&nbsp;code&nbsp;unchanged&nbsp;means&nbsp;that<br>
+the&nbsp;flexibility&nbsp;(with&nbsp;respect&nbsp;to&nbsp;the&nbsp;range&nbsp;of&nbsp;raw&nbsp;formats&nbsp;supported)&nbsp;of&nbsp;dcraw&nbsp;is&nbsp;maintained.&nbsp;This&nbsp;extension<br>
+module&nbsp;was&nbsp;not&nbsp;designed&nbsp;to&nbsp;be&nbsp;used&nbsp;'stand&nbsp;alone'&nbsp;and&nbsp;should&nbsp;instead&nbsp;be&nbsp;accessed&nbsp;using&nbsp;the&nbsp;allskyRaw&nbsp;module.</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-canDecode"><strong>canDecode</strong></a>(...)</dt><dd><tt><a href="#-canDecode">canDecode</a>(fp):&nbsp;Function&nbsp;returns&nbsp;True&nbsp;if&nbsp;the&nbsp;file&nbsp;can&nbsp;be&nbsp;decoded&nbsp;by&nbsp;cRaw,&nbsp;False&nbsp;otherwise,&nbsp;where&nbsp;fp&nbsp;is&nbsp;a&nbsp;Python&nbsp;file&nbsp;pointer&nbsp;to&nbsp;an&nbsp;open&nbsp;binary&nbsp;file&nbsp;(rb).</tt></dd></dl>
+ <dl><dt><a name="-getRawData"><strong>getRawData</strong></a>(...)</dt><dd><tt><a href="#-getRawData">getRawData</a>(fp):&nbsp;Function&nbsp;returns&nbsp;a&nbsp;numpy&nbsp;array&nbsp;containing&nbsp;the&nbsp;4&nbsp;channels&nbsp;of&nbsp;the&nbsp;raw&nbsp;image,&nbsp;where&nbsp;fp&nbsp;is&nbsp;a&nbsp;Python&nbsp;file&nbsp;pointer&nbsp;to&nbsp;an&nbsp;open&nbsp;binary&nbsp;file&nbsp;(rb).</tt></dd></dl>
+ <dl><dt><a name="-getTimestamp"><strong>getTimestamp</strong></a>(...)</dt><dd><tt><a href="#-getTimestamp">getTimestamp</a>(fp):&nbsp;Function&nbsp;returns&nbsp;timestamp&nbsp;read&nbsp;from&nbsp;Raw&nbsp;image,&nbsp;where&nbsp;fp&nbsp;is&nbsp;a&nbsp;Python&nbsp;file&nbsp;pointer&nbsp;to&nbsp;an&nbsp;open&nbsp;binary&nbsp;file&nbsp;(rb).</tt></dd></dl>
+</td></tr></table>
+</body></html>
