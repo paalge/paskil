@@ -19,6 +19,10 @@ from distutils.core import setup,Extension
 import sys
 import os.path
 
+#get the version of PASKIL from the module itself
+import PASKIL
+paskil_version = PASKIL.get_version()
+
 try:
     import numpy
     import numpy.numarray
@@ -94,7 +98,7 @@ if sys.platform == 'win32':
 
 #Then build/install it!
 setup(name='PASKIL',
-	  version='3.2.1',
+	  version=paskil_version,
 	  description='Python All-Sky Image Library', 
 	  author = 'Nial Peters', 
 	  author_email='nonbiostudent@hotmail.com',
@@ -104,6 +108,12 @@ setup(name='PASKIL',
 	                       ["PASKIL/extensions/cRaw.c"],
 	                       define_macros=[('NO_JPEG',None),('NO_LCMS', None)],
 	                       include_dirs=[numpyincludedirs]+numarrayincludedirs,
-                           libraries=libs)])
+                           libraries=libs),
+                   Extension("PASKIL.extensions.cKeo",
+                             ["PASKIL/extensions/cKeo.c"],
+                             include_dirs=[numpyincludedirs]),
+                   Extension("PASKIL.extensions.cFit",
+                             ["PASKIL/extensions/cFit.c"],
+                             include_dirs=[numpyincludedirs])])
 
 

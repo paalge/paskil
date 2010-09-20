@@ -77,10 +77,36 @@ Example:
 
 from PIL import Image #imports from PIL
 import matplotlib
+import numpy
 
+from PASKIL.extensions import cFit
 #Functions
 
 ###################################################################################
+
+def calcThresholds(hist):
+    if len(hist) == 65536:
+        raise ValueError, "Auto thresholds is only available for L mode images"
+    
+    if len(hist) != 256:
+        raise ValueError, "Unexpected length for histogram: "+str(len(hist))+". Expecting 256."
+
+        
+    mean, std_dev = cFit.fit_norm_dist(numpy.array(hist,dtype='intc'))
+    
+    lower = int(mean - 2*std_dev)
+    upper = int(mean + 2*std_dev)
+    
+    if lower <= 0:
+        lower = 1
+    if upper < lower:
+        upper = lower+1
+    if upper > 255:
+        upper = 255
+
+    
+    return (lower,upper)
+
 
 def convertToMplColormap(colour_table):
     """
@@ -133,7 +159,7 @@ def createSegment(length, start_RGB, end_RGB):
 
 ###################################################################################
 
-def default(histogram, thresholds):
+def default(histogram, thresholds='AUTO'):
     """
     Returns a colourTable object which uses a default palette (black to blue to red) consisting of five 
     segments. The histogram argument should be a list of integers representing the pixel count of their
@@ -142,7 +168,9 @@ def default(histogram, thresholds):
     function. The thresholds argument should be a tuple (min_threshold,max_threshold). It controls what range
     of intensities the colour table is applied to. Intensities above the max_threshold are set to the 
     highest value in the colour table (red for the default), and intensities below the min_threshold are set 
-    to the lowest (black for the default)
+    to the lowest (black for the default). For 'L' mode images, thresholds may be set to 'AUTO', in which 
+    case a normal distribution is fitted to the histogram and the thresholds are set to two standard deviations
+    either side of the mean of the distribution.
     """
     segments=range(5)        
     segments[0]=segment(256, (0, 0, 0), (0, 0, 255))
@@ -150,6 +178,11 @@ def default(histogram, thresholds):
     segments[2]=segment(256, (0, 255, 255), (0, 255, 0))
     segments[3]=segment(256, (0, 255, 0), (255, 255, 0))
     segments[4]=segment(256, (255, 255, 0), (255, 0, 0))
+    
+    if thresholds == 'AUTO':
+        thresholds = calcThresholds(histogram)
+    elif thresholds is None:
+        thresholds = (1,len(histogram)-1)
     
     return fromList(segments, histogram, thresholds)
     
@@ -200,7 +233,7 @@ def histogram(dataset):
 
 ###################################################################################
 
-def fromImage(filename, histogram, thresholds):
+def fromImage(filename, histogram, thresholds='AUTO'):
     """
     Function returns a colourTable object which uses the palette contained in the image specified by the 
     filename argument. Such palette files can be produced using the colourTable.savePalette() method. Other 
@@ -212,6 +245,11 @@ def fromImage(filename, histogram, thresholds):
     
     palette = list(im.getdata())[0:width]
     
+    if thresholds == 'AUTO':
+        thresholds = calcThresholds(histogram)
+    elif thresholds is None:
+        thresholds = (1,len(histogram)-1)
+        
     #create a colourTable object to hold the data
     colour_table = colourTable(palette, histogram, thresholds)
     
@@ -219,7 +257,7 @@ def fromImage(filename, histogram, thresholds):
     
 ###################################################################################    
 
-def fromList(segments, histogram, thresholds):
+def fromList(segments, histogram, thresholds='AUTO'):
     """
     Function returns a colourTable object which uses a palette defined by a list of segment objects passed 
     as the segments argument. The list must contain at least one entry. See the segments class for details. 
@@ -232,6 +270,11 @@ def fromList(segments, histogram, thresholds):
     palette=[]
     for i in range(len(segments)):
         palette=palette+segments[i].tolist()
+    
+    if thresholds == 'AUTO':
+        thresholds = calcThresholds(histogram)
+    elif thresholds is None:
+        thresholds = (1,len(histogram)-1)
         
     #create a colourTable object to hold the data
     colour_table = colourTable(palette, histogram, thresholds)
@@ -279,7 +322,23 @@ class basicColourTable:
     images.
     """
     def __init__(self, colour_table):
-        self.colour_table=colour_table
+        self.colour_table = colour_table
+    
+    
+    def __eq__(self, x):
+        if not isinstance(x, basicColourTable):
+            return NotImplemented
+        
+        return self.colour_table == x.colour_table
+    
+    def __ne__(self, x):
+        if not isinstance(x, basicColourTable):
+            return NotImplemented
+        
+        return self.colour_table != x.colour_table
+    
+    def __hash__(self):
+        return hash(tuple(self.colour_table))
     
     def getColourTable(self):
         """
@@ -293,71 +352,9 @@ class basicColourTable:
             j+=3
         
         return list_colour_table 
-
-###################################################################################
-
-class colourTable:
-    """
-    Container class for histogram, palette and colour table data.
-    """
-    def __init__(self, palette, histogram, thresholds):
-        
-        #check that thresholds are within range of image
-        if thresholds[1] >= len(histogram):
-            raise ValueError, "Max threshold is outside of image pixel value range"
-        
-        #set class attributes
-        self.__palette = palette
-        self.__histogram = histogram
-        
-        #create colour table from palette and histogram
-        self.colour_table = [] 
     
-        #find total number of counts in histogram between thresholds
-        total_counts = 0
-        for i in range(thresholds[0], thresholds[1]):
-            total_counts += histogram[i]
-        
-        #set values below min_threshold to first value in colour table
-        for i in range(thresholds[0]):
-            self.colour_table.append(palette[0])
-        
-        #set values between threshold to colours, with a step size based on the histogram.
-        #This gives widest colour variation at intensities with high pixel counts
-        place_holder = 0
-        float_place_holder = 0.0
-        count = 0
-        for i in range(thresholds[0], thresholds[1]):
-            self.colour_table.append(palette[place_holder])
-            
-            #calculate current count
-            count = count + histogram[i]
-            float_place_holder = (float(len(palette)) * float(count)) / float(total_counts)
-            place_holder = int(float_place_holder + 0.5)
-            
-            if place_holder >= len(palette):
-                place_holder = len(palette)-1
-            
-        #set values above max_threshold to last value in colour table
-        for i in range(thresholds[1], len(histogram)):
-            self.colour_table.append(palette[len(palette)-1])
-
-    ###################################################################################
     
-    def getColourTable(self):
-        """
-        Returns the colour table data in a format compatible with PIL's Image class putpalette() method.
-        """
-        #convert colour_table to a list format for use with putpalette()
-        list_colour_table=range(3*len(self.__histogram))
-        j=0    
-        for i in range(len(self.__histogram)):
-            list_colour_table[j], list_colour_table[j+1], list_colour_table[j+2]=self.colour_table[i]
-            j+=3
-        
-        return list_colour_table
-    
-    ###################################################################################
+        ###################################################################################
 
     def saveColourTable(self, filename):
         """
@@ -372,6 +369,56 @@ class colourTable:
         im=Image.new(mode="RGB", size=(len(self.colour_table), 50))
         im.putdata(image_string)
         im.save(filename)
+    
+###################################################################################
+
+class colourTable(basicColourTable):
+    """
+    Container class for histogram, palette and colour table data.
+    """
+    def __init__(self, palette, histogram, thresholds):
+        
+        #check that thresholds are within range of image
+        if thresholds[1] >= len(histogram):
+            raise ValueError, "Max threshold is outside of image pixel value range"
+        
+        #set class attributes
+        self.__palette = palette
+        self.__histogram = histogram
+        
+        #create colour table from palette and histogram
+        colour_table = [] 
+    
+        #find total number of counts in histogram between thresholds
+        total_counts = 0
+        for i in range(thresholds[0], thresholds[1]):
+            total_counts += histogram[i]
+        
+        #set values below min_threshold to first value in colour table
+        for i in range(thresholds[0]):
+            colour_table.append(palette[0])
+        
+        #set values between threshold to colours, with a step size based on the histogram.
+        #This gives widest colour variation at intensities with high pixel counts
+        place_holder = 0
+        float_place_holder = 0.0
+        count = 0
+        for i in range(thresholds[0], thresholds[1]):
+            colour_table.append(palette[place_holder])
+            
+            #calculate current count
+            count = count + histogram[i]
+            float_place_holder = (float(len(palette)) * float(count)) / float(total_counts)
+            place_holder = int(float_place_holder + 0.5)
+            
+            if place_holder >= len(palette):
+                place_holder = len(palette)-1
+            
+        #set values above max_threshold to last value in colour table
+        for i in range(thresholds[1], len(histogram)):
+            colour_table.append(palette[len(palette)-1])
+        
+        basicColourTable.__init__(self, colour_table)
 
     ###################################################################################
     

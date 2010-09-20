@@ -18,6 +18,21 @@
 Module containing miscellaneous statistical functions used internally by PASKIL
 """
 import math
+#
+#def hist_variance_mean(hist):
+#    """
+#    Function returns the variance and mean of a histogram
+#    """
+#    sum_x = 0.0
+#    sum_sqd_x = 0.0
+#    for i in range(len(hist)):
+#        sum_x = sum_x + (i*hist[i])
+#        sum_sqd_x=sum_sqd_x+(i*hist[i]*hist[i])
+#        
+#    mean = sum_x/float(sum(hist))
+#    mean_of_squares = sum_sqd_x/float(sum(hist))
+#    
+#    return (mean_of_squares-(mean*mean), mean)
 
 def variance_mean(data):
     """

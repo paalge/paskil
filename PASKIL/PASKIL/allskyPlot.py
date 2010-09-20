@@ -53,7 +53,7 @@ def plot(objects, columns=1, size=None):
     objects to be plotted. Columns specifies how many columns of subplots to include 
     in the final plot, default is one in which case all objects will be plotted below
     each other. Size is a tuple (width,height) of the size in inches of the final 
-    figure, default isa None in which case the default value for matplotlib is used.
+    figure, default is None in which case the default value for matplotlib is used.
     """
     
     fig = matplotlib.pyplot.figure()

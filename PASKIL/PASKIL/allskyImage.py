@@ -68,16 +68,8 @@ import matplotlib.font_manager
 import matplotlib.pyplot
 import Image, ImageOps, ImageDraw, ImageFilter, ImageFont, ImageChops 
 
-from PASKIL import misc, allskyImagePlugins, allskyProj, allskyPlot
+from PASKIL import misc, allskyImagePlugins, allskyProj, allskyPlot, allskyColour
 
-#attempt to import psyco to improve performance
-try:
-    import psyco
-    use_psyco = True
-except ImportError:
-    use_psyco = False
-    warnings.warn("Could not import psyco. This will reduce performance.")
- 
  
 def new(image_filename, site_info_file=None, force=False):
     """
@@ -110,7 +102,7 @@ class allskyImage:
     
         #set private class attributes
         self.__loaded = False #shows if the image data has been loaded yet.
-        self.__image = image.copy()
+        self.__image = image#.copy()
         self.__image.__info = {}
         self.__filename = image_file
         self.__info = {}
@@ -169,6 +161,12 @@ class allskyImage:
         Returns a string containing the mode of the image ("RGB","L" etc...). See PIL handbook for 
         details of different image modes"""
         return self.__image.mode
+    
+    def getColourTable(self):
+        try:
+            return allskyColour.basicColourTable(self.__info['processing']['applyColourTable'])
+        except KeyError:
+            return None
         
     ###################################################################################
 
@@ -214,6 +212,8 @@ class allskyImage:
         #attempt to read time data from header
         try:
             time = datetime.datetime.strptime(self.__info['header']['Creation Time'], "%d %b %Y %H:%M:%S %Z")
+        except ValueError:
+            time = datetime.datetime.strptime(self.__info['header'] ['Creation Time'] + " GMT", "%d %b %Y %H:%M:%S %Z")
         except KeyError:
             raise  IOError, "Cannot read time data from header for image " + self.__filename
         
@@ -372,17 +372,17 @@ class allskyImage:
         
         if self.__info['camera']['lens_projection'] == 'equidistant':
             #calculate focal length
-            focal_length=float(self.__info['camera']['Radius'])/float(self.__info['camera']['fov_angle'])
+            focal_length = float(self.__info['camera']['Radius'])/float(self.__info['camera']['fov_angle'])
             
             #calculate radius for masking circle
-            radius=int((focal_length*fov_angle)+0.5)
+            radius = int(round(focal_length*fov_angle))
         
         elif self.__info['camera']['lens_projection'] == 'equisolidangle':
             #calculate focal length
-            focal_length=float(self.__info['camera']['Radius'])/(2.0*math.sin(math.radians(float(self.__info['camera']['fov_angle']))/2.0))
+            focal_length = float(self.__info['camera']['Radius'])/(2.0*math.sin(math.radians(float(self.__info['camera']['fov_angle']))/2.0))
             
             #calculate radius for masking circle
-            radius=int((2.0*focal_length*math.sin(math.radians(fov_angle)/2.0))+0.5)
+            radius = int(round(2.0*focal_length*math.sin(math.radians(fov_angle)/2.0)))
         
         else:
             raise ValueError, "Unsupported lens projection type"
@@ -454,7 +454,7 @@ class allskyImage:
         """
         Resizes and centres the image about the field of view, finding the best fit for the circular 
         field of view in a rectangular image. The image returned will be square, with dimensions of
-        RadiusxRadius.
+        2*Radiusx2*Radius.
         """
 
         #check if image has already been centered
@@ -606,16 +606,7 @@ class allskyImage:
         return allskyImage(new_image, self.__filename, new_info)
         
     ###################################################################################
-    
     def getStrip(self, angle, strip_width):
-        """
-        Returns a list of lists (Python's equivalent of a 2D array, elements are accessed by 
-        list[i][j]) containing pixel values in a strip through the centre of the image. The 
-        angle argument controls the angle from geographic north that the strip is taken. The 
-        strip_width argument controls the width of the strip in pixels. The image must be 
-        aligned with North before this method can be used. The list returned will always have a
-        length equal to the 'Radius' of the field of view of the image.
-        """
         
         #check that image has been aligned with north (if so then it must have been centred)
         if self.__info['processing'].keys().count('alignNorth') == 0:
@@ -623,26 +614,38 @@ class allskyImage:
                 
         #rotate image so that the slice runs from top to bottom
         #the rotation direction depends on the orientation of the image
-        if self.__info['processing']['alignNorth'].count('NESW') != 0:
-            im = self.__image.rotate(angle - float(self.__info['camera']['cam_rot']))
-        elif self.__info['processing']['alignNorth'].count('NWSE') != 0:
-            im = self.__image.rotate(float(self.__info['camera']['cam_rot']) - angle)
-        else:
-            raise ValueError, "getStrip(): Cannot read orientation data from info dict. Try re-aligning the image with North"
-        
+        if (angle - float(self.__info['camera']['cam_rot'])) != 0.0:          
+            if self.__info['processing']['alignNorth'].count('NESW') != 0:
+                im = self.__image.rotate(angle - float(self.__info['camera']['cam_rot']))
+            elif self.__info['processing']['alignNorth'].count('NWSE') != 0:
+                im = self.__image.rotate(float(self.__info['camera']['cam_rot']) - angle)
+            else:
+                raise ValueError, "getStrip(): Cannot read orientation data from info dict. Try re-aligning the image with North"
+    
         #convert the rotated image to a numpy array (im is a PIL Image object)
         im_arr = numpy.asarray(im)
         
+        #ensure the array is 3d even if we are not dealing with an RGB image
+        if len(im_arr.shape) == 2:
+            im_arr = im_arr.reshape((im_arr.shape[0],im_arr.shape[1],1))
+        
+        radius = int(self.__info['camera']['Radius'])
         #calculate bounding indices of slice
         width = im.size[0]
         centre = int((float(width)/2.0)+0.5) - 1
         
-        lower = centre - int(strip_width/2)
-        upper = centre + int(strip_width/2.0 +0.5) 
+        lower_x = centre - int(strip_width/2)
+        upper_x = centre + int(strip_width/2.0 +0.5)
         
-        strip = im_arr[:, lower:upper].swapaxes(0, 1).tolist()
-             
-        return strip  
+        #create an array of zeros to hold the strip data
+        strip = numpy.zeros((2*radius,upper_x-lower_x,im_arr.shape[2]),im_arr.dtype)
+        
+        #the radius of the image may be larger than the image dimensions, in which 
+        #case we ensure that the strip is padded with zeros to the size of the radius
+        lower_y = int(((2*radius)-im_arr.shape[0])/2)
+        upper_y = im_arr.shape[0] + lower_y
+        strip[lower_y:upper_y,:,:] = im_arr[:, lower_x:upper_x,:]   
+        return strip.swapaxes(0, 1)
     
     ###################################################################################
     
@@ -658,7 +661,7 @@ class allskyImage:
             histogram = self.__image.histogram() #use PIL histogram method for 8bit images
         elif mode == "I":          
             im_pix = numpy.asarray(self.__image) #load pixel values
-            histogram = numpy.histogram(im_pix, bins=range(65537), new=True)[0]
+            histogram = numpy.histogram(im_pix, bins=range(65537))[0]
             
         else:
             raise ValueError, "Unsupported image mode"
@@ -1107,13 +1110,4 @@ class allskyImage:
         return angle
 
 ###################################################################################                
-
-#use psyco to pre-compile computationally intensive functions
-if use_psyco:
-    psyco.bind(allskyImage.applyColourTable)
-    psyco.bind(allskyImage.flatFieldCorrection)
-    psyco.bind(allskyImage.getStrip)
-    psyco.bind(allskyImage.medianFilter)
-    psyco.bind(allskyImage.projectToHeight)        
-
-
+    

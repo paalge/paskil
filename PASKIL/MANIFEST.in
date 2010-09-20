@@ -2,3 +2,4 @@ include docs/*.html
 include PASKIL/extensions/*.c
 include PASKIL/extensions/*.h
 include examples/*
+include tools/*.py

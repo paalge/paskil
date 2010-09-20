@@ -130,6 +130,21 @@ Bugs and comments:
 
     nonbiostudent@hotmail.com
 """
+try:
+    import pymedia
+    use_pymedia = True
+except ImportError:
+    use_pymedia = False
+
 #Define a list of all modules in PASKIL package.
 __all__ = ["allskyCalib", "allskyColour", "allskyData", "allskyImage", "allskyImagePlugins", "allskyPlot","allskyProj", "allskyKeo", "allskyRaw","misc", "stats", "plugins"]
-__version__ = '3.2.1'
+__version__ = '4.0'
+
+if use_pymedia:
+    __all__.append('allskyVideo')
+
+def get_version():
+	"""
+	Returns the version of PASKIL being used.
+	"""
+	return __version__

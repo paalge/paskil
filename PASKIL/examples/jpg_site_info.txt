@@ -1,0 +1,9 @@
+cam_rot=327
+y_center=1025
+x_center=1025
+Radius=1025
+fov_angle=90
+Magn. Bearing=327
+lat=78.148
+lon=16.043
+lens_projection=equisolidangle

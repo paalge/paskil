@@ -1,0 +1,5 @@
+The two example scripts in this folder "map_projection.py" and "calibrated_image_from_raw.py" are designed to demonstrate some of the capabilities of PASKIL. Both scripts are heavily commented and it is hoped that this will aid people in understanding and using PASKIL for themselves.
+
+Before running the scripts you will need to have installed PASKIL on your computer. See the docs/PASKIL.html file for instructions. 
+
+If the scripts fail to run, you may need to convert the site information files and the flat field data file to use the same end of line characters as your operating system. They were produced under Linux and so this may cause problems for windows users. See http://www.thefreecountry.com/tofrodos/ for a possible solution.

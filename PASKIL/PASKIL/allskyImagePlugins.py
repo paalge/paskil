@@ -154,6 +154,27 @@ types = [] #list to hold all available plugins
 
 ###################################################################################
 
+def list_plugins():
+	"""
+	Returns a list of names of all the plugins that are registered.
+	"""
+	return [x.name for x in types]
+
+###################################################################################
+
+def which_plugin(image_filename, info_filename=None, force=False):
+	"""
+	Returns the name of the plugin that will be used to open the specified image.
+	If no plugin is found to open the image, then None is returned.
+	"""
+	try:
+		plugin = load(image_filename, info_filename, force)
+		return plugin.name
+	except ValueError:
+		return None
+
+###################################################################################
+
 def load(image_filename, info_filename, force):
     """    
     Returns the plugin object needed to open the image. Raises TypeError if no plugin is found. This should
@@ -161,7 +182,7 @@ def load(image_filename, info_filename, force):
     """
     
     if force:
-        i = 2 #skip the first two plugins in the list - these are the internal ones
+        i = 3 #skip the first three plugins in the list - these are the internal ones
     else:
         i = 0
     
@@ -180,6 +201,8 @@ def register(plugin):
     Registers a plugin. The plugin argument should be an instance of the plugin class to be registered. You
     must make a call to this function when you import an external plugin, otherwise it will be ignored.
     """
+    #TODO - should check that the plugin has the correct methods/attributes
+    
     types.append(plugin)
     
 ###################################################################################
@@ -199,7 +222,7 @@ class PASKIL_Allsky_Image_PNG:
     """
     
     def __init__(self):
-        self.name = "PASKIL All-sky PNG Image" #This is not used anywhere in the code yet, but is probably a good idea
+        self.name = "PASKIL All-sky PNG Image Plugin"  
         
     ###################################################################################    
         
@@ -207,6 +230,7 @@ class PASKIL_Allsky_Image_PNG:
         """
         Returns true if 'image_filename' is in the PASKIL PNG format, false otherwise.
         """
+
         #load image
         try:
             image = Image.open(image_filename)
@@ -265,7 +289,7 @@ class PASKIL_Allsky_Image_JPEG:
     """
     
     def __init__(self):
-        self.name = "PASKIL All-sky JPEG Image" #This is not used anywhere in the code yet, but is probably a good idea
+        self.name = "PASKIL All-sky JPEG Image Plugin"  
         
     ###################################################################################    
         
@@ -317,7 +341,7 @@ class PASKIL_Allsky_Image_FITS:
     should be read from the header rather than being re-loaded from a site info file.
     """
     def __init__(self):
-        self.name = "PASKIL All-sky FITS Image"
+        self.name = "PASKIL All-sky FITS Image Plugin"
     
     ###################################################################################        
     
