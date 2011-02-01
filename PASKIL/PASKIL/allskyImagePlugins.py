@@ -298,11 +298,11 @@ class PASKIL_Allsky_Image_JPEG:
         Returns true if 'image_filename' is in the PASKIL JPEG format, false otherwise.
         """
         #check exif
-        exif = pyexiv2.Image(image_filename)
-        exif.readMetadata()
+        exif = pyexiv2.ImageMetadata(image_filename)
+        exif.read()
         
         try:
-            if exif['Exif.Image.ProcessingSoftware'] == "PASKIL":
+            if exif['Exif.Image.ProcessingSoftware'].value == "PASKIL":
                 return True
             else:
                 return False

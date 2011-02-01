@@ -64,18 +64,6 @@ def pngsave(im, file_):
 
     # and save
     im.save(file_, "PNG", pnginfo=meta)
-
-###################################################################################
-
-def xy2angle(x, y, x_0, y_0, fov_angle, radius):
-    """
-    Converts x and y coordinates into angle from the centre (from the Z axis).
-    """
-    dist_from_centre=math.sqrt(((x-x_0)*(x-x_0)) + ((y-y_0)*(y-y_0)))
-    
-    angle = float(float(dist_from_centre)*(float(fov_angle)/float(radius)))
-    
-    return angle
     
 ###################################################################################
 
@@ -111,12 +99,12 @@ def readExifData(filename):
     """    
     exif_data = {}
     try:
-        im = pyexiv2.Image(filename)
-        im.readMetadata()
+        exif = pyexiv2.ImageMetadata(filename)
+        exif.read()
         
-        for tag in im.exifKeys():
+        for tag in exif.keys():
             try:
-                exif_data[tag] = im[tag]
+                exif_data[tag] = exif[tag].value
             except:
                 continue
     finally:

@@ -312,6 +312,33 @@ class allskyImage:
         return allskyImage(new_image, self.__filename, new_info)
         
     ###################################################################################    
+    
+    def angle2dist(self, angle):
+        """
+        Converts an angle (in degrees) from zenith into a radial distance in pixels
+        from the image centre.
+        """
+        if self.__info['camera']['lens_projection'] == 'equidistant':
+            #calculate focal length
+            focal_length = float(self.__info['camera']['Radius'])/float(self.__info['camera']['fov_angle'])
+            
+            #calculate radius for masking circle
+            radius = int(round(focal_length*angle))
+        
+        elif self.__info['camera']['lens_projection'] == 'equisolidangle':
+            #calculate focal length
+            focal_length = float(self.__info['camera']['Radius'])/(2.0*math.sin(math.radians(float(self.__info['camera']['fov_angle']))/2.0))
+            
+            #calculate radius for masking circle
+            radius = int(round(2.0*focal_length*math.sin(math.radians(angle)/2.0)))
+        
+        else:
+            raise ValueError, "Unsupported lens projection type"
+        
+        return radius
+        
+
+    ###################################################################################
         
     def applyColourTable(self, colour_table):
         """
@@ -370,22 +397,7 @@ class allskyImage:
         if fov_angle > self.__info['camera']['fov_angle']:
             raise ValueError, "Field of view is too large for image."
         
-        if self.__info['camera']['lens_projection'] == 'equidistant':
-            #calculate focal length
-            focal_length = float(self.__info['camera']['Radius'])/float(self.__info['camera']['fov_angle'])
-            
-            #calculate radius for masking circle
-            radius = int(round(focal_length*fov_angle))
-        
-        elif self.__info['camera']['lens_projection'] == 'equisolidangle':
-            #calculate focal length
-            focal_length = float(self.__info['camera']['Radius'])/(2.0*math.sin(math.radians(float(self.__info['camera']['fov_angle']))/2.0))
-            
-            #calculate radius for masking circle
-            radius = int(round(2.0*focal_length*math.sin(math.radians(fov_angle)/2.0)))
-        
-        else:
-            raise ValueError, "Unsupported lens projection type"
+        radius = self.angle2dist(fov_angle)
         
         mode = self.__image.mode
         
@@ -670,6 +682,68 @@ class allskyImage:
     
     ###################################################################################    
     
+    def keoSanityCheck(self, angle, fov, strip_width=5, colour=(255,0,0), fill=True):
+        """
+        Returns a PIL image object which is a copy of the allsky image but with the 
+        pixels that would be put into a keogram with the specified parameters 
+        highlighted. The colour argument controls the highlighting colour.
+        """
+        
+        #make a copy of self to draw onto         
+        im = self.getImage()       
+        im = im.convert("RGB")
+        
+        #rotate image so that the slice runs from top to bottom
+        #check that image has been aligned with north (if so then it must have been centred)
+        if self.__info['processing'].keys().count('alignNorth') == 0:
+            raise RuntimeError, "Image must be aligned with North."
+                
+        #rotate image so that the slice runs from top to bottom
+        #the rotation direction depends on the orientation of the image
+        if (angle - float(self.__info['camera']['cam_rot'])) != 0.0:          
+            if self.__info['processing']['alignNorth'].count('NESW') != 0:
+                rot_angle = angle - float(self.__info['camera']['cam_rot'])
+                im = im.rotate(rot_angle)
+            elif self.__info['processing']['alignNorth'].count('NWSE') != 0:
+                rot_angle = float(self.__info['camera']['cam_rot']) - angle
+                im = im.rotate(rot_angle)
+            else:
+                raise ValueError, "keoSanityCheck(): Cannot read orientation data from info dict. Try re-aligning the image with North"
+    
+        #work out the length of the slice
+        if fov[1] >= 90:
+            upper_length = self.angle2dist(fov[1]-90)
+        else:
+            upper_length = self.angle2dist(fov[1])
+        if fov[0] >= 90:
+            lower_length = self.angle2dist(fov[0]-90)
+        else:
+            lower_length = self.angle2dist(fov[0])        
+        
+        #work out the coordinates for the slice
+        width, height = self.getSize()
+        
+        centre = (int((float(width)/2.0)+0.5) - 1,int((float(height)/2.0)+0.5) - 1)
+
+        lower_x = centre[0] - int(strip_width/2)
+        upper_x = centre[0] + int(strip_width/2.0 +0.5)
+        lower_y = centre[1] - lower_length
+        upper_y = centre[1] + upper_length
+        
+        #draw a rectangle around the slice
+        draw = ImageDraw.Draw(im)
+        if fill:
+            draw.rectangle([lower_x,lower_y,upper_x+1,upper_y+1], outline=colour, fill=colour)
+        else:
+            draw.rectangle([lower_x,lower_y,upper_x+1,upper_y+1], outline=colour)
+        
+        #rotate back to orginal image orientation
+        im = im.rotate(-rot_angle)
+        
+        return im
+    
+    ###################################################################################
+    
     def medianFilter(self, n):
         """
         This is a thin wrapper function for the median filter provided by PIL. It replaces each 
@@ -810,7 +884,7 @@ class allskyImage:
             format = "png"
         elif filename.endswith((".fits", ".FITS")):
             format = "fits"
-        elif filename.endswith((".jpg", ".JPG", ".JPEG", ".jpg")):
+        elif filename.endswith((".jpg", ".JPG", ".JPEG", ".jpeg")):
             format = "jpg"
         
         if format == "png": #save as png image
@@ -834,19 +908,19 @@ class allskyImage:
             self.__image.save(filename)
             
             #prepare to copy exif data in
-            exif_im = pyexiv2.Image(filename)
-            exif_im.readMetadata()
+            exif_im = pyexiv2.ImageMetadata(filename)
+            exif_im.read()
             
             #copy the existing exif data into the saved exif
             existing_exif = self.getExif()
             for tag,value in existing_exif.items():
                 try:
-                    exif_im[tag] = value
+                    exif_im[tag].value = value
                 except:
                     continue
             
             #now write the PASKIL specific exif tags
-            exif_im['Exif.Image.ProcessingSoftware'] = "PASKIL"
+            exif_im['Exif.Image.ProcessingSoftware'].value = "PASKIL"
             
             info_no_exif = self.getInfo()
             info_no_exif.pop('exif')
@@ -854,10 +928,10 @@ class allskyImage:
             #this should really be stored in the MakerNote tag,
             #but pyexiv2 can't read it back if you put it there - so
             #for now we'll just have to abuse the usercomment tag
-            exif_im['Exif.Photo.UserComment'] = str(info_no_exif)
+            exif_im['Exif.Photo.UserComment'].value = str(info_no_exif)
             
             #write the exif back to the file
-            exif_im.writeMetadata()
+            exif_im.write()
         
         elif format == "fits": #save as FITS format
     
@@ -1022,7 +1096,7 @@ class allskyImage:
         if self.__info['processing'].has_key('convertTo8bit'):
             #conversion to 8bit scales intensities relative to max and min pixel values
             #therefore it does not make sense to allow background subtraction (the background
-            #image will be scaled differently
+            #image will be scaled differently)
             raise TypeError, "Cannot subtract images which have been converted to 8bit (due to intensity scaling)"
         if background.getMode() != self.__image.mode:
             raise ValueError, "Background image has a different mode to image"
