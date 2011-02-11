@@ -626,6 +626,7 @@ class allskyImage:
                 
         #rotate image so that the slice runs from top to bottom
         #the rotation direction depends on the orientation of the image
+        im = self.__image #in case no rotation is needed
         if (angle - float(self.__info['camera']['cam_rot'])) != 0.0:          
             if self.__info['processing']['alignNorth'].count('NESW') != 0:
                 im = self.__image.rotate(angle - float(self.__info['camera']['cam_rot']))
@@ -737,7 +738,7 @@ class allskyImage:
         else:
             draw.rectangle([lower_x,lower_y,upper_x+1,upper_y+1], outline=colour)
         
-        #rotate back to orginal image orientation
+        #rotate back to original image orientation
         im = im.rotate(-rot_angle)
         
         return im
@@ -920,7 +921,7 @@ class allskyImage:
                     continue
             
             #now write the PASKIL specific exif tags
-            exif_im['Exif.Image.ProcessingSoftware'].value = "PASKIL"
+            exif_im['Exif.Image.ProcessingSoftware'] = "PASKIL"
             
             info_no_exif = self.getInfo()
             info_no_exif.pop('exif')
@@ -928,7 +929,7 @@ class allskyImage:
             #this should really be stored in the MakerNote tag,
             #but pyexiv2 can't read it back if you put it there - so
             #for now we'll just have to abuse the usercomment tag
-            exif_im['Exif.Photo.UserComment'].value = str(info_no_exif)
+            exif_im['Exif.Photo.UserComment'] = str(info_no_exif)
             
             #write the exif back to the file
             exif_im.write()
