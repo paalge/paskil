@@ -2191,14 +2191,14 @@ class keogram:
             time_roll = latest_time - self.__end_time
             
             #find out how many pixels to roll keogram by
-            pix_roll = self.time2pix(self.__start_time + time_roll) - buffer
+            pix_roll = self.time2pix(self.__start_time + time_roll)
             
             if pix_roll is None:
                 #if pix_roll is bigger than the keogram itself, 
                 #then just blank the whole keogram
                 int_pix_roll = self.__width
             else:  
-                int_pix_roll = int(round(pix_roll)) 
+                int_pix_roll = int(round(pix_roll - buffer)) 
         
         elif earliest_time < self.__start_time: 
             #keogram needs to be rolled backwards in time    
@@ -2206,13 +2206,13 @@ class keogram:
             time_roll = earliest_time - self.__start_time
 
             #find out how many pixels to roll keogram by
-            pix_roll = -self.time2pix(self.__start_time - time_roll) + buffer
+            pix_roll = -self.time2pix(self.__start_time - time_roll)
             if pix_roll is None:
                 #if pix_roll is bigger than the keogram itself, then just blank
                 # the whole keogram
                 int_pix_roll = -self.__width
             else:  
-                int_pix_roll = int(round(pix_roll)) 
+                int_pix_roll = int(round(pix_roll + buffer)) 
 
         #modify start and end times
         end_time = time_roll + self.__end_time
