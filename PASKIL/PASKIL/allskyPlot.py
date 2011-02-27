@@ -36,9 +36,6 @@ Concepts:
         _plot(subplot)  - Returns the supplied subplot with the object plotted into it.
 
 """
-
-
-import matplotlib
 import matplotlib.pyplot
 import math
 import numpy
@@ -83,10 +80,8 @@ def plot(objects, columns=1, size=None):
     
     for _object in objects:
         #create a new subplot object
-
-        s = matplotlib.pylab.subplot(rows, columns, i)
-
-        
+        s = fig.add_subplot(rows, columns, i)
+       
         if (cb_correct and (not _object._hasColourBar())):
             #create an invisible colour bar so that the sizes of the objects will be the same
             fake_data = numpy.random.rand(2, 2)
@@ -99,8 +94,6 @@ def plot(objects, columns=1, size=None):
         
         #add the object to the figure
         s = _object._plot(s)
-        
-        fig.add_subplot(s)
 
         i+=1    
 

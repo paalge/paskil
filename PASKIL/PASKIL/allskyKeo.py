@@ -84,7 +84,7 @@ import datetime
 import calendar
 import math
 import numpy
-import matplotlib
+import matplotlib.cm
 import warnings
 import Image
 import ImageFilter
@@ -124,7 +124,6 @@ def combine(keograms, data_spacing="AUTO"):
     angles = set()
     keo_fovs = set()
     keo_lens_projs = set()
-    keo_times = []
     for keo in keograms:
         modes.add(keo.getMode())
         calib_factors.add(keo.getCalib_factor())
@@ -730,8 +729,8 @@ def __fromList(data, angle, start_time=None, end_time=None, strip_width=5,
                                        colour_table, strip_width, 
                                        int(1.5 * mean_data_spacing_pix)) 
         elif keo_type == "Average":
-             #+5 is effective strip width - used in calculating the 
-             #width of the keogram
+            #+5 is effective strip width - used in calculating the 
+            #width of the keogram
             keo_arr = _interpolateData(int_data_points, keo_arr, mode, 
                                        colour_table, 1, 
                                        int(1.5 * (mean_data_spacing_pix + 5)))
@@ -957,7 +956,6 @@ def _putData(image, keo_arr, strip_width, angle, keo_fov_angle, start_time,
     #get image properties
     current_image_info = current_image.getInfo()
     im_fov_angle = float(current_image_info['camera']['fov_angle'])
-    im_radius = float(current_image_info['camera']['Radius'])
     im_lens_proj = current_image_info['camera']['lens_projection']
     mode = current_image.getMode()
     
@@ -1587,7 +1585,14 @@ class keogram:
         """
         return [int(round(x)) for x in self.__data_points]
 
-
+    ###########################################################################     
+    
+    def getDataSpacing(self):
+        """
+        Returns the data spacing of the keogram.
+        """
+        return self.__data_spacing
+    
     ########################################################################### 
         
     def getDataTimes(self):
@@ -1886,8 +1891,8 @@ class keogram:
         #calculate pixel position of time
         x_position = int(round(self.time2pix(time)))
         
-         #work out max strip width we can use (cannot exceed dimensions of 
-         #keogram)
+        #work out max strip width we can use (cannot exceed dimensions of 
+        #keogram)
         if x_position + int(-strip_width / 2) + 1 < 0: 
             min_pix = 0
         else:
@@ -2051,8 +2056,6 @@ class keogram:
         subplot.yaxis.set_major_formatter(FixedFormatter(y_labels))
                
         #create tick marks for the x-axis
-        time_span = self.__end_time - self.__start_time
-
         x_ticks = [] #tick positions (in pixels)
         x_labels = []
         current_time = self.__start_time.replace(minute=0, second=0, 
@@ -2064,14 +2067,7 @@ class keogram:
                 x_labels.append(current_time.strftime("%H:%M"))
             
             if self.time_label_spacing is not None:
-                current_time += datetime.timedelta(minutes=self.time_label_spacing)
-#            if time_span <= datetime.timedelta(hours=1):
-#                #if the keogram is less than an hour long - tick every 10 mins
-#                current_time += datetime.timedelta(minutes=10)
-#        
-#            elif time_span < datetime.timedelta(hours=7):
-#                #if the keogram is less than 7 hours long - tick every 30 mins
-#                current_time += datetime.timedelta(minutes=30)  
+                current_time += datetime.timedelta(minutes=self.time_label_spacing) 
                 
             else:
                 #otherwise only tick every hour
@@ -2128,8 +2124,6 @@ class keogram:
         #initialise time limits to greatest extremes they could have
         latest_time = datetime.datetime.fromordinal(1)
         earliest_time = datetime.datetime.utcnow()
-        
-        capture_times = []
         
         #if the list is of file names then load the allskyImages
         images = []
@@ -2269,7 +2263,7 @@ class keogram:
                                             self.__strip_width, 
                                             int(1.5 * (data_spacing)))
         elif self.__keo_type == "Average":
-            rolled_array = __interpolateData(int_new_data_points, rolled_array,
+            rolled_array = _interpolateData(int_new_data_points, rolled_array,
                                              self.__mode, self.__colour_table, 
                                              1, int(1.5 * (data_spacing + 5))) #+5 is effective strip width used when calculating keogram width
         
