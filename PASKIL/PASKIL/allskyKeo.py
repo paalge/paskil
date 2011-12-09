@@ -409,15 +409,20 @@ def _generate_pix2angle_converter(keo_height, keo_fov_angle, lens_projection):
                             keo_fov_angle[0])
     
     elif lens_projection == "equisolidangle":
-        focal_length = (keo_height - 1) / (2.0 * math.sin(angle_range / 2.0))
+        angle_from_zenith = lambda angle: math.fabs(angle - 90.0)
         
-        return lambda pix: (math.degrees(2.0 * 
-                            math.asin(pix / (2.0 * focal_length))) + 
-                            keo_fov_angle[0])
+        theta_1 = math.radians(angle_from_zenith(keo_fov_angle[0]))
+        theta_2 = math.radians(angle_from_zenith(keo_fov_angle[1]))
     
-    else:
-        raise ValueError, ("Unknown lens projection \"" + str(lens_projection)+ 
-                           "\"Expecting \"equidistant\" or \"equisolidangle\"")
+        focal_length = float(keo_height-1) / (2.0 * (math.sin(theta_1/2.0) + math.sin(theta_2/2.0)))
+        
+        zenith_pixel = _generate_angle2pix_converter(keo_height, keo_fov_angle, lens_projection)(90.0)
+        
+        angle_from_zenith = lambda pix: 2.0*math.asin(math.fabs(zenith_pixel-pix)/(2.0*focal_length))
+        
+        
+        return lambda pix: math.degrees(((-1 if pix<zenith_pixel else 1)*angle_from_zenith(pix)) + math.radians(90.0))
+
 
 
 ###############################################################################
@@ -436,13 +441,15 @@ def _generate_angle2pix_converter(keo_height, keo_fov_angle, lens_projection):
         
         return lambda angle: focal_length * math.radians(angle - 
                                                           keo_fov_angle[0])
-    
     elif lens_projection == "equisolidangle":
-        focal_length = (keo_height - 1) / (2.0 * math.sin(angle_range / 2.0))
+        angle_from_zenith = lambda angle: math.fabs(angle - 90.0)
         
-        return lambda angle: (2.0 * focal_length * 
-                              math.sin(math.radians(angle - 
-                                                    keo_fov_angle[0]) / 2.0))
+        theta_1 = math.radians(angle_from_zenith(keo_fov_angle[0]))
+        theta_2 = math.radians(angle_from_zenith(keo_fov_angle[1]))
+    
+        focal_length = float(keo_height-1) / (2.0 * (math.sin(theta_1/2.0) + math.sin(theta_2/2.0)))
+
+        return lambda angle: ((-1 if angle<90 else 1)*(2.0 * focal_length * math.sin(math.radians(angle_from_zenith(angle)) / 2.0)))+(2.0 * focal_length * math.sin(theta_1 / 2.0))
     
     else:
         raise ValueError, ("Unknown lens projection \"" + str(lens_projection)+ 
