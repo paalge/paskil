@@ -1394,6 +1394,8 @@ class keogram:
             raise TypeError, ("fov_angle argument must be a tuple (min fov, "
                               "max fov)")
         
+        self.__has_colourbar =True
+        
         #set class attributes
         self.__data = data_array.copy()
         self.__keo_type = keo_type
@@ -1519,9 +1521,12 @@ class keogram:
                 keo_image_pix = keo_image.load()
                 
                 data = self.__data
-                ct = self.__colour_table.getColourTable()
+
+                ct = self.__colour_table.colour_table
+
                 for x in range(keo_image.size[0]):
                     for y in range(keo_image.size[1]):
+
                         keo_image_pix[x, y] = ct[data[x, y]]
                         
             keo_image = keo_image.convert("RGB")
@@ -2023,7 +2028,7 @@ class keogram:
         otherwise. This method is required for compatibility with the 
         allskyPlot module.
         """
-        if self.__colour_table is not None:
+        if self.__colour_table is not None and self.__has_colourbar:
             return True
         else:
             return False
@@ -2047,7 +2052,7 @@ class keogram:
                                    aspect="auto", cmap=matplotlib.cm.gray)       
         
     
-        if self.__colour_table is not None:
+        if self._hasColourBar():
             allskyPlot.createColourbar(subplot, 
                                        self.__colour_table.colour_table, 
                                        self.__calib_factor)
@@ -2056,8 +2061,13 @@ class keogram:
         y_ticks = [] #tick positions (in pixels)
         y_labels = [] 
         for y in range(0, 180, 20):
-            y_ticks.append(self.angle2pix(y))
-            y_labels.append(str(int(math.fabs(y - 180))))
+            pix = self.angle2pix(y)
+            if pix is None:
+                continue
+            y_ticks.append(pix)
+
+        h = self.getFov_angle()
+        y_labels = [str(h[1] - self.pix2angle(i) + h[0]) for i in y_ticks]
         
         subplot.yaxis.set_major_locator(FixedLocator(y_ticks))
         subplot.yaxis.set_major_formatter(FixedFormatter(y_labels))
@@ -2319,7 +2329,16 @@ class keogram:
             
         #save image as png file
         misc.pngsave(image, filename)
-
+        
+    ########################################################################### 
+    
+    def set_show_colourbar(self, val):
+        """
+        Set whether or not to plot a colour bar for the keogram - has no 
+        effect for greyscale keograms
+        """
+        assert isinstance(val, bool)
+        self.__has_colourbar = val
        
 
     ########################################################################### 
