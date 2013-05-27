@@ -138,7 +138,7 @@ except ImportError:
 
 #Define a list of all modules in PASKIL package.
 __all__ = ["allskyCalib", "allskyColour", "allskyData", "allskyImage", "allskyImagePlugins", "allskyPlot","allskyProj", "allskyKeo", "allskyRaw","misc", "stats", "plugins"]
-__version__ = '4.0'
+__version__ = '4.1'
 
 if use_pymedia:
     __all__.append('allskyVideo')
