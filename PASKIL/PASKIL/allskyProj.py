@@ -59,6 +59,9 @@ import math, numpy
 import Image, ImageOps
 from mpl_toolkits.basemap import Basemap
 from matplotlib import cm
+from matplotlib.pyplot import gca
+
+from PASKIL import allskyPlot
 
 #define private dictionary for converting between lens projection descriptions and matplotlib.basemap projection descriptions
 __proj_codes={'equidistant':'aeqd', 'equisolidangle':'laea', 'gnomonic':'gnom'}
@@ -78,6 +81,7 @@ class projection:
             raise ValueError, "Illegal value for background, expecting 'black' or 'white'"
         
         self.__background=background
+        self.__allsky_image = im
         
         #define radius of Earth
         Re=6.37E6
@@ -208,7 +212,7 @@ class projection:
 
     ###################################################################################
     
-    def createMapProjection(self, grid_size=500, **kwargs):
+    def createMapProjection(self, grid_size=500, colour_bar=True, **kwargs):
         """
         Returns a matplotlib basemap object containing a plot of the map projection described by kwargs.
         The grid_size option sets the number of grid squares that the map plot will be split into to 
@@ -254,13 +258,28 @@ class projection:
         #plot the image. Matplotlib doesn't support 16bit images, so need to convert to 8bit before plotting
         if self.__mode == 'I':
             image=image.convert('L')
-        observatory_map.imshow(image, cmap=cm.gray) #plot the image, setting cmap to gray to prevent matplotlib applying its own colour table
         
+        if self.__mode == 'RGB':
+            observatory_map.imshow(image)
+            try:
+                ct = self.__allsky_image.getInfo()['processing']['applyColourTable']
+            except KeyError:
+                ct = None
+            try:
+                calib_factor = float(self.__allsky_image.getInfo()['processing']['absoluteCalibration'])
+            except KeyError:
+                calib_factor = None
+            if ct is not None:
+                allskyPlot.createColourbar(gca(), ct, None)
+            
+        else:
+            observatory_map.imshow(image, cmap=cm.gray) #plot the image, setting cmap to gray to prevent matplotlib applying its own colour table
+
         return observatory_map
     
     ###################################################################################
     
-    def default(self):
+    def default(self, colour_bar=True):
         """
         Creates a 'standard' map projection of the image and returns it as a matplotlib basemap
         object. The 'standard' is an azimuthal equidistant projection centred on the observation
@@ -272,7 +291,7 @@ class projection:
         else:
             line_colour='white'
         
-        _map=self.createMapProjection(projection='aeqd', lat_0=self.site_lat, lon_0=self.site_lon, resolution='h', width=3*self.fov_distance, height=3*self.fov_distance)
+        _map=self.createMapProjection(projection='aeqd', colour_bar=colour_bar, lat_0=self.site_lat, lon_0=self.site_lon, resolution='h', width=3*self.fov_distance, height=3*self.fov_distance)
         _map.drawcoastlines(color=line_colour, linewidth=0.5)
         _map.drawmeridians(range(-180, 180, 10), color=line_colour)
         _map.drawparallels(range(-90, 90, 10), color=line_colour)

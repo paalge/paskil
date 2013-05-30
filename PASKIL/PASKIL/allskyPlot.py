@@ -115,7 +115,7 @@ def createColourbar(subplot, colour_table, calib_factor):
     colour_table.reverse()
     offset = colour_table.index(colour_table[-1])
     lower_threshold = len(colour_table)- 1 - offset
-    
+
     #now the upper threshold
     colour_table.reverse()
     upper_threshold = colour_table.index(colour_table[-1])
