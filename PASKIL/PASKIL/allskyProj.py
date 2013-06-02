@@ -269,7 +269,7 @@ class projection:
                 calib_factor = float(self.__allsky_image.getInfo()['processing']['absoluteCalibration'])
             except KeyError:
                 calib_factor = None
-            if ct is not None:
+            if ct is not None and colour_bar:
                 allskyPlot.createColourbar(gca(), ct, None)
             
         else:
