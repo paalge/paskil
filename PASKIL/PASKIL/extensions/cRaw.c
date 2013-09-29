@@ -69,6 +69,9 @@ along with PASKIL.  If not, see <http://www.gnu.org/licenses/>.
 #include <io.h>
 #endif
 #ifdef WIN32
+#define fseeko fseek
+#define ftello ftell
+#define fgetc fgetc
 #include <sys/utime.h>
 #include <winsock2.h>
 #pragma comment(lib, "ws2_32.lib")
