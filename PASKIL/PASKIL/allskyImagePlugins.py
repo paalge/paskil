@@ -1,19 +1,19 @@
-#Copyright (C) Nial Peters 2009
+# Copyright (C) Nial Peters 2009
 #
-#This file is part of PASKIL.
+# This file is part of PASKIL.
 #
-#PASKIL is free software: you can redistribute it and/or modify
-#it under the terms of the GNU General Public License as published by
-#the Free Software Foundation, either version 3 of the License, or
+# PASKIL is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
 #(at your option) any later version.
 #
-#PASKIL is distributed in the hope that it will be useful,
-#but WITHOUT ANY WARRANTY; without even the implied warranty of
-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#GNU General Public License for more details.
+# PASKIL is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#You should have received a copy of the GNU General Public License
-#along with PASKIL.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License
+# along with PASKIL.  If not, see <http://www.gnu.org/licenses/>.
 """
 Introduction:
 
@@ -144,68 +144,74 @@ Writing Your Own Plugin:
         
 """
 
-import allskyImage, misc
+import allskyImage
+import misc
 import pyfits
-import pyexiv2
-import Image, ImageOps
+from gi.Repository import GExiv2 as pyexiv2
+from PIL import Image, ImageOps
 
-types = [] #list to hold all available plugins
+types = []  # list to hold all available plugins
 
 
-###################################################################################
+##########################################################################
 
 def list_plugins():
-	"""
-	Returns a list of names of all the plugins that are registered.
-	"""
-	return [x.name for x in types]
+    """
+    Returns a list of names of all the plugins that are registered.
+    """
+    return [x.name for x in types]
 
-###################################################################################
+##########################################################################
+
 
 def which_plugin(image_filename, info_filename=None, force=False):
-	"""
-	Returns the name of the plugin that will be used to open the specified image.
-	If no plugin is found to open the image, then None is returned.
-	"""
-	try:
-		plugin = load(image_filename, info_filename, force)
-		return plugin.name
-	except ValueError:
-		return None
+    """
+    Returns the name of the plugin that will be used to open the specified image.
+    If no plugin is found to open the image, then None is returned.
+    """
+    try:
+        plugin = load(image_filename, info_filename, force)
+        return plugin.name
+    except ValueError:
+        return None
 
-###################################################################################
+##########################################################################
+
 
 def load(image_filename, info_filename, force):
     """    
     Returns the plugin object needed to open the image. Raises TypeError if no plugin is found. This should
     only be needed for debugging purposes.
     """
-    
+
     if force:
-        i = 3 #skip the first three plugins in the list - these are the internal ones
+        # skip the first three plugins in the list - these are the internal
+        # ones
+        i = 3
     else:
         i = 0
-    
+
     while i < len(types):
         if types[i].test(image_filename, info_filename):
             return types[i]
         i += 1
 
-    raise TypeError, ("allskyImagePlugins.load(): Unrecognised filetype for "+image_filename+". Make sure you have imported the required plugin for the image.")
+    raise TypeError, ("allskyImagePlugins.load(): Unrecognised filetype for " + image_filename + ". Make sure you have imported the required plugin for the image.")
 
-    
-###################################################################################
+
+##########################################################################
 
 def register(plugin):
     """
     Registers a plugin. The plugin argument should be an instance of the plugin class to be registered. You
     must make a call to this function when you import an external plugin, otherwise it will be ignored.
     """
-    #TODO - should check that the plugin has the correct methods/attributes
-    
+    # TODO - should check that the plugin has the correct methods/attributes
+
     types.append(plugin)
-    
-###################################################################################
+
+##########################################################################
+
 
 class PASKIL_Allsky_Image_PNG:
     """
@@ -215,92 +221,94 @@ class PASKIL_Allsky_Image_PNG:
     'camera' and 'processing'. These relate to information about the image, information about the camera
     setup and information about the processing that has been applied to the image (mainly used internally
     by PASKIL) respectively.
-    
+
     This plugin is used to open images which have already been opened by PASKIL and then resaved. As a result, 
     all the metadata is now stored in the image header, and in order not to lose the processing history, it 
     should be read from the header rather than being re-loaded from a site info file.
     """
-    
+
     def __init__(self):
-        self.name = "PASKIL All-sky PNG Image Plugin"  
-        
-    ###################################################################################    
-        
+        self.name = "PASKIL All-sky PNG Image Plugin"
+
+    ##########################################################################
+
     def test(self, image_filename, info_filename):
         """
         Returns true if 'image_filename' is in the PASKIL PNG format, false otherwise.
         """
 
-        #load image
+        # load image
         try:
             image = Image.open(image_filename)
         except:
             return False
-        
-        #look in the image header data to see if this image is from PASKIL
-        keys=image.info.keys()
-        if keys.count('header')==1 and keys.count('camera')==1 and keys.count('processing')==1:
+
+        # look in the image header data to see if this image is from PASKIL
+        keys = image.info.keys()
+        if keys.count('header') == 1 and keys.count('camera') == 1 and keys.count('processing') == 1:
             return True
         else:
             return False
-            
-    ###################################################################################    
-        
+
+    ##########################################################################
+
     def open(self, image_filename, info_filename):
         """
         Returns an allskyImage object containing the image data and image metadata contained in 'image_filename'.
         """
         image = Image.open(image_filename)
-        
-        #read image header data
-        info=image.info
 
-        #load the metadata from the image header data
-        camera=eval(info['camera'])
-        processing=eval(info['processing'])
-        header=eval(info['header'])
+        # read image header data
+        info = image.info
+
+        # load the metadata from the image header data
+        camera = eval(info['camera'])
+        processing = eval(info['processing'])
+        header = eval(info['header'])
         try:
             exif = eval(info['exif'])
             del info['exif']
         except KeyError:
             exif = {}
-        
+
         del info['camera']
         del info['processing']
         del info['header']
-        
-        #create a dictionary containing all the metadata
-        info={'header':header, 'camera':camera, 'processing':processing, 'exif':exif}
-        
-        #return new allskyImage object
-        return allskyImage.allskyImage(image, image.filename, info)        
-        
-    ###################################################################################            
-###################################################################################    
+
+        # create a dictionary containing all the metadata
+        info = {'header': header, 'camera': camera,
+                'processing': processing, 'exif': exif}
+
+        # return new allskyImage object
+        return allskyImage.allskyImage(image, image.filename, info)
+
+    ##########################################################################
+##########################################################################
+
 
 class PASKIL_Allsky_Image_JPEG:
     """
     Plugin class used to open PASKIL jpeg files. These are jpeg image files with the image metadata stored
     in the image exif (currently under the UserComment tag due to limitations of pyexiv2).
-    
+
     This plugin is used to open images which have already been opened by PASKIL and then resaved. As a result, 
     all the metadata is now stored in the image exif, and in order not to lose the processing history, it 
     should be read from the exif rather than being re-loaded from a site info file.
     """
-    
+
     def __init__(self):
-        self.name = "PASKIL All-sky JPEG Image Plugin"  
-        
-    ###################################################################################    
-        
+        self.name = "PASKIL All-sky JPEG Image Plugin"
+
+    ##########################################################################
+
     def test(self, image_filename, info_filename):
         """
         Returns true if 'image_filename' is in the PASKIL JPEG format, false otherwise.
         """
-        #check exif
+        # check exif
         exif = pyexiv2.ImageMetadata(image_filename)
         exif.read()
-        
+
         try:
             if exif['Exif.Image.ProcessingSoftware'].value == "PASKIL":
                 return True
@@ -308,25 +316,26 @@ class PASKIL_Allsky_Image_JPEG:
                 return False
         except:
             return False
-            
-    ###################################################################################    
-        
+
+    ##########################################################################
+
     def open(self, image_filename, info_filename):
         """
         Returns an allskyImage object containing the image data and image metadata contained in 'image_filename'.
         """
         image = Image.open(image_filename)
         exif_data = misc.readExifData(image_filename)
-        
+
         info_str = exif_data.pop("Exif.Photo.UserComment")
         info = eval(info_str)
         info['exif'] = exif_data
-                
-        #return new allskyImage object
-        return allskyImage.allskyImage(image, image.filename, info)        
-        
-    ###################################################################################            
-###################################################################################    
+
+        # return new allskyImage object
+        return allskyImage.allskyImage(image, image.filename, info)
+
+    ##########################################################################
+##########################################################################
+
 
 class PASKIL_Allsky_Image_FITS:
     """
@@ -335,17 +344,18 @@ class PASKIL_Allsky_Image_FITS:
     for 'processing'. These relate to information about the image, information about the camera setup and 
     information about the processing that has been applied to the image (mainly used internally by PASKIL) 
     respectively.
-    
+
     This plugin is used to open images which have already been opened by PASKIL and then resaved. As a result, 
     all the metadata is now stored in the image header, and in order not to lose the processing history, it 
     should be read from the header rather than being re-loaded from a site info file.
     """
+
     def __init__(self):
         self.name = "PASKIL All-sky FITS Image Plugin"
-    
-    ###################################################################################        
-    
-    def test(self, image_filename , info_filename):
+
+    ##########################################################################
+
+    def test(self, image_filename, info_filename):
         """
         Returns true if image_filename is in the PASKIL FITS format, false otherwise.
         """
@@ -353,97 +363,102 @@ class PASKIL_Allsky_Image_FITS:
             image = Image.open(image_filename)
         except:
             return False
-        
-        #check image has fits format
+
+        # check image has fits format
         if image.format != 'FITS':
             return False
-        
-        #if it is a FITS image, then check if it is a PASKIL fits image
-        
-        #open fits file using pyfits
-        hdulist=pyfits.open(image_filename)
-        
-        #look in the header of the primary hdu for the PASKIL tag
+
+        # if it is a FITS image, then check if it is a PASKIL fits image
+
+        # open fits file using pyfits
+        hdulist = pyfits.open(image_filename)
+
+        # look in the header of the primary hdu for the PASKIL tag
         try:
-            mode=hdulist[0].header['PASKIL']
-        
+            mode = hdulist[0].header['PASKIL']
+
         except KeyError:
             return False
-        
+
         if mode == 1:
             return True
         else:
             return False
-    
-    ###################################################################################    
-    
+
+    ##########################################################################
+
     def open(self, image_filename, info_filename):
         """
         Returns an allskyImage object containing the image data and image metadata contained in 'image'.
         """
-        header={}
-        camera={}
-        processing={}
-        exif={}
-        
-        #open fits file using pyfits
-        hdulist=pyfits.open(image_filename)
-        
-        #read header data locations from header
-        header_hdu=hdulist[hdulist[0].header['PSKHEAD']]
-        camera_hdu=hdulist[hdulist[0].header['PSKCAM']]
-        processing_hdu=hdulist[hdulist[0].header['PSKPRO']]
-        exif_hdu=hdulist[hdulist[0].header['PSKEXIF']]
-        
-        #write image info dictionary
+        header = {}
+        camera = {}
+        processing = {}
+        exif = {}
+
+        # open fits file using pyfits
+        hdulist = pyfits.open(image_filename)
+
+        # read header data locations from header
+        header_hdu = hdulist[hdulist[0].header['PSKHEAD']]
+        camera_hdu = hdulist[hdulist[0].header['PSKCAM']]
+        processing_hdu = hdulist[hdulist[0].header['PSKPRO']]
+        exif_hdu = hdulist[hdulist[0].header['PSKEXIF']]
+
+        # write image info dictionary
         for i in range(header_hdu.data.size):
             try:
-                header[header_hdu.data[i][0]]=eval(header_hdu.data[i][1])
+                header[header_hdu.data[i][0]] = eval(header_hdu.data[i][1])
             except:
-                header[header_hdu.data[i][0]]=header_hdu.data[i][1]
-                
+                header[header_hdu.data[i][0]] = header_hdu.data[i][1]
+
         for i in range(camera_hdu.data.size):
             try:
-                camera[camera_hdu.data[i][0]]=eval(camera_hdu.data[i][1])
+                camera[camera_hdu.data[i][0]] = eval(camera_hdu.data[i][1])
             except:
-                camera[camera_hdu.data[i][0]]=camera_hdu.data[i][1]
-        
+                camera[camera_hdu.data[i][0]] = camera_hdu.data[i][1]
+
         for i in range(processing_hdu.data.size):
             try:
-                processing[processing_hdu.data[i][0]]=eval(processing_hdu.data[i][1])
+                processing[processing_hdu.data[i][0]] = eval(
+                    processing_hdu.data[i][1])
             except:
-                processing[processing_hdu.data[i][0]]=processing_hdu.data[i][1]
-        
+                processing[
+                    processing_hdu.data[i][0]] = processing_hdu.data[i][1]
+
         for i in range(exif_hdu.data.size):
             try:
-                exif[exif_hdu.data[i][0]]=eval(exif_hdu.data[i][1])
+                exif[exif_hdu.data[i][0]] = eval(exif_hdu.data[i][1])
             except:
-                exif[exif_hdu.data[i][0]]=exif_hdu.data[i][1]
-        
-        info={'header':header, 'camera':camera, 'processing':processing, 'exif':exif}
-        
-        mode=hdulist[0].header['PSKMODE']
-        
-        #load image data
-        image_data=hdulist[0].data
-        
+                exif[exif_hdu.data[i][0]] = exif_hdu.data[i][1]
+
+        info = {'header': header, 'camera': camera,
+                'processing': processing, 'exif': exif}
+
+        mode = hdulist[0].header['PSKMODE']
+
+        # load image data
+        image_data = hdulist[0].data
+
         if mode != "RGB":
-            new_image = ImageOps.flip(Image.fromarray(image_data)) #need to flip image as it is read in upside down
+            # need to flip image as it is read in upside down
+            new_image = ImageOps.flip(Image.fromarray(image_data))
         else:
-            #read in separate RGB channels and then combine them into one image
+            # read in separate RGB channels and then combine them into one
+            # image
             red_image = Image.fromarray(image_data[0])
             green_image = Image.fromarray(image_data[1])
             blue_image = Image.fromarray(image_data[2])
-            
-            new_image = ImageOps.flip(Image.merge("RGB", [red_image, green_image, blue_image]))
-            
+
+            new_image = ImageOps.flip(
+                Image.merge("RGB", [red_image, green_image, blue_image]))
+
         return allskyImage.allskyImage(new_image, image_filename, info)
-        
-    ###################################################################################            
-###################################################################################               
-                  
-#register plugins
+
+    ##########################################################################
+##########################################################################
+
+# register plugins
 register(PASKIL_Allsky_Image_PNG())
 register(PASKIL_Allsky_Image_FITS())
 register(PASKIL_Allsky_Image_JPEG())
-
