@@ -61,7 +61,7 @@ import math
 import warnings
 
 import numpy
-from gi.Repository import GExiv2 as pyexiv2
+from gi.repository import GExiv2 as pyexiv2
 import pyfits
 import matplotlib
 import matplotlib.font_manager

@@ -39,7 +39,7 @@ Concepts:
 import matplotlib.pyplot
 import math
 import numpy
-from PIl import Image, ImageDraw
+from PIL import Image, ImageDraw
 
 from pylab import NullLocator, FixedLocator, FuncFormatter
 

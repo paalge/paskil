@@ -147,7 +147,7 @@ Writing Your Own Plugin:
 import allskyImage
 import misc
 import pyfits
-from gi.Repository import GExiv2 as pyexiv2
+from gi.repository import GExiv2 as pyexiv2
 from PIL import Image, ImageOps
 
 types = []  # list to hold all available plugins

@@ -22,7 +22,7 @@ Module containing miscellaneous functions used internally by PASKIL
 import math
 import os
 import glob
-from gi.Repository import GExiv2 as pyexiv2
+from gi.repository import GExiv2 as pyexiv2
 
 ##########################################################################
 
