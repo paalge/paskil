@@ -108,11 +108,9 @@ def readExifData(filename):
     exif_data = {}
     try:
         exif = pyexiv2.Metadata(filename)
-#         exif.read()
-
-        for tag in exif.keys():
+        for tag in exif.get_exif_tags():
             try:
-                exif_data[tag] = exif[tag].value
+                exif_data[tag] = exif[tag]
             except:
                 continue
     finally:

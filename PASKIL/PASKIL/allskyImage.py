@@ -964,15 +964,15 @@ class allskyImage:
             self.__image.save(filename)
 
             # prepare to copy exif data in
-            exif_im = pyexiv2.ImageMetadata(filename)
-            exif_im.read()
+            exif_im = pyexiv2.Metadata(filename)
 
             # copy the existing exif data into the saved exif
             existing_exif = self.getExif()
             for tag, value in existing_exif.items():
                 try:
-                    exif_im[tag].value = value
+                    exif_im[tag] = value
                 except:
+                    print("Not writing exif tag: " + tag)
                     continue
 
             # now write the PASKIL specific exif tags
@@ -987,7 +987,7 @@ class allskyImage:
             exif_im['Exif.Photo.UserComment'] = str(info_no_exif)
 
             # write the exif back to the file
-            exif_im.write()
+            exif_im.save_file()
 
         elif format == "fits":  # save as FITS format
 
