@@ -89,10 +89,10 @@ Example:
 """
 
 ###############################################################################
-from __future__ import with_statement
+
 import glob
 import datetime
-import cPickle
+import pickle
 import os
 import os.path
 
@@ -136,9 +136,9 @@ def combine(datasets):
     for d in datasets:
         filetypes += d.getFiletypes()
 
-        tuple_list += zip(d.getTimes(), d.getFilenames(),
+        tuple_list += list(zip(d.getTimes(), d.getFilenames(),
                           d.getSite_info_files(), d._getRadiiList(),
-                          d._getFov_anglesList())
+                          d._getFov_anglesList()))
 
     # sort the list into chronological order and remove duplicate entries
     tuple_list = list(set(tuple_list))
@@ -222,23 +222,23 @@ def fromList(file_names, wavelength, filetype, site_info_file=None):
             lens_projection = current_lens_projection
 
         if current_image.getMode() != mode:
-            print("Warning! allskyData.fromList(): Skipping file " + filename +
-                  ". Incorrect image mode.")
+            print(("Warning! allskyData.fromList(): Skipping file " + filename +
+                  ". Incorrect image mode."))
             continue
 
         if current_colour_table != colour_table:
-            print("Warning! allskyData.fromList(): Skipping file " + filename +
-                  ". Incorrect colour table.")
+            print(("Warning! allskyData.fromList(): Skipping file " + filename +
+                  ". Incorrect colour table."))
             continue
 
         if current_calib_factor != calib_factor:
-            print("Warning! allskyData.fromList(): Skipping file " + filename +
-                  ". Incorrect absolute calibration factor.")
+            print(("Warning! allskyData.fromList(): Skipping file " + filename +
+                  ". Incorrect absolute calibration factor."))
             continue
 
         if current_lens_projection != lens_projection:
-            print("Warning! allskyData.fromList(): Skipping file " + filename +
-                  ". Incorrect lens projection.")
+            print(("Warning! allskyData.fromList(): Skipping file " + filename +
+                  ". Incorrect lens projection."))
             continue
         # read creation time from header
         time_str = info['header']['Creation Time']
@@ -283,7 +283,7 @@ def load(filename):
     then this might lead to unexpected behavior.
     """
     with open(filename, "rb") as f:
-        dataset = cPickle.load(f)
+        dataset = pickle.load(f)
 
     # check that the all the files stored in the dataset still exist.
     for image_filename in dataset.getFilenames():
@@ -389,7 +389,7 @@ class dataset:
         # multiple values allowed for any given dataset
         self.__filetypes = list(set(filetypes))
 
-        n = range(len(data))
+        n = list(range(len(data)))
         self.__times = [data[i][0] for i in n]
         self.__filenames = [data[i][1] for i in n]
         self.__site_info_files = [data[i][2] for i in n]
@@ -421,7 +421,7 @@ class dataset:
         if not isinstance(x, dataset):
             return NotImplemented
 
-        for k in self.__dict__.keys():
+        for k in list(self.__dict__.keys()):
             if self.__dict__[k] != getattr(x, k):
                 return False
         return True
@@ -429,7 +429,7 @@ class dataset:
     def __ne__(self, x):
         if not isinstance(x, dataset):
             return NotImplemented
-        for k in self.__dict__.keys():
+        for k in list(self.__dict__.keys()):
             if self.__dict__[k] != getattr(x, k):
                 return True
         return False
@@ -596,9 +596,9 @@ class dataset:
         e += 1  # so that list slices include the image at index e
 
         # build list of tuples
-        cropped_data = zip(self.__times[s:e], self.__filenames[s:e],
+        cropped_data = list(zip(self.__times[s:e], self.__filenames[s:e],
                            self.__site_info_files[s:e], self.__radii_list[s:e],
-                           self.__fov_angles_list[s:e])
+                           self.__fov_angles_list[s:e]))
 
         return dataset(cropped_data, self.__wavelength, self.__filetypes,
                        self.__mode, self.__colour_table, self.__calib_factor,
@@ -612,7 +612,7 @@ class dataset:
         files in the dataset and their corresponding site info files, 
         e.g. [(image1, site_info1), (image2, site_info2)...]
         """
-        return zip(self.__filenames, self.__site_info_files)
+        return list(zip(self.__filenames, self.__site_info_files))
 
     ###########################################################################
 
@@ -629,7 +629,7 @@ class dataset:
         s, e = self.__t_range2indices(time1, time2)
         e += 1  # so that list slices include the image at index e
 
-        return zip(self.__filenames[s:e], self.__site_info_files[s:e])
+        return list(zip(self.__filenames[s:e], self.__site_info_files[s:e]))
 
     ###########################################################################
 
@@ -700,7 +700,7 @@ class dataset:
         # open file for writing
         with open(filename, "wb") as f:
             # pickle the dataset object and save it to the file
-            cPickle.dump(self, f, cPickle.HIGHEST_PROTOCOL)
+            pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
 
     ###########################################################################
 
@@ -725,8 +725,8 @@ class dataset:
 
         inc = int(float(length) / float(n) + 0.5)
         split_list = []
-        data = zip(self.__times, self.__filenames, self.__site_info_files,
-                   self.__radii_list, self.__fov_angles_list)
+        data = list(zip(self.__times, self.__filenames, self.__site_info_files,
+                   self.__radii_list, self.__fov_angles_list))
 
         for i in range(0, n - 1):
             data_slice = data[i * inc:i * inc + inc]
@@ -770,7 +770,7 @@ class datasetIterator:
 
     ###########################################################################
 
-    def next(self):
+    def __next__(self):
         """
         Required for the iterator protocol. Returns the next allskyImage in the
         dataset. 

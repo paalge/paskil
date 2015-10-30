@@ -106,15 +106,15 @@ class projection:
             self.__mode = 'L'
 
         # ensure that the image is aligned with geographic north
-        if image_info['processing'].has_key('alignNorth'):
+        if 'alignNorth' in image_info['processing']:
             if image_info['processing']['alignNorth'] != 'geographic (NESW)':
                 im = im.alignNorth(north='geographic', orientation='NESW')
 
         else:
-            if not image_info['processing'].has_key('binaryMask'):
+            if 'binaryMask' not in image_info['processing']:
                 im = im.binaryMask(float(image_info['camera']['fov_angle']))
 
-            if not image_info['processing'].has_key('centerImage'):
+            if 'centerImage' not in image_info['processing']:
                 im = im.centerImage()
 
             im = im.alignNorth(north='geographic')
@@ -332,8 +332,8 @@ class projection:
         _map = self.createMapProjection(projection='aeqd', colour_bar=colour_bar, lat_0=self.site_lat,
                                         lon_0=self.site_lon, resolution='h', width=3 * self.fov_distance, height=3 * self.fov_distance)
         _map.drawcoastlines(color=line_colour, linewidth=0.5)
-        _map.drawmeridians(range(-180, 180, 10), color=line_colour)
-        _map.drawparallels(range(-90, 90, 10), color=line_colour)
+        _map.drawmeridians(list(range(-180, 180, 10)), color=line_colour)
+        _map.drawparallels(list(range(-90, 90, 10)), color=line_colour)
         _map.drawmapboundary(fill_color=self.__background)
 
         return _map

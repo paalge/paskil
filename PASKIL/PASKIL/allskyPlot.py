@@ -169,22 +169,22 @@ def createColourbar(subplot, colour_table, calib_factor):
 
     # colour in the arrows (if there are any)
     # remember that image indexing starts at top left
-    for y in xrange(0, upper_arrow):
-        for x in xrange(colour_bar_width):
+    for y in range(0, upper_arrow):
+        for x in range(colour_bar_width):
             colour_bar_pix[x, y] = colour_table[upper_threshold]
-    for y in xrange(0, lower_arrow):
-        for x in xrange(colour_bar_width):
+    for y in range(0, lower_arrow):
+        for x in range(colour_bar_width):
             colour_bar_pix[
                 x, colour_bar_height - y - 1] = colour_table[lower_threshold]
 
     # colour in the rest of the colour bar based on the colour table of the
     # image
-    for y in xrange(colour_bar_height - upper_arrow - lower_arrow):
+    for y in range(colour_bar_height - upper_arrow - lower_arrow):
         current_ct_index = upper_threshold - \
             (int((y / float(colour_bar_height - upper_arrow - lower_arrow)
                   * (upper_threshold - lower_threshold)) + 0.5))
         current_colour = colour_table[current_ct_index]
-        for x in xrange(colour_bar_width):
+        for x in range(colour_bar_width):
             colour_bar_pix[x, y + upper_arrow] = current_colour
 
     # if the image could contain values outside of the threshold

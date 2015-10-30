@@ -53,7 +53,7 @@ class PmisImageFile(ImageFile.ImageFile):
             except ValueError:
                 indicies.append(header.index("S"))
         except ValueError:
-            print "Cannot read pmis header data"
+            print("Cannot read pmis header data")
             sys.exit()
 
         # sort list

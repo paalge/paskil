@@ -19,7 +19,7 @@ This is something of an experimental module, and is largely unfinished. It is de
 to make producing videos from allsky images easy. It may be removed in future versions
 of PASKIL.
 """
-from __future__ import with_statement
+
 import sys, os, time
 import pymedia.video.vcodec as vcodec
 

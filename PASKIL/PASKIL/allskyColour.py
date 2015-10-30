@@ -176,7 +176,7 @@ def default(histogram, thresholds='AUTO'):
     case a normal distribution is fitted to the histogram and the thresholds are set to two standard deviations
     either side of the mean of the distribution.
     """
-    segments = range(5)
+    segments = list(range(5))
     segments[0] = segment(256, (0, 0, 0), (0, 0, 255))
     segments[1] = segment(256, (0, 0, 255), (0, 255, 255))
     segments[2] = segment(256, (0, 255, 255), (0, 255, 0))
@@ -206,9 +206,9 @@ def histogram(dataset):
         raise ValueError("Unsupported image mode")
 
     number_of_images = 0  # number of images read
-    total_histogram = range(size)
-    mean_histogram = range(size)
-    current_histogram = range(size)
+    total_histogram = list(range(size))
+    mean_histogram = list(range(size))
+    current_histogram = list(range(size))
 
     for infile in dataset.getAll():
         current_image = Image.open(infile[0])
@@ -312,7 +312,7 @@ def loadHistogram(filename):
         histogram.append(int(words[1]))
         index.append(int(words[0]))
 
-    if index != range(256) and index != range(65536):
+    if index != list(range(256)) and index != list(range(65536)):
         raise ValueError(
             "Incorrect number of data entries in file: " + filename)
 
@@ -357,7 +357,7 @@ class basicColourTable:
         Returns the colour table data in a format compatible with PIL's Image class putpalette() method.
         """
         # convert colour_table to a list format for use with putpalette()
-        list_colour_table = range(3 * len(self.colour_table))
+        list_colour_table = list(range(3 * len(self.colour_table)))
         j = 0
         for i in range(len(self.colour_table)):
             list_colour_table[j], list_colour_table[

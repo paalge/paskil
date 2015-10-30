@@ -17,7 +17,7 @@
 """
 PASKIL plugin for opening PNG files created by the UiO allsky camera in Longyearbyen
 """
-from __future__ import with_statement
+
 #import required modules
 from PASKIL import allskyImage, allskyImagePlugins
 import Image
@@ -76,7 +76,7 @@ class UiO_Allsky_LYR_PNG:
                 words=line.split("=") #split the line at the = sign
                 
                 if len(words) != 2:
-                    print "Error! allskyImagePlugins.UiO_Allsky_LYR.open(): Cannot read site info file, too many words per line"
+                    print("Error! allskyImagePlugins.UiO_Allsky_LYR.open(): Cannot read site info file, too many words per line")
                     sys.exit()
                     
                 camera[words[0].lstrip().rstrip()] = words[1].lstrip().rstrip() #store the values (minus white space) in a dictionary

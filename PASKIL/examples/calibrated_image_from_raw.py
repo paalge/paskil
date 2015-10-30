@@ -33,7 +33,7 @@ ffcalib_file = "D80_flat_field.txt"
 
 
 # Open the raw image files.
-print "Decoding NEF files"
+print("Decoding NEF files")
 raw_image = allskyImage.new(nef_file, site_info_file=info_file)
 bkgd_image = allskyImage.new(background_image, site_info_file=info_file)
 
@@ -44,7 +44,7 @@ bkgd_image = allskyImage.new(background_image, site_info_file=info_file)
 # different colour channels are as follows: 0=red, 1=1st green,
 # 2=blue, 3=2nd green. The green channels are essentially
 # identical.
-print "Extracting green channel"
+print("Extracting green channel")
 green_image = raw_image.getChannel(1)
 green_bkgd = bkgd_image.getChannel(1)
 
@@ -52,7 +52,7 @@ green_bkgd = bkgd_image.getChannel(1)
 # Subtract the background image. Most methods return
 # a new allskyImage object - here we simply overwrite the
 # original with the background subtracted version.
-print "Subtracting background image"
+print("Subtracting background image")
 green_image = green_image.subtractBackgroundImage(green_bkgd)
 
 
@@ -61,19 +61,19 @@ green_image = green_image.subtractBackgroundImage(green_bkgd)
 # them we crop the image to only have a 150 degree field of
 # view. Note that with PASKIL you have to specify the angle from
 # zenith that you want the image cropped at.
-print "Cropping field of view"
+print("Cropping field of view")
 green_image = green_image.binaryMask(75)
 
 
 # Crop the image size to only include the field of view.
-print "Cropping image to field of view size"
+print("Cropping image to field of view size")
 green_image = green_image.centerImage()
 
 
 # Next we align the top of the image with geomagnetic north.
 # Since most all-sky images have a NWSE orientation, we stick
 # with this convention.
-print "Aligning image with geomagnetic north"
+print("Aligning image with geomagnetic north")
 green_image = green_image.alignNorth(north='geomagnetic', orientation='NWSE')
 
 
@@ -88,7 +88,7 @@ ffcalib = allskyCalib.fromFile(ffcalib_file)
 
 
 # Apply the flat field calibration to the image.
-print "Applying flat field correction"
+print("Applying flat field correction")
 green_image = green_image.flatFieldCorrection(ffcalib)
 
 
@@ -100,7 +100,7 @@ green_image = green_image.flatFieldCorrection(ffcalib)
 # are all set to the highest value colour. Careful choice of
 # thresholds allows the greatest variation of colour within
 # the desired intensity range.
-print "Creating false colour scale"
+print("Creating false colour scale")
 image_histogram = green_image.histogram()
 thresholds = (40, 300)
 colour_table = allskyColour.default(image_histogram, thresholds)
@@ -116,7 +116,7 @@ false_colour_image = green_image.applyColourTable(colour_table)
 # Rayleighs! The calibration is only done when the image is
 # plotted. The const_factor argument is used to account for
 # transmission through the instrument dome.
-print "Calibrating intensities to Rayleighs"
+print("Calibrating intensities to Rayleighs")
 factor = 1.4E-3  # counts per second per Rayleigh
 exptime = 20.0  # exposure time in seconds
 dome_tansmission = 0.96  # transmission through instrument dome
@@ -128,8 +128,8 @@ calibrated_image = false_colour_image.absoluteCalibration(
 # object is a matplotlib figure object - see the matplotlib
 # documentation for details of all the things you can do with
 # this!
-print "Plotting image"
+print("Plotting image")
 calibrated_image.title = "Example Calibrated Image"
 figure = allskyPlot.plot([calibrated_image])
 figure.savefig("calibrated_example.png")
-print "Done! Calibrated image is stored in calibrated_example.png"
+print("Done! Calibrated image is stored in calibrated_example.png")

@@ -65,8 +65,8 @@ Example:
 ##########################################################################
 
 from PIL import Image  # imports from PIL
-import stats
-import misc  # imports from PASKIL
+from . import stats
+from . import misc  # imports from PASKIL
 import datetime
 import calendar  # imports from other python modules
 from pylab import figure, title, xlabel, ylabel, plot
@@ -217,7 +217,7 @@ class calibration:
         """
         figure(1)
         title("Normalised flat field intensity against angle from zenith")
-        plot(range(len(self.calibration_data)), self.calibration_data)
+        plot(list(range(len(self.calibration_data))), self.calibration_data)
         xlabel("Angle (degrees)")
         ylabel("Normalised Flat Field Intensity")
 

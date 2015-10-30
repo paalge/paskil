@@ -25,7 +25,7 @@ import datetime
 import numpy
 from PIL import Image, ImageChops
 
-import allskyImage
+from . import allskyImage
 import rawkit
 from rawkit.raw import Raw
 

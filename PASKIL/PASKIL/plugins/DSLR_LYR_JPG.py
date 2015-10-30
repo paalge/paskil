@@ -17,7 +17,7 @@
 """
 Plugin for loading images taken using the Nikon D80 DSLR allsky camera at KHO. 
 """
-from __future__ import with_statement
+
 from PASKIL import allskyImage, allskyImagePlugins
 import sys
 import datetime
@@ -69,7 +69,7 @@ class DSLR_LYR_JPG:
                 words = line.split("=")  # split the line at the = sign
 
                 if len(words) != 2:
-                    print "Error! allskyImagePlugins.DSLR_LYR.open(): Cannot read site info file, too many words per line"
+                    print("Error! allskyImagePlugins.DSLR_LYR.open(): Cannot read site info file, too many words per line")
                     sys.exit()
 
                 # store the values (minus white space) in a dictionary

@@ -33,7 +33,7 @@ info_file = "jpg_site_info.txt"
 
 
 # Open the image file
-print "Opening image file"
+print("Opening image file")
 image = allskyImage.new(jpg_file, info_file)
 
 
@@ -44,18 +44,18 @@ image = allskyImage.new(jpg_file, info_file)
 # zenith that you want the image cropped at. Most methods return
 # a new allskyImage object - here we simply overwrite the 
 # original with the cropped version.
-print "Cropping field of view"
+print("Cropping field of view")
 image = image.binaryMask(75)
 
 
 # Crop the image size to only include the field of view.
-print "Cropping image to field of view size"
+print("Cropping image to field of view size")
 image = image.centerImage()
 
 
 # Create a projection object which can then be used to create
 # different map projections.
-print "Projecting image"
+print("Projecting image")
 proj_height = 150000 # meters (we assume that the green emissions dominate)
 proj = image.projectToHeight(proj_height)
 
@@ -63,11 +63,11 @@ proj = image.projectToHeight(proj_height)
 # The projection object can be used to create almost any map 
 # projection desired. Here however, we use the default projection
 # which is a azimuthal equidistant projection centred on the observatory.
-print "Creating map"
+print("Creating map")
 _map = proj.default()
 
 
 # Save the map projection
 savefig("map_projection_example.png")
-print "Done! Map projection is stored in map_projection_example.png"
+print("Done! Map projection is stored in map_projection_example.png")
 

@@ -18,7 +18,7 @@
 Plugin for loading images taken using the Nikon D80 DSLR allsky camera at KHO. This plugin is for opening
 the PPM files produced by decoding the raw NEF files using dcraw.
 """
-from __future__ import with_statement
+
 from PASKIL import allskyImage, allskyImagePlugins
 import sys
 import datetime
@@ -62,7 +62,7 @@ class DSLR_LYR:
                 words = line.split("=")  # split the line at the = sign
 
                 if len(words) != 2:
-                    print "Error! allskyImagePlugins.DSLR_LYR.open(): Cannot read site info file, too many words per line"
+                    print("Error! allskyImagePlugins.DSLR_LYR.open(): Cannot read site info file, too many words per line")
                     sys.exit()
 
                 # store the values (minus white space) in a dictionary

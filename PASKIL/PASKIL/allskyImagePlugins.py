@@ -144,8 +144,8 @@ Writing Your Own Plugin:
         
 """
 
-import allskyImage
-import misc
+from . import allskyImage
+from . import misc
 import pyfits
 from gi.repository import GExiv2 as pyexiv2
 from PIL import Image, ImageOps
@@ -245,7 +245,7 @@ class PASKIL_Allsky_Image_PNG:
             return False
 
         # look in the image header data to see if this image is from PASKIL
-        keys = image.info.keys()
+        keys = list(image.info.keys())
         if keys.count('header') == 1 and keys.count('camera') == 1 and keys.count('processing') == 1:
             return True
         else:

@@ -18,7 +18,7 @@
 Plugin for loading images taken using the Nikon D80 DSLR allsky camera at KHO using the old 
 diagonal fish-eye lens. This plugin is for opening the raw NEF files.
 """
-from __future__ import with_statement
+
 from PASKIL import allskyImage, allskyImagePlugins, allskyRaw
 import sys,datetime
 import Image
@@ -53,7 +53,7 @@ class DSLR_LYR_OL_NEF:
                 words=line.split("=") #split the line at the = sign
                 
                 if len(words) != 2:
-                    print "Error! allskyImagePlugins.DSLR_LYR.open(): Cannot read site info file, too many words per line"
+                    print("Error! allskyImagePlugins.DSLR_LYR.open(): Cannot read site info file, too many words per line")
                     sys.exit()
                     
                 camera[words[0].lstrip().rstrip()] = words[1].lstrip().rstrip() #store the values (minus white space) in a dictionary

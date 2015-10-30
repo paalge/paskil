@@ -17,10 +17,10 @@
 """
 PASKIL plugin for opening PMIS files created by the UiO allsky cameras in Longyearbyen and Ny Alesund.
 """
-from __future__ import with_statement
+
 from PASKIL.allskyImage import allskyImage
 from PASKIL.allskyImagePlugins import register
-import PmisImagePlugin
+from . import PmisImagePlugin
 import datetime
 import Image
 

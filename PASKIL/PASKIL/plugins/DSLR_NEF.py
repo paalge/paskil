@@ -14,7 +14,7 @@
 #
 #You should have received a copy of the GNU General Public License
 #along with PASKIL.  If not, see <http://www.gnu.org/licenses/>.
-from __future__ import with_statement
+
 
 #import required modules
 from PASKIL import allskyImage, allskyImagePlugins,allskyRaw
@@ -70,7 +70,7 @@ class NEF_Format:
                 words=line.split("=") #split the line at the = sign
                 
                 if len(words) != 2:
-                    print "Error! allskyImagePlugins.DSLR_LYR.open(): Cannot read site info file, too many words per line"
+                    print("Error! allskyImagePlugins.DSLR_LYR.open(): Cannot read site info file, too many words per line")
                     sys.exit()
                     
                 camera[words[0].lstrip().rstrip()] = words[1].lstrip().rstrip() #store the values (minus white space) in a dictionary

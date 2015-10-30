@@ -321,7 +321,7 @@ def new(data, angle, start_time=None, end_time=None, strip_width=5,
         # create the keogram segments
         results = processing_pool.map(__fromDatasetWrapper, arg_tuples,
                                       chunksize=1)
-    except Exception, ex:
+    except Exception as ex:
         # if anything goes wrong, kill the child processes
         processing_pool.terminate()
         raise ex
@@ -1080,13 +1080,13 @@ def _imagePreProcess(image):
     """
     info = image.getInfo()
 
-    if not info['processing'].has_key('binaryMask'):
+    if 'binaryMask' not in info['processing']:
         image = image.binaryMask(float(info['camera']['fov_angle']))
 
-    if not info['processing'].has_key('centerImage'):
+    if 'centerImage' not in info['processing']:
         image = image.centerImage()
 
-    if not info['processing'].has_key('alignNorth'):
+    if 'alignNorth' not in info['processing']:
         image = image.alignNorth()
 
     return image
@@ -1258,7 +1258,7 @@ class keoTimeSlice(keoIntensitiesBase):
         # decide on tick locations
         if time_span <= datetime.timedelta(hours=1):
             # if the keogram is less than an hour long - tick every 10 mins
-            x_ticks = range(0, 70, 10)
+            x_ticks = list(range(0, 70, 10))
         elif time_span < datetime.timedelta(hours=7):
             # if the keogram is less than 7 hours long - tick every 30 mins
             x_ticks = [0, 30]
@@ -1448,7 +1448,7 @@ class keogram:
             return NotImplemented
 
         # check attributes are the same
-        for k in self.__dict__.keys():
+        for k in list(self.__dict__.keys()):
             if k == "_keogram__data":
                 continue
             if self.__dict__[k] != getattr(x, k):
@@ -1474,7 +1474,7 @@ class keogram:
             return NotImplemented
 
         # check attributes are not the same
-        for k in self.__dict__.keys():
+        for k in list(self.__dict__.keys()):
             if k == "_keogram__data":
                 continue
             if self.__dict__[k] != getattr(x, k):
@@ -1920,9 +1920,9 @@ class keogram:
         length 65536. The histogram method cannot be used for RGB images.
         """
         if self.__mode == "L":
-            histogram = numpy.histogram(self.__data, bins=range(257))[0]
+            histogram = numpy.histogram(self.__data, bins=list(range(257)))[0]
         elif self.__mode == "I":
-            histogram = numpy.histogram(self.__data, bins=range(65537))[0]
+            histogram = numpy.histogram(self.__data, bins=list(range(65537)))[0]
 
         else:
             raise ValueError("Unsupported image mode")

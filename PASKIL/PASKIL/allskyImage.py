@@ -206,13 +206,13 @@ class allskyImage:
         """
 
         # check that colour table has already been applied
-        if ((self.__info['processing'].keys().count('applyColourTable') == 0) and (self.getMode() != "RGB")):
+        if ((list(self.__info['processing'].keys()).count('applyColourTable') == 0) and (self.getMode() != "RGB")):
             warnings.warn(
                 "Adding a time stamp before applying a colour table will result in the colour table being applied to the time stamp as well!")
             sys.stdout.flush()
 
         # check if a time stamp has already been applied
-        if self.__info['processing'].keys().count('addTimeStamp') != 0:
+        if list(self.__info['processing'].keys()).count('addTimeStamp') != 0:
             warnings.warn(
                 "A timestamp has already been applied to " + self.__filename)
             return self
@@ -272,7 +272,7 @@ class allskyImage:
         in a NWSE orientation before they are processed by PASKIL (i.e. looking upwards).
         """
         # check that image has already been centered
-        if self.__info['processing'].keys().count('centerImage') == 0:
+        if list(self.__info['processing'].keys()).count('centerImage') == 0:
             raise RuntimeError(
                 "Image " + self.__filename + " must be centred before it can be aligned with north.")
 
@@ -320,14 +320,12 @@ class allskyImage:
                 new_image = new_image.rotate(-
                                              float(new_info['camera']['Magn. Bearing']))
             else:
-                raise(
-                    ValueError("Unknown value for orientation. Expecting \"NESW\" or \"NWSE\""))
+                raise ValueError
 
             new_info['camera']['cam_rot'] = new_info['camera']['Magn. Bearing']
 
         elif north != "geographic":
-            raise(
-                ValueError("Unknown value for north. Expecting \"geomagnetic\" or \"geographic\""))
+            raise ValueError
 
         # update processing history
         new_info['processing']['alignNorth'] = north + " (" + orientation + ")"
@@ -377,12 +375,12 @@ class allskyImage:
             raise TypeError("Cannot apply a colour table to an RGB image")
 
         # check if the image has had the flat field calibration applied
-        if self.__info['processing'].keys().count('flatFieldCorrection') == 0:
+        if list(self.__info['processing'].keys()).count('flatFieldCorrection') == 0:
             warnings.warn(
                 "Images should have flat field corrections applied before the colour table is applied")
 
         # check if the image has already had a colour table applied
-        if self.__info['processing'].keys().count('applyColourTable') != 0:
+        if list(self.__info['processing'].keys()).count('applyColourTable') != 0:
             raise RuntimeError(
                 "A colour table has already been applied to " + self.__filename)
 
@@ -502,7 +500,7 @@ class allskyImage:
         """
 
         # check if image has already been centered
-        if self.__info['processing'].keys().count('centerImage') != 0:
+        if list(self.__info['processing'].keys()).count('centerImage') != 0:
             warnings.warn(
                 "Image " + self.__filename + " has already been centered")
 
@@ -630,12 +628,12 @@ class allskyImage:
         """
 
         # check that image has been centered
-        if self.__info['processing'].keys().count('centerImage') == 0:
+        if list(self.__info['processing'].keys()).count('centerImage') == 0:
             raise RuntimeError(
                 "Image must be centered before it can be calibrated")
 
         # check if the image has already been calibrated
-        if self.__info['processing'].keys().count('flatFieldCorrection') != 0:
+        if list(self.__info['processing'].keys()).count('flatFieldCorrection') != 0:
             warnings.warn("Image has already been calibrated")
 
         new_image = self.getImage()  # copy image
@@ -669,7 +667,7 @@ class allskyImage:
 
         # check that image has been aligned with north (if so then it must have
         # been centred)
-        if self.__info['processing'].keys().count('alignNorth') == 0:
+        if list(self.__info['processing'].keys()).count('alignNorth') == 0:
             raise RuntimeError("Image must be aligned with North.")
 
         # rotate image so that the slice runs from top to bottom
@@ -728,7 +726,7 @@ class allskyImage:
             histogram = self.__image.histogram()
         elif mode == "I":
             im_pix = numpy.asarray(self.__image)  # load pixel values
-            histogram = numpy.histogram(im_pix, bins=range(65537))[0]
+            histogram = numpy.histogram(im_pix, bins=list(range(65537)))[0]
 
         else:
             raise ValueError("Unsupported image mode")
@@ -751,7 +749,7 @@ class allskyImage:
         # rotate image so that the slice runs from top to bottom
         # check that image has been aligned with north (if so then it must have
         # been centred)
-        if self.__info['processing'].keys().count('alignNorth') == 0:
+        if list(self.__info['processing'].keys()).count('alignNorth') == 0:
             raise RuntimeError("Image must be aligned with North.")
 
         # rotate image so that the slice runs from top to bottom
@@ -976,11 +974,11 @@ class allskyImage:
 
             # copy the existing exif data into the saved exif
             existing_exif = self.getExif()
-            for tag, value in existing_exif.items():
+            for tag, value in list(existing_exif.items()):
                 try:
                     exif_im[tag] = value
                 except:
-                    print("Not writing exif tag: " + tag)
+                    print(("Not writing exif tag: " + tag))
                     continue
 
             # now write the PASKIL specific exif tags
@@ -1063,7 +1061,7 @@ class allskyImage:
             key_length = 1
             value_length = 1
             data = self.getInfo()['header']
-            for key, value in data.iteritems():
+            for key, value in data.items():
                 value = str(value)
                 data[key] = value  # convert values to strings
                 if len(key) > key_length:
@@ -1072,16 +1070,16 @@ class allskyImage:
                     value_length = len(value)
 
             header_keys_col = pyfits.Column(
-                name="key", format="A" + str(key_length), array=data.keys())
+                name="key", format="A" + str(key_length), array=list(data.keys()))
             header_values_col = pyfits.Column(
-                name="value", format="A" + str(value_length), array=data.values())
+                name="value", format="A" + str(value_length), array=list(data.values()))
 
             # find max length of keys and values and convert both to strings
             # for storage in FITS table
             key_length = 1
             value_length = 1
             data = self.getInfo()['camera']
-            for key, value in data.iteritems():
+            for key, value in data.items():
                 value = str(value)
                 data[key] = value  # convert values to strings
                 if len(key) > key_length:
@@ -1090,16 +1088,16 @@ class allskyImage:
                     value_length = len(value)
 
             camera_keys_col = pyfits.Column(
-                name="key", format="A" + str(key_length), array=data.keys())
+                name="key", format="A" + str(key_length), array=list(data.keys()))
             camera_values_col = pyfits.Column(
-                name="value", format="A" + str(value_length), array=data.values())
+                name="value", format="A" + str(value_length), array=list(data.values()))
 
             # find max length of keys and values and convert both to strings
             # for storage in FITS table
             key_length = 1
             value_length = 1
             data = self.getInfo()['processing']
-            for key, value in data.iteritems():
+            for key, value in data.items():
                 value = str(value)
                 data[key] = value  # convert values to strings
                 if len(key) > key_length:
@@ -1108,14 +1106,14 @@ class allskyImage:
                     value_length = len(value)
 
             processing_keys_col = pyfits.Column(
-                name="key", format="A" + str(key_length), array=data.keys())
+                name="key", format="A" + str(key_length), array=list(data.keys()))
             processing_values_col = pyfits.Column(
-                name="value", format="A" + str(value_length), array=data.values())
+                name="value", format="A" + str(value_length), array=list(data.values()))
 
             key_length = 1
             value_length = 1
             data = self.getInfo()['exif']
-            for key, value in data.iteritems():
+            for key, value in data.items():
                 value = str(value)
                 data[key] = value  # convert values to strings
                 if len(key) > key_length:
@@ -1124,9 +1122,9 @@ class allskyImage:
                     value_length = len(value)
 
             exif_keys_col = pyfits.Column(
-                name="key", format="A" + str(key_length), array=data.keys())
+                name="key", format="A" + str(key_length), array=list(data.keys()))
             exif_values_col = pyfits.Column(
-                name="value", format="A" + str(value_length), array=data.values())
+                name="value", format="A" + str(value_length), array=list(data.values()))
 
             # create a column definition
             header_cols_def = pyfits.ColDefs(
@@ -1186,10 +1184,10 @@ class allskyImage:
 
         if self.__image.mode == "RGB":
             raise TypeError("Cannot subtract RGB images")
-        if self.__info['processing'].has_key('flatFieldCorrection'):
+        if 'flatFieldCorrection' in self.__info['processing']:
             raise RuntimeError(
                 "Background subtraction must be done before flat field calibration")
-        if self.__info['processing'].has_key('convertTo8bit'):
+        if 'convertTo8bit' in self.__info['processing']:
             # conversion to 8bit scales intensities relative to max and min pixel values
             # therefore it does not make sense to allow background subtraction (the background
             # image will be scaled differently)
@@ -1199,12 +1197,12 @@ class allskyImage:
             raise ValueError("Background image has a different mode to image")
         # apply the same processing to the background image as is applied to
         # this image
-        if self.__info['processing'].has_key('binaryMask'):
+        if 'binaryMask' in self.__info['processing']:
             background = background.binaryMask(
                 self.__info['camera']['fov_angle'])
-        if self.__info['processing'].has_key('centerImage'):
+        if 'centerImage' in self.__info['processing']:
             background = background.centerImage()
-        if self.__info['processing'].has_key('alignNorth'):
+        if 'alignNorth' in self.__info['processing']:
             # work out what orientation we are in
             if self.__info['processing']['alignNorth'].count('NESW') != 0:
                 orientation = 'NESW'
