@@ -1,4 +1,6 @@
+# -*- coding: utf-8 -*-
 # Copyright (C) Nial Peters 2009
+# Pål Ellingsen 2015
 #
 # This file is part of PASKIL.
 #

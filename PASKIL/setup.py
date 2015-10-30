@@ -25,14 +25,14 @@ paskil_version = PASKIL.get_version()
 
 try:
     import numpy
-    import numpy.oldnumeric
+#     import numpy.oldnumeric
 except ImportError:
     raise ImportError(
         "Could not import numpy. Please ensure that it is correctly installed. See http://numpy.scipy.org/")
 
 # get the lists of directories containing the numpy header files
 numpyincludedirs = numpy.get_include()
-numarrayincludedirs = numpy.oldnumeric.get_numarray_include()
+# numarrayincludedirs = numpy.oldnumeric.get_numarray_include()
 
 # in some numpy distributions cfunc.h is put in a strange place
 if os.path.exists("/usr/share/pyshared/numpy/numarray/numpy/cfunc.h"):
@@ -75,6 +75,12 @@ if sys.argv.count('install') != 0:
         raise ImportError(
             "Could not import the Python Image Library. Please ensure that it is correctly installed. See http://www.pythonware.com/products/pil/")
 
+    try:
+        from rawkit import raw
+    except ImportError:
+        raise ImportError(
+            "Could not import the rawkit. Please ensure that it is correctly installed. See https://rawkit.readthedocs.org/")
+
     # run a check to see if the bug in PIL's fromarray function has been fixed
     # This is vital for PASKIL operation!
     test_im = Image.new('I', (10, 10))  # create 32bit image
@@ -111,16 +117,17 @@ setup(name='PASKIL',
       author_email='nonbiostudent@hotmail.com',
       url='http://code.google.com/p/paskil/',
           packages=['PASKIL', 'PASKIL.plugins', 'PASKIL.extensions'],
-          ext_modules=[Extension("PASKIL.extensions.cRaw",
-                                 ["PASKIL/extensions/cRaw.c"],
-                                 define_macros=[
-                                     ('NO_JPEG', None), ('NO_LCMS', None)],
-                                 include_dirs=[
-                                     numpyincludedirs, numarrayincludedirs],
-                                 libraries=libs),
-                       Extension("PASKIL.extensions.cKeo",
+          ext_modules=[Extension("PASKIL.extensions.cKeo",
                                  ["PASKIL/extensions/cKeo.c"],
                                  include_dirs=[numpyincludedirs]),
                        Extension("PASKIL.extensions.cFit",
                                  ["PASKIL/extensions/cFit.c"],
                                  include_dirs=[numpyincludedirs])])
+# Removing cRaw in favour of rawkit
+#                        Extension("PASKIL.extensions.cRaw",
+#                                  ["PASKIL/extensions/cRaw.c"],
+#                                  define_macros=[
+#                                      ('NO_JPEG', None), ('NO_LCMS', None)],
+#                                  include_dirs=[
+#                                      numpyincludedirs],  # , numarrayincludedirs],
+#                                  libraries=libs),

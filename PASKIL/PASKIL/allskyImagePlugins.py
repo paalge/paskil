@@ -196,7 +196,8 @@ def load(image_filename, info_filename, force):
             return types[i]
         i += 1
 
-    raise TypeError, ("allskyImagePlugins.load(): Unrecognised filetype for " + image_filename + ". Make sure you have imported the required plugin for the image.")
+    raise TypeError("allskyImagePlugins.load(): Unrecognised filetype for " +
+                    image_filename + ". Make sure you have imported the required plugin for the image.")
 
 
 ##########################################################################

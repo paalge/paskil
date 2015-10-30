@@ -83,7 +83,8 @@ class projection:
 
         # check arguments
         if background not in ['black', 'white']:
-            raise ValueError, "Illegal value for background, expecting 'black' or 'white'"
+            raise ValueError(
+                "Illegal value for background, expecting 'black' or 'white'")
 
         self.__background = background
         self.__allsky_image = im

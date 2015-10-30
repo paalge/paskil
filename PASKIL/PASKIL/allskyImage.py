@@ -1,4 +1,6 @@
+# -*- coding: utf-8 -*-
 # Copyright (C) Nial Peters 2009
+# Pål Ellingsen 2015
 #
 # This file is part of PASKIL.
 #
@@ -223,7 +225,8 @@ class allskyImage:
             time = datetime.datetime.strptime(
                 self.__info['header']['Creation Time'] + " GMT", "%d %b %Y %H:%M:%S %Z")
         except KeyError:
-            raise IOError, "Cannot read time data from header for image " + self.__filename
+            raise IOError(
+                "Cannot read time data from header for image " + self.__filename)
 
         # create copy of image
         new_image = self.__image.copy()
@@ -242,7 +245,7 @@ class allskyImage:
 
         # if text is too big for image then complain and quit
         if text_width > new_image.size[0] | text_height > new_image.size[1]:
-            raise ValueError, "Timestamp is too big for image!"
+            raise ValueError("Timestamp is too big for image!")
 
         # insert timestamp
         x_position = int((new_image.size[0] - text_width) / 2)
@@ -270,7 +273,8 @@ class allskyImage:
         """
         # check that image has already been centered
         if self.__info['processing'].keys().count('centerImage') == 0:
-            raise RuntimeError, "Image " + self.__filename + " must be centred before it can be aligned with north."
+            raise RuntimeError(
+                "Image " + self.__filename + " must be centred before it can be aligned with north.")
 
         # copy the info dict, ready to create a new allskyImage
         new_info = self.getInfo()
@@ -317,13 +321,13 @@ class allskyImage:
                                              float(new_info['camera']['Magn. Bearing']))
             else:
                 raise(
-                    ValueError, "Unknown value for orientation. Expecting \"NESW\" or \"NWSE\"")
+                    ValueError("Unknown value for orientation. Expecting \"NESW\" or \"NWSE\""))
 
             new_info['camera']['cam_rot'] = new_info['camera']['Magn. Bearing']
 
         elif north != "geographic":
             raise(
-                ValueError, "Unknown value for north. Expecting \"geomagnetic\" or \"geographic\"")
+                ValueError("Unknown value for north. Expecting \"geomagnetic\" or \"geographic\""))
 
         # update processing history
         new_info['processing']['alignNorth'] = north + " (" + orientation + ")"
@@ -356,7 +360,7 @@ class allskyImage:
                 round(2.0 * focal_length * math.sin(math.radians(angle) / 2.0)))
 
         else:
-            raise ValueError, "Unsupported lens projection type"
+            raise ValueError("Unsupported lens projection type")
 
         return radius
 
@@ -370,7 +374,7 @@ class allskyImage:
         """
         # cannot apply a colour table to an RGB image
         if self.__image.mode == "RGB":
-            raise TypeError, "Cannot apply a colour table to an RGB image"
+            raise TypeError("Cannot apply a colour table to an RGB image")
 
         # check if the image has had the flat field calibration applied
         if self.__info['processing'].keys().count('flatFieldCorrection') == 0:
@@ -379,7 +383,8 @@ class allskyImage:
 
         # check if the image has already had a colour table applied
         if self.__info['processing'].keys().count('applyColourTable') != 0:
-            raise RuntimeError, "A colour table has already been applied to " + self.__filename
+            raise RuntimeError(
+                "A colour table has already been applied to " + self.__filename)
 
         # get a copy of the image
         new_image = self.getImage()
@@ -420,7 +425,7 @@ class allskyImage:
         """
 
         if fov_angle > self.__info['camera']['fov_angle']:
-            raise ValueError, "Field of view is too large for image."
+            raise ValueError("Field of view is too large for image.")
 
         radius = self.angle2dist(fov_angle)
 
@@ -433,7 +438,7 @@ class allskyImage:
         elif mode == "RGB":
             white = (255, 255, 255)
         else:
-            raise ValueError, "Unsupported image mode"
+            raise ValueError("Unsupported image mode")
 
         # calculate bounding box for the circle
         bb_left = int(self.__info['camera']['x_center']) - radius
@@ -472,7 +477,7 @@ class allskyImage:
 
                 new_image = Image.fromarray(numpy.minimum(im_pix, mask_pix))
         else:
-            raise ValueError, "Unsupported image mode"
+            raise ValueError("Unsupported image mode")
 
         new_info = self.getInfo()
 
@@ -602,7 +607,7 @@ class allskyImage:
             elif self.__image.mode == "I":
                 white = 65536
             else:
-                raise ValueError, "Image mode not supported yet"
+                raise ValueError("Image mode not supported yet")
 
             im = Image.new(self.__image.mode, (quicklook.getSize()[0], quicklook.getSize()[
                            1] + 24), white)  # create new image which is 24 pixels bigger
@@ -626,7 +631,8 @@ class allskyImage:
 
         # check that image has been centered
         if self.__info['processing'].keys().count('centerImage') == 0:
-            raise RuntimeError, "Image must be centered before it can be calibrated"
+            raise RuntimeError(
+                "Image must be centered before it can be calibrated")
 
         # check if the image has already been calibrated
         if self.__info['processing'].keys().count('flatFieldCorrection') != 0:
@@ -664,7 +670,7 @@ class allskyImage:
         # check that image has been aligned with north (if so then it must have
         # been centred)
         if self.__info['processing'].keys().count('alignNorth') == 0:
-            raise RuntimeError, "Image must be aligned with North."
+            raise RuntimeError("Image must be aligned with North.")
 
         # rotate image so that the slice runs from top to bottom
         # the rotation direction depends on the orientation of the image
@@ -677,7 +683,8 @@ class allskyImage:
                 im = self.__image.rotate(
                     float(self.__info['camera']['cam_rot']) - angle)
             else:
-                raise ValueError, "getStrip(): Cannot read orientation data from info dict. Try re-aligning the image with North"
+                raise ValueError(
+                    "getStrip(): Cannot read orientation data from info dict. Try re-aligning the image with North")
 
         # convert the rotated image to a numpy array (im is a PIL Image object)
         im_arr = numpy.asarray(im)
@@ -724,7 +731,7 @@ class allskyImage:
             histogram = numpy.histogram(im_pix, bins=range(65537))[0]
 
         else:
-            raise ValueError, "Unsupported image mode"
+            raise ValueError("Unsupported image mode")
 
         return histogram
 
@@ -745,7 +752,7 @@ class allskyImage:
         # check that image has been aligned with north (if so then it must have
         # been centred)
         if self.__info['processing'].keys().count('alignNorth') == 0:
-            raise RuntimeError, "Image must be aligned with North."
+            raise RuntimeError("Image must be aligned with North.")
 
         # rotate image so that the slice runs from top to bottom
         # the rotation direction depends on the orientation of the image
@@ -757,7 +764,8 @@ class allskyImage:
                 rot_angle = float(self.__info['camera']['cam_rot']) - angle
                 im = im.rotate(rot_angle)
             else:
-                raise ValueError, "keoSanityCheck(): Cannot read orientation data from info dict. Try re-aligning the image with North"
+                raise ValueError(
+                    "keoSanityCheck(): Cannot read orientation data from info dict. Try re-aligning the image with North")
 
         # work out the length of the slice
         if fov[1] >= 90:
@@ -1159,7 +1167,8 @@ class allskyImage:
             hdulist.writeto(filename)
 
         else:
-            raise ValueError, "Illegal value for format argument, expecting \'png\' or \'fits\'."
+            raise ValueError(
+                "Illegal value for format argument, expecting \'png\' or \'fits\'.")
 
     ##########################################################################
 
@@ -1176,16 +1185,18 @@ class allskyImage:
         """
 
         if self.__image.mode == "RGB":
-            raise TypeError, "Cannot subtract RGB images"
+            raise TypeError("Cannot subtract RGB images")
         if self.__info['processing'].has_key('flatFieldCorrection'):
-            raise RuntimeError, "Background subtraction must be done before flat field calibration"
+            raise RuntimeError(
+                "Background subtraction must be done before flat field calibration")
         if self.__info['processing'].has_key('convertTo8bit'):
             # conversion to 8bit scales intensities relative to max and min pixel values
             # therefore it does not make sense to allow background subtraction (the background
             # image will be scaled differently)
-            raise TypeError, "Cannot subtract images which have been converted to 8bit (due to intensity scaling)"
+            raise TypeError(
+                "Cannot subtract images which have been converted to 8bit (due to intensity scaling)")
         if background.getMode() != self.__image.mode:
-            raise ValueError, "Background image has a different mode to image"
+            raise ValueError("Background image has a different mode to image")
         # apply the same processing to the background image as is applied to
         # this image
         if self.__info['processing'].has_key('binaryMask'):
@@ -1216,7 +1227,8 @@ class allskyImage:
         # hopefully the background image is still the same size as this one, otherwise
         # we have problem!
         if background.getSize() != self.__image.size:
-            raise ValueError, "Background image is not the same size as the image it is to be subtracted from"
+            raise ValueError(
+                "Background image is not the same size as the image it is to be subtracted from")
 
         # if the image is 8bit then use PIL's subtraction method
         if self.__image.mode == 'L':
@@ -1274,7 +1286,7 @@ class allskyImage:
             angle = math.degrees(angle_radians)
 
         else:
-            raise ValueError, "Unsupported lens projection type"
+            raise ValueError("Unsupported lens projection type")
 
         return angle
 

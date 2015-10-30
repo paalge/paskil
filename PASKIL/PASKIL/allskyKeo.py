@@ -111,8 +111,8 @@ def combine(keograms, data_spacing="AUTO"):
     """
     # check func arg is a list
     if type(keograms) != type(list()):
-        raise ValueError, ("combine(keograms) expecting a list, got " +
-                           str(type(keograms)))
+        raise ValueError("combine(keograms) expecting a list, got " +
+                         str(type(keograms)))
 
     # check that the keograms all have the same properties
     modes = set()
@@ -136,27 +136,27 @@ def combine(keograms, data_spacing="AUTO"):
         keo_fovs.add(keo.getFov_angle())
 
     if len(modes) > 1:
-        raise ValueError, "Cannot combine keograms with different modes"
+        raise ValueError("Cannot combine keograms with different modes")
     if len(keo_fovs) > 1:
-        raise ValueError, ("Cannot combine keograms with different fields of "
-                           "view")
+        raise ValueError("Cannot combine keograms with different fields of "
+                         "view")
     if len(calib_factors) > 1:
-        raise ValueError, ("Cannot combine keograms with different calibration"
-                           " factors")
+        raise ValueError("Cannot combine keograms with different calibration"
+                         " factors")
     if len(colour_tables) > 1:
-        raise ValueError, ("Cannot combine keograms with different colour "
-                           "tables")
+        raise ValueError("Cannot combine keograms with different colour "
+                         "tables")
     if len(strip_widths) > 1:
-        raise ValueError, "Cannot combine keograms with different strip widths"
+        raise ValueError("Cannot combine keograms with different strip widths")
     if len(keo_types) > 1:
-        raise ValueError, "Cannot combine keograms of different keo_types"
+        raise ValueError("Cannot combine keograms of different keo_types")
     if len(heights) > 1:
-        raise ValueError, "Cannot combine keograms of different heights"
+        raise ValueError("Cannot combine keograms of different heights")
     if len(angles) > 1:
-        raise ValueError, "Cannot combine keograms of different angles"
+        raise ValueError("Cannot combine keograms of different angles")
     if len(keo_lens_projs) > 1:
-        raise ValueError, ("Cannot combine keograms with different "
-                           "lens projections")
+        raise ValueError("Cannot combine keograms with different "
+                         "lens projections")
 
     mode = modes.pop()
     calib_factor = calib_factors.pop()
@@ -271,18 +271,18 @@ def new(data, angle, start_time=None, end_time=None, strip_width=5,
 
     # check fov arg is tuple
     if type(keo_fov_angle) not in [type(None), tuple]:
-        raise TypeError, ("keo_fov_angle must be either None or a tuple "
-                          "(min fov, max fov)")
+        raise TypeError("keo_fov_angle must be either None or a tuple "
+                        "(min fov, max fov)")
 
     # check that the range is sensible
     if type(keo_fov_angle) is tuple:
         if keo_fov_angle[0] >= keo_fov_angle[1]:
-            raise ValueError, ("Lower field of view angle bound must be "
-                               "smaller than upper bound.")
+            raise ValueError("Lower field of view angle bound must be "
+                             "smaller than upper bound.")
         for bound in keo_fov_angle:
             if bound < 0.0 or bound > 180.0:
-                raise ValueError, ("Field of view bounds must be in the "
-                                   "range 0.0 - 180.0 degrees")
+                raise ValueError("Field of view bounds must be in the "
+                                 "range 0.0 - 180.0 degrees")
 
     # record key word arguments passed to this function
     kwargs = {'start_time': start_time, 'end_time': end_time,
@@ -452,8 +452,8 @@ def _generate_angle2pix_converter(keo_height, keo_fov_angle, lens_projection):
         return lambda angle: ((-1 if angle < 90 else 1) * (2.0 * focal_length * math.sin(math.radians(angle_from_zenith(angle)) / 2.0))) + (2.0 * focal_length * math.sin(theta_1 / 2.0))
 
     else:
-        raise ValueError, ("Unknown lens projection \"" + str(lens_projection) +
-                           "\"Expecting \"equidistant\" or \"equisolidangle\"")
+        raise ValueError("Unknown lens projection \"" + str(lens_projection) +
+                         "\"Expecting \"equidistant\" or \"equisolidangle\"")
 
 
 ###############################################################################
@@ -510,7 +510,7 @@ def _generate_keo_arr(mode, keo_width, keo_height):
     elif mode == "I":
         keo_arr = numpy.zeros(shape=(keo_width, keo_height, 1), dtype='int32')
     else:
-        raise ValueError, "Unsupported mode for keogram"
+        raise ValueError("Unsupported mode for keogram")
     return keo_arr
 
 
@@ -525,8 +525,8 @@ def _estimate_data_spacing(times):
     # if there is only one image in the dataset, then the spacing cannot be
     # found!
     if len(times) < 2:
-        raise RuntimeError, ("Not enough images to allow automatic data "
-                             "spacing calculation")
+        raise RuntimeError("Not enough images to allow automatic data "
+                           "spacing calculation")
     spacings = []
     i = 1
     while i < len(times):
@@ -658,17 +658,17 @@ def __fromList(data, angle, start_time=None, end_time=None, strip_width=5,
     if start_time == None:
         start_time = min(times)
     elif start_time > max(times):
-        raise ValueError, ("The image(s) are outside of the specified time "
-                           "range for the keogram")
+        raise ValueError("The image(s) are outside of the specified time "
+                         "range for the keogram")
     if end_time == None:
         end_time = max(times)
     elif end_time < min(times):
-        raise ValueError, ("The image(s) are outside of the specified time "
-                           "range for the keogram")
+        raise ValueError("The image(s) are outside of the specified time "
+                         "range for the keogram")
 
     if start_time > end_time:
-        raise ValueError, ("The start time for the keogram is after the end "
-                           "time!")
+        raise ValueError("The start time for the keogram is after the end "
+                         "time!")
 
     # if the start and end times are the same (e.g. if the keogram has been
     # created with a single image) then add one hour to the end time
@@ -770,7 +770,7 @@ def __fromDataset(data, angle, start_time=None, end_time=None, strip_width=5,
 
     # check that the dataset isn't empty
     if data.getNumImages() == 0:
-        raise ValueError, "Cannot create a keogram from an empty dataset"
+        raise ValueError("Cannot create a keogram from an empty dataset")
 
     # read the keogram parameters from the dataset
 
@@ -792,17 +792,17 @@ def __fromDataset(data, angle, start_time=None, end_time=None, strip_width=5,
     if start_time == None:
         start_time = min(times)
     elif start_time > max(times):
-        raise ValueError, ("The image(s) are outside of the specified time "
-                           "range for the keogram")
+        raise ValueError("The image(s) are outside of the specified time "
+                         "range for the keogram")
     if end_time == None:
         end_time = max(times)
     elif end_time < min(times):
-        raise ValueError, ("The image(s) are outside of the specified time "
-                           "range for the keogram")
+        raise ValueError("The image(s) are outside of the specified time "
+                         "range for the keogram")
 
     if start_time > end_time:
-        raise ValueError, ("The start time for the keogram is after the end "
-                           "time!")
+        raise ValueError("The start time for the keogram is after the end "
+                         "time!")
 
     # if the start and end times are the same (e.g. if the keogram has been
     # created with a single image) then add one hour to the end time
@@ -937,7 +937,7 @@ def _interpolateData(data_list, array, mode, colour_table, strip_width,
                                strip_width, max_gap)
             array = array.astype("uint8")
     else:
-        raise ValueError, "Unknown image mode"
+        raise ValueError("Unknown image mode")
 
     return array
 
@@ -1019,8 +1019,8 @@ def _putData(image, keo_arr, strip_width, angle, keo_fov_angle, start_time,
             capture_time = datetime.datetime.strptime(current_image_info['header']['Creation Time'] +
                                                       " GMT", "%d %b %Y %H:%M:%S %Z")
     except KeyError:
-        raise IOError, ("Cannot read creation time from image " +
-                        current_image.getFilename())
+        raise IOError("Cannot read creation time from image " +
+                      current_image.getFilename())
 
     # calculate x pixel coordinate in keogram of where strip from current image
     # should go
@@ -1062,8 +1062,8 @@ def _putData(image, keo_arr, strip_width, angle, keo_fov_angle, start_time,
             axis=0)[:, :]
 
     else:
-        raise ValueError, ("Unknown keogram type. Expecting \"CopyPaste\" or"
-                           " \"Average\", got " + type)
+        raise ValueError("Unknown keogram type. Expecting \"CopyPaste\" or"
+                         " \"Average\", got " + type)
 
     # return the x-coordinate of where we just put the data
     return x_coordinate
@@ -1104,7 +1104,7 @@ def _checkImages(images, mode=None, wavelength=None, colour_table=None,
     a dataset is created.
     """
     if len(images) == 0:
-        raise ValueError, "Cannot perform checks on an empty list!"
+        raise ValueError("Cannot perform checks on an empty list!")
 
     # if no optional arguments are specified, then take the values from the
     # first image in the list
@@ -1130,29 +1130,29 @@ def _checkImages(images, mode=None, wavelength=None, colour_table=None,
     # compare these values to all the other images in the list
     for im in images:
         if im.getMode() != mode:
-            raise ValueError, ("Image has incorrect mode, expecting mode: " +
-                               str(mode))
+            raise ValueError("Image has incorrect mode, expecting mode: " +
+                             str(mode))
         if im.getInfo()['header']['Wavelength'].find(wavelength) == -1:
-            raise ValueError, ("Image has incorrect wavelength, expecting: " +
-                               str(wavelength))
+            raise ValueError("Image has incorrect wavelength, expecting: " +
+                             str(wavelength))
 
         if im.getColourTable() != colour_table:
-            raise ValueError, "Image has incorrect colour table"
+            raise ValueError("Image has incorrect colour table")
 
         if im.getInfo()['camera']['lens_projection'] != lens_proj:
-            raise ValueError, ("Image has incorrect lens projection, "
-                               "expecting: " + lens_proj)
+            raise ValueError("Image has incorrect lens projection, "
+                             "expecting: " + lens_proj)
 
         try:
             if im.getInfo()['processing']['absoluteCalibration'] != calib_factor:
-                raise ValueError, ("Image has incorrect absolute calibration "
-                                   "factor")
+                raise ValueError("Image has incorrect absolute calibration "
+                                 "factor")
         except KeyError:
             if calib_factor is None:
                 pass
             else:
-                raise ValueError, ("Image has incorrect absolute calibration "
-                                   "factor")
+                raise ValueError("Image has incorrect absolute calibration "
+                                 "factor")
 
 
 ###############################################################################
@@ -1391,8 +1391,8 @@ class keogram:
 
         # check that fov is a tuple (min fov,max fov)
         if type(fov_angle) is not tuple:
-            raise TypeError, ("fov_angle argument must be a tuple (min fov, "
-                              "max fov)")
+            raise TypeError("fov_angle argument must be a tuple (min fov, "
+                            "max fov)")
 
         self.__has_colourbar = True
 
@@ -1419,7 +1419,7 @@ class keogram:
             else:
                 self.__mode = 'L'
         else:
-            raise ValueError, "Unknown mode for keogram"
+            raise ValueError("Unknown mode for keogram")
 
         self.__colour_table = colour_table
 
@@ -1699,7 +1699,7 @@ class keogram:
         Returns a new keogram object which has been calibrated to kR
         """
         if (self.__mode == "RGB"):
-            raise RuntimeError, "No intensity data available for this keogram"
+            raise RuntimeError("No intensity data available for this keogram")
 
         calib_factor = 1.0 / float(spectral_responsivity * exposure_time *
                                    1000)
@@ -1739,7 +1739,7 @@ class keogram:
         """
         # can't apply a colour table to an RGB image
         if self.getMode() == 'RGB':
-            raise ValueError, "Cannot apply a colour table to an RGB keogram"
+            raise ValueError("Cannot apply a colour table to an RGB keogram")
 
         # create new keogram object
         return keogram(self.__data, colour_table, self.__start_time,
@@ -1788,7 +1788,7 @@ class keogram:
         """
         # can't get intensities for RGB keogram
         if self.__mode == "RGB":
-            raise RuntimeError, "Cannot resolve intensities for an RGB keogram"
+            raise RuntimeError("Cannot resolve intensities for an RGB keogram")
 
         # find out if we are taking a horizontal or vertical slice from the
         # keogram
@@ -1822,18 +1822,18 @@ class keogram:
                                                             strip_width)
             return keoAngleSlice(positions, intensities, self.__calib_factor)
         else:
-            raise TypeError, ("Position must be either a number (angle) or a "
-                              "datetime object")
+            raise TypeError("Position must be either a number (angle) or a "
+                            "datetime object")
 
     ###########################################################################
 
     def _getHorizontalStrip(self, angle, strip_width):
         # check that specified angle is within range of keogram
         if angle > self.__fov_angle[1] or angle < self.__fov_angle[0]:
-            raise ValueError, "Angle is outside of range of keogram."
+            raise ValueError("Angle is outside of range of keogram.")
 
         if self.__mode == 'RGB':
-            raise RuntimeError, "Operation not permitted for RGB keograms"
+            raise RuntimeError("Operation not permitted for RGB keograms")
 
         # calculate pixel position of angle
         y_position = int(round(self.angle2pix(angle)))
@@ -1872,10 +1872,10 @@ class keogram:
     def _getVerticalStrip(self, time, strip_width):
         # check that specified time is within range of keogram
         if time > self.pix2time(self.__width - 1) or time < self.pix2time(0):
-            raise ValueError, "Time is outside of range of keogram."
+            raise ValueError("Time is outside of range of keogram.")
 
         if self.__mode == 'RGB':
-            raise RuntimeError, "Operation not permitted for RGB keograms"
+            raise RuntimeError("Operation not permitted for RGB keograms")
 
         # calculate pixel position of time
         x_position = int(round(self.time2pix(time)))
@@ -1925,7 +1925,7 @@ class keogram:
             histogram = numpy.histogram(self.__data, bins=range(65537))[0]
 
         else:
-            raise ValueError, "Unsupported image mode"
+            raise ValueError("Unsupported image mode")
 
         return histogram
 
@@ -2140,8 +2140,8 @@ class keogram:
                                                           "%d %b %Y %H:%M:%S")
 
             except KeyError:
-                raise IOError, ("Cannot read creation time from image " +
-                                im.getFilename())
+                raise IOError("Cannot read creation time from image " +
+                              im.getFilename())
 
             # if it is later than the latest time then update latest time
             if capture_time > latest_time:
@@ -2154,8 +2154,8 @@ class keogram:
         # if earliest_time<start_time and latest_time>end_time then give up,
         # which direction should the keogram be moved in?
         if latest_time > self.__end_time and earliest_time < self.__start_time:
-            raise ValueError, ("File list time range exceeds keogram time "
-                               "range, which way should the keogram be rolled?")
+            raise ValueError("File list time range exceeds keogram time "
+                             "range, which way should the keogram be rolled?")
 
         # if all the capture times are within the existing range of the keogram,
         # then no roll is needed
@@ -2338,18 +2338,18 @@ class keogram:
         """
         # check fov arg is tuple
         if type(fov) is not tuple:
-            raise TypeError, ("field of view argument must be a tuple (min fov"
-                              ", max fov)")
+            raise TypeError("field of view argument must be a tuple (min fov"
+                            ", max fov)")
 
         # check that the range is sensible
         if fov[0] >= fov[1]:
-            raise ValueError, ("Lower field of view angle bound must be smaller"
-                               " than upper bound.")
+            raise ValueError("Lower field of view angle bound must be smaller"
+                             " than upper bound.")
 
         # check the range is within the range of the keogram
         if fov[0] < self.__fov_angle[0] or fov[1] > self.__fov_angle[1]:
-            raise ValueError, ("Field of view specified is larger than the "
-                               "field of view of the keogram.")
+            raise ValueError("Field of view specified is larger than the "
+                             "field of view of the keogram.")
 
         # work out slice indicies
         a2p = _generate_angle2pix_converter(self.__height, self.__fov_angle,
@@ -2376,7 +2376,7 @@ class keogram:
         """
         # check that zoom range includes some of the keogram
         if start_time > self.__end_time or end_time < self.__start_time:
-            raise ValueError, "Zoom range is outside of keogram range."
+            raise ValueError("Zoom range is outside of keogram range.")
 
         # convert times to pixel coordinates
         start_pix = self.time2pix(start_time)
