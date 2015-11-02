@@ -144,8 +144,8 @@ Writing Your Own Plugin:
         
 """
 
-from . import allskyImage
-from . import misc
+import allskyImage
+import misc
 import pyfits
 from gi.repository import GExiv2 as pyexiv2
 from PIL import Image, ImageOps
