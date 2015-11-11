@@ -194,7 +194,7 @@ class allskyImage:
 
     ##########################################################################
 
-    def addTimeStamp(self, format, colour="black", fontsize=20):
+    def addTimeStamp(self, format, colour="black", fontsize=20, label=""):
         """
         Prints the creation time (as specified in info[`header'][`Creation Time']) on the image in 
         a format specified by the format argument. The format string is the same as for time.strftime() 
@@ -231,8 +231,8 @@ class allskyImage:
         # create copy of image
         new_image = self.__image.copy()
 
-        # create a datetime string with the desired format
-        time_string = time.strftime(format)
+        # create a datetime string with label with the desired format
+        time_string = label + time.strftime(format)
 
         draw = ImageDraw.Draw(new_image)  # create draw object of image
 
@@ -579,9 +579,9 @@ class allskyImage:
 
     ##########################################################################
 
-    def createQuicklook(self, size=(480, 640), timestamp="%a %b %d %Y, %H:%M:%S %Z", fontsize=16):
+    def createQuicklook(self, size=(480, 640), timestamp="%a %b %d %Y, %H:%M:%S %Z", fontsize=16, label=""):
         """
-        Returns an PIL Image object which contains a thumbnail image with a timestamp appended to
+        Returns an PIL Image object which contains a thumbnail image with a timestamp and label appended to
         the bottom of it. The size option should be a tuple specifying the thumbnail size in 
         pixels. Note that the actual thumbnail produced will be 24 pixels higher due to the size of
         the timestamp. This method also preserves the aspect ratio of the image, so the thumbnail 
@@ -614,7 +614,8 @@ class allskyImage:
 
             quicklook = allskyImage(im, self.__filename, self.__info)
 
-            quicklook = quicklook.addTimeStamp(timestamp, fontsize=fontsize)
+            quicklook = quicklook.addTimeStamp(
+                timestamp, fontsize=fontsize, label=label)
 
         return quicklook.getImage()
 
