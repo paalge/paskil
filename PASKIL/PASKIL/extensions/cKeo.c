@@ -262,8 +262,20 @@ static PyMethodDef cKeo_methods[] = {
     {NULL, NULL}
 };
 
-//set up module to be importable in Python
-PyMODINIT_FUNC initcKeo(void){
-    import_array();
-    Py_InitModule3("cKeo", cKeo_methods,mod_doc);
+// Module definition
+static struct PyModuleDef cKeo_module = {
+   PyModuleDef_HEAD_INIT,
+   "CKeo",   /* name of module */
+   mod_doc, /* module documentation, may be NULL */
+   -1,       /* size of per-interpreter state of the module,
+                or -1 if the module keeps state in global variables. */
+   cKeo_methods
+};
+
+// Init function
+PyMODINIT_FUNC
+PyInit_cKeo(void)
+{
+	import_array();
+    return PyModule_Create(&cKeo_module);
 }
