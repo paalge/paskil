@@ -16,9 +16,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with PASKIL.  If not, see <http://www.gnu.org/licenses/>.
-import contextlib
-import sys
-import warnings
+
 """
 Module containing miscellaneous functions used internally by PASKIL
 
