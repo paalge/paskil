@@ -21,10 +21,10 @@ Introduction:
     Keograms are an effective means to summarise all-sky data from a long time
     period. They are basically thin strips taken from all the images and 
     stacked together in the time axis.
-    
-    
+
+
 Concepts:
-    
+
     Keograms are created by taking strips of pixel values out of all-sky images
     and stacking them together. The width of the strip of pixels can be set 
     using the strip_width argument. A value of about 5 gives reasonable 
@@ -33,7 +33,7 @@ Concepts:
     will result in blank spaces in the keogram. The angle (from geographic 
     North) that the strips are taken from the images at, can be set using the
     angle argument.
-    
+
 
 Example:
 
@@ -48,35 +48,35 @@ Example:
         from PASKIL import allskyKeo, allskyData, allskyPlot
         import datetime
         from pylab import show
-        
+
         #create datetime object defining start time for keogram
         start_time = datetime.datetime.strptime("04 Feb 2003 18:30:00 GMT",
                                                 "%d %b %Y %H:%M:%S %Z")
-        
-        #create datetime object defining end time for keogram 
+
+        #create datetime object defining end time for keogram
         end_time = datetime.datetime.strptime("04 Feb 2003 19:30:00 GMT",
-                                              "%d %b %Y %H:%M:%S %Z") 
-        
+                                              "%d %b %Y %H:%M:%S %Z")
+
         #create a new dataset object
         dataset = allskyData.new("Allsky Images","630","png",
                                  site_info_file="site_info.txt",recursive=True) 
-        
+
         #create a new keogram with a sweep angle of 327 degrees from geographic
-        #north and using a strip width of 3 pixels and a data spacing of 60 
+        #north and using a strip width of 3 pixels and a data spacing of 60
         #seconds
         keo = allskyKeo.new(dataset, 327, start_time=start_time,
                             end_time=end_time, strip_width=3, data_spacing=60)
-        
+
         #set a title for the keogram plot
         keo.title = "An Example Keogram"
-        
-        #set the x axis to show a label every 10 mins
-        keo.time_label_spacing = 10 
-    
-        #plot the keogram
-        plot = allskyPlot.plot([keo]) 
 
-        show() #open the figure in an interactive plotting window       
+        #set the x axis to show a label every 10 mins
+        keo.time_label_spacing = 10
+
+        #plot the keogram
+        plot = allskyPlot.plot([keo])
+
+        show() #open the figure in an interactive plotting window
 """
 
 ###############################################################################
@@ -188,7 +188,7 @@ def combine(keograms, data_spacing="AUTO"):
     converter = _generate_time2pix_converter(min(times), max(times),
                                              combined_width, strip_width)
     combined_data_pts = [converter(t) for t in times]
-    extra_bit = (strip_width / 2)
+    extra_bit = (strip_width // 2)
 
     # convert data points to integer pixel coordinates
     int_combined_data_pts = [int(round(x)) for x in combined_data_pts]
@@ -227,35 +227,35 @@ def combine(keograms, data_spacing="AUTO"):
 def new(data, angle, start_time=None, end_time=None, strip_width=5,
         data_spacing="AUTO", keo_type="CopyPaste", keo_fov_angle=None):
     """
-    Returns a keogram object. The data argument can be either an 
-    allskyData.dataset object or a list of allskyImage.allskyImage objects - 
-    the images from which the keogram will be produced.  The angle argument is 
-    the angle from geographic North that the slices from the images will be 
-    taken at. The strip width option controls the width (in pixels) of the 
-    slice taken from the image. The start and end time options should be 
+    Returns a keogram object. The data argument can be either an
+    allskyData.dataset object or a list of allskyImage.allskyImage objects -
+    the images from which the keogram will be produced.  The angle argument is
+    the angle from geographic North that the slices from the images will be
+    taken at. The strip width option controls the width (in pixels) of the
+    slice taken from the image. The start and end time options should be
     datetime objects specifying the time range of the keogram (the keogram will
-    be inclusive of these times). The default value is None, in which case all 
+    be inclusive of these times). The default value is None, in which case all
     images in the dataset/list will be included. The data_spacing option should
-    be the amount of time (in seconds) between the source images for the 
-    keogram. The default value is "AUTO", in which case the minimum gap between 
-    consecutive images in the dataset is used. However, under some 
-    circumstances, this may lead to a stripy, uninterpolated keogram, in which 
-    case you should increase the data_spacing value. The keo_type argument 
-    controls how the keogram is produced. If it is set to "Average" then the 
+    be the amount of time (in seconds) between the source images for the
+    keogram. The default value is "AUTO", in which case the minimum gap between
+    consecutive images in the dataset is used. However, under some
+    circumstances, this may lead to a stripy, uninterpolated keogram, in which
+    case you should increase the data_spacing value. The keo_type argument
+    controls how the keogram is produced. If it is set to "Average" then the
     keogram will be made up of a series of strips one pixel wide, which are the
-    averaged pixel values of the slice taken from the image. These one pixel 
-    wide strips will then be interpolated between. Effective use of this type, 
-    requires a much larger strip width than 'CopyPaste' keograms. It is also 
+    averaged pixel values of the slice taken from the image. These one pixel
+    wide strips will then be interpolated between. Effective use of this type,
+    requires a much larger strip width than 'CopyPaste' keograms. It is also
     not particularly successful for RGB keograms. "CopyPaste" type keograms
     are made up of finite width slices of the image (specified by strip_width),
     which are then interpolated between. This is not a keogram in the strictest
-    sense of the word, since the finite width of the slices is plotted in the 
-    time domain, which doesn't really make sense. However, for RGB keograms it 
+    sense of the word, since the finite width of the slices is plotted in the
+    time domain, which doesn't really make sense. However, for RGB keograms it
     often produces a more attractive plot with less interpolation effects.
 
-    For keograms produced from dataset objects, this function uses the 
+    For keograms produced from dataset objects, this function uses the
     multiprocessing module to split keogram creation over multiple CPUs
-    (where available). This can significantly speed up creating keograms - 
+    (where available). This can significantly speed up creating keograms -
     however, this is not possible to do when creating keograms from a list
     of allskyImage objects.
 
@@ -305,22 +305,26 @@ def new(data, angle, start_time=None, end_time=None, strip_width=5,
     # than cpus
     if num_images >= 2 * num_cpus:
         num_chunks = num_cpus
-    elif int(num_images / 2) >= 2:
-        num_chunks = int(num_images / 2)
+    elif int(num_images // 2) >= 2:
+        num_chunks = int(num_images // 2)
     # else num_chunks remains as 1
 
     # create argument tuples
-    args = map(None, data.split(num_chunks), [angle] * num_chunks)
+#     args = (,k)
     kwargs['interpolate'] = False  # don't want to interpolate the sections
-    arg_tuples = map(None, args, [kwargs] * num_chunks)
+    arg_tuples = list(
+        zip(data.split(num_chunks), [angle] * num_chunks, [kwargs] * num_chunks))
 
     # create processing pool
     try:
         processing_pool = multiprocessing.Pool(processes=num_chunks)
 
         # create the keogram segments
-        results = processing_pool.map(__fromDatasetWrapper, arg_tuples,
-                                      chunksize=1)
+#         results = processing_pool.map(__fromDatasetWrapper, arg_tuples,
+#                                       chunksize=1)
+        results = [__fromDataset(data, angle, **k)
+                   for data, angle, k in arg_tuples]  # Non threaded test version
+#         results = __fromDatasetWrapper(arg_tuples)
     except Exception as ex:
         # if anything goes wrong, kill the child processes
         processing_pool.terminate()
@@ -399,7 +403,7 @@ def _generate_pix2angle_converter(keo_height, keo_fov_angle, lens_projection):
     """
 
     angle_range = math.radians(keo_fov_angle[1] - keo_fov_angle[0])
-
+#     lens_projection = "equidistant"
     if lens_projection == "equidistant":
         focal_length = (keo_height - 1) / float(angle_range)
 
@@ -434,6 +438,7 @@ def _generate_angle2pix_converter(keo_height, keo_fov_angle, lens_projection):
     angle bound.
     """
     angle_range = math.radians(keo_fov_angle[1] - keo_fov_angle[0])
+#     lens_projection = "equidistant"
 
     if lens_projection == "equidistant":
         focal_length = (keo_height - 1) / float(angle_range)
@@ -441,15 +446,17 @@ def _generate_angle2pix_converter(keo_height, keo_fov_angle, lens_projection):
         return lambda angle: focal_length * math.radians(angle -
                                                          keo_fov_angle[0])
     elif lens_projection == "equisolidangle":
+
         angle_from_zenith = lambda angle: math.fabs(angle - 90.0)
 
         theta_1 = math.radians(angle_from_zenith(keo_fov_angle[0]))
         theta_2 = math.radians(angle_from_zenith(keo_fov_angle[1]))
-
         focal_length = float(
             keo_height - 1) / (2.0 * (math.sin(theta_1 / 2.0) + math.sin(theta_2 / 2.0)))
-
-        return lambda angle: ((-1 if angle < 90 else 1) * (2.0 * focal_length * math.sin(math.radians(angle_from_zenith(angle)) / 2.0))) + (2.0 * focal_length * math.sin(theta_1 / 2.0))
+        return lambda angle: ((-1 if angle < 90 else 1)
+                              * (2.0 * focal_length *
+                                  math.sin(math.radians(angle_from_zenith(angle)) / 2.0))) + (2.0 *
+                                                                                              focal_length * math.sin(theta_1 / 2.0))
 
     else:
         raise ValueError("Unknown lens projection \"" + str(lens_projection) +
@@ -604,7 +611,7 @@ def __fromDatasetWrapper(args_tuple):
     Simple wrapper function to allow the __fromDataset function to be called
     using an argument tuple (args, kwargs).
     """
-    return __fromDataset(*args_tuple[0], **args_tuple[1])
+    return __fromDataset(args_tuple[0], args_tuple[1], **args_tuple[2])
 
 
 ###############################################################################
@@ -702,7 +709,7 @@ def __fromList(data, angle, start_time=None, end_time=None, strip_width=5,
                                                        keo_type, data_spacing)
 
     # calculate the height for the keogram. This could be set to any value
-    #(since the strips taken from the images are just resized to fit). However,
+    # (since the strips taken from the images are just resized to fit). However,
     # to minimise the amount of resizing to be done we guess that the max radius
     # corresponds to the image with the max fov angle, and calculate the height
     # for the keogram based on this
@@ -774,7 +781,7 @@ def __fromDataset(data, angle, start_time=None, end_time=None, strip_width=5,
 
     # read the keogram parameters from the dataset
 
-    # need to convert the times list to a set just incase there are two images
+    # need to convert the times list to a set just in case there are two images
     # from the same time (would result in zero as separation)
     times = list(set(data.getTimes()))
     mode = data.getMode()
@@ -819,13 +826,15 @@ def __fromDataset(data, angle, start_time=None, end_time=None, strip_width=5,
                                                        data_spacing)
 
     # calculate the height for the keogram. This could be set to any value
-    #(since the strips taken fromthe images are just resized to fit). However,
-    # to minimise the amount of resizing to be donewe guess that the max radius
-    # corresponds to the image with the max fov angle, and calculate theheight
+    # (since the strips taken from the images are just resized to fit). However,
+    # to minimise the amount of resizing to be done we guess that the max radius
+    # corresponds to the image with the max fov angle, and calculate the height
     # for the keogram based on this
+
     im_angle2pix = _generate_angle2pix_converter(2 * max(radii),
                                                  (90 - max_im_fov,
                                                   90 + max_im_fov), lens_proj)
+
     min_pix = im_angle2pix(keo_fov_angle[0])
     max_pix = im_angle2pix(keo_fov_angle[1])
     keo_height = max_pix - min_pix + 2
@@ -1054,8 +1063,8 @@ def _putData(image, keo_arr, strip_width, angle, keo_fov_angle, start_time,
     # store data in keogram
     if keo_type == "CopyPaste":
         # just copy the pixel data from the image into the keogram
-        keo_arr[int_x_coordinate + (-strip_width / 2 + 1):int_x_coordinate +
-                (strip_width / 2 + 1), :, :] = size_corrected_strip[:, :, :]
+        keo_arr[int_x_coordinate + (-strip_width // 2 + 1):int_x_coordinate +
+                (strip_width // 2 + 1), :, :] = size_corrected_strip[:, :, :]
 
     elif keo_type == "Average":
         keo_arr[int_x_coordinate, :, :] = size_corrected_strip.mean(
@@ -1840,15 +1849,15 @@ class keogram:
 
         # work out max strip width we can use (cannot exceed dimensions of
         # keogram)
-        if y_position + int(-strip_width / 2) + 1 < 0:
+        if y_position + int(-strip_width // 2) + 1 < 0:
             min_pix = 0
         else:
-            min_pix = y_position + int(-strip_width / 2) + 1
+            min_pix = y_position + int(-strip_width // 2) + 1
 
-        if y_position + int(strip_width / 2) + 1 > self.__height - 1:
+        if y_position + int(strip_width // 2) + 1 > self.__height - 1:
             max_pix = self.__height - 1
         else:
-            max_pix = y_position + int(strip_width / 2) + 1
+            max_pix = y_position + int(strip_width // 2) + 1
 
         # not RGB, only want a 2D array
         intensities = self.__data[:, min_pix:max_pix, 0]
@@ -1882,15 +1891,15 @@ class keogram:
 
         # work out max strip width we can use (cannot exceed dimensions of
         # keogram)
-        if x_position + int(-strip_width / 2) + 1 < 0:
+        if x_position + int(-strip_width // 2) + 1 < 0:
             min_pix = 0
         else:
-            min_pix = x_position + int(-strip_width / 2) + 1
+            min_pix = x_position + int(-strip_width // 2) + 1
 
-        if x_position + int(strip_width / 2) + 1 > self.__width:
+        if x_position + int(strip_width // 2) + 1 > self.__width:
             max_pix = self.__width
         else:
-            max_pix = x_position + int(strip_width / 2) + 1
+            max_pix = x_position + int(strip_width // 2) + 1
 
         # not RGB, so only want a 2D array
         intensities = self.__data[min_pix:max_pix, :, 0]
@@ -1922,7 +1931,8 @@ class keogram:
         if self.__mode == "L":
             histogram = numpy.histogram(self.__data, bins=list(range(257)))[0]
         elif self.__mode == "I":
-            histogram = numpy.histogram(self.__data, bins=list(range(65537)))[0]
+            histogram = numpy.histogram(
+                self.__data, bins=list(range(65537)))[0]
 
         else:
             raise ValueError("Unsupported image mode")
@@ -2017,10 +2027,12 @@ class keogram:
         # plot keogram image,matplotlib doesn't support 16bit images, so if the
         # image is not RGB, then need to check that it is 8bit
         if image.mode == 'RGB' or image.mode == 'L':
-            image = subplot.imshow(image, origin="top", aspect="auto")
+            image = subplot.imshow(
+                image, origin="top", aspect="auto", interpolation=None)
         else:
             image = subplot.imshow(image.convert('L'), origin="top",
-                                   aspect="auto", cmap=matplotlib.cm.gray)
+                                   aspect="auto", cmap=matplotlib.cm.gray,
+                                   interpolation=None)
 
         if self._hasColourBar():
             allskyPlot.createColourbar(subplot,
@@ -2037,7 +2049,8 @@ class keogram:
             y_ticks.append(pix)
 
         h = self.getFov_angle()
-        y_labels = [str(h[1] - self.pix2angle(i) + h[0]) for i in y_ticks]
+        y_labels = [str(round(h[1] - self.pix2angle(i) + h[0], 1))
+                    for i in y_ticks]
 
         subplot.yaxis.set_major_locator(FixedLocator(y_ticks))
         subplot.yaxis.set_major_formatter(FixedFormatter(y_labels))

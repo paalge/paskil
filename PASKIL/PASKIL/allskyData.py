@@ -137,8 +137,8 @@ def combine(datasets):
         filetypes += d.getFiletypes()
 
         tuple_list += list(zip(d.getTimes(), d.getFilenames(),
-                          d.getSite_info_files(), d._getRadiiList(),
-                          d._getFov_anglesList()))
+                               d.getSite_info_files(), d._getRadiiList(),
+                               d._getFov_anglesList()))
 
     # sort the list into chronological order and remove duplicate entries
     tuple_list = list(set(tuple_list))
@@ -223,22 +223,22 @@ def fromList(file_names, wavelength, filetype, site_info_file=None):
 
         if current_image.getMode() != mode:
             print(("Warning! allskyData.fromList(): Skipping file " + filename +
-                  ". Incorrect image mode."))
+                   ". Incorrect image mode."))
             continue
 
         if current_colour_table != colour_table:
             print(("Warning! allskyData.fromList(): Skipping file " + filename +
-                  ". Incorrect colour table."))
+                   ". Incorrect colour table."))
             continue
 
         if current_calib_factor != calib_factor:
             print(("Warning! allskyData.fromList(): Skipping file " + filename +
-                  ". Incorrect absolute calibration factor."))
+                   ". Incorrect absolute calibration factor."))
             continue
 
         if current_lens_projection != lens_projection:
             print(("Warning! allskyData.fromList(): Skipping file " + filename +
-                  ". Incorrect lens projection."))
+                   ". Incorrect lens projection."))
             continue
         # read creation time from header
         time_str = info['header']['Creation Time']
@@ -265,7 +265,8 @@ def fromList(file_names, wavelength, filetype, site_info_file=None):
                          "were found " + str(found_wavelengths))
 
     # sort the list into chronological order
-    data.sort(misc.tupleCompare)
+    data.sort()
+#     data.sort(misc.tupleCompare)
 
     # return a dataset object
     return dataset(data, wavelength, filetype, mode, colour_table,
@@ -376,7 +377,7 @@ class dataset:
         # check that the filetype argument is of the correct type -
         # this is a common error to make
         if type(filetypes) != list:
-            raise TypeError("Incorrect type, " + str(type(filetype)) +
+            raise TypeError("Incorrect type, " + str(type(filetypes)) +
                             " for filetype argument, expecting list")
 
         # constants for any given dataset
@@ -506,7 +507,7 @@ class dataset:
 
     def getRadii(self):
         """
-        Returns a set (only unique values) of the radii of the images in the 
+        Returns a set (only unique values) of the radii of the images in the
         dataset in pixels.
         """
         return set(self.__radii_list)
@@ -597,8 +598,9 @@ class dataset:
 
         # build list of tuples
         cropped_data = list(zip(self.__times[s:e], self.__filenames[s:e],
-                           self.__site_info_files[s:e], self.__radii_list[s:e],
-                           self.__fov_angles_list[s:e]))
+                                self.__site_info_files[
+                                    s:e], self.__radii_list[s:e],
+                                self.__fov_angles_list[s:e]))
 
         return dataset(cropped_data, self.__wavelength, self.__filetypes,
                        self.__mode, self.__colour_table, self.__calib_factor,
@@ -726,7 +728,7 @@ class dataset:
         inc = int(float(length) / float(n) + 0.5)
         split_list = []
         data = list(zip(self.__times, self.__filenames, self.__site_info_files,
-                   self.__radii_list, self.__fov_angles_list))
+                        self.__radii_list, self.__fov_angles_list))
 
         for i in range(0, n - 1):
             data_slice = data[i * inc:i * inc + inc]

@@ -46,11 +46,12 @@ from pylab import NullLocator, FixedLocator, FuncFormatter
 
 def plot(objects, columns=1, size=None):
     """
-    Plots a list of objects implementing the plotting interface. Objects is a list of
-    objects to be plotted. Columns specifies how many columns of subplots to include 
-    in the final plot, default is one in which case all objects will be plotted below
-    each other. Size is a tuple (width,height) of the size in inches of the final 
-    figure, default is None in which case the default value for matplotlib is used.
+    Plots a list of objects implementing the plotting interface. Objects is a
+    list of objects to be plotted. Columns specifies how many columns of
+    subplots to include in the final plot, default is one in which case all
+    objects will be plotted below each other. Size is a tuple (width,height)
+    of the size in inches of the final figure, default is None in which case
+    the default value for matplotlib is used.
     """
 
     fig = matplotlib.pyplot.figure()
@@ -136,7 +137,7 @@ def createColourbar(subplot, colour_table, calib_factor):
     if (upper_threshold - lower_threshold) >= 230:
         # colour bar is very long - extend width to get correct aspect ratio
         # 33 is just an arbitrary number that works
-        colour_bar_width = (upper_threshold - lower_threshold) / 33
+        colour_bar_width = (upper_threshold - lower_threshold) // 33
         # the colour bar should be an odd number of pixels wide (to make
         # drawing arrowheads easy)
         if colour_bar_width % 2 != 0:

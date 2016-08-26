@@ -16,6 +16,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with PASKIL.  If not, see <http://www.gnu.org/licenses/>.
+import contextlib
+import sys
+import warnings
 """
 Module containing miscellaneous functions used internally by PASKIL
 
@@ -32,7 +35,7 @@ from gi.repository import GExiv2 as pyexiv2
 def findFiles(directory, search_string):
     """
     Function performs a recursive search of the specified directory using the search string provided. It returns a list of filenames of 
-    all files that matched the search string    
+    all files that matched the search string
     """
     found_files = []
     found_files = found_files + glob.glob(directory + os.sep + search_string)
@@ -117,5 +120,6 @@ def readExifData(filename):
                 continue
     finally:
         return exif_data
+
 
 ##########################################################################

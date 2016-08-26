@@ -124,6 +124,16 @@ class allskyImage:
 
     ##########################################################################
 
+    # define setter
+
+    def setInfo(self, key, field, value):
+        """
+        For setting a specific attibute to something else in case it is wrong
+        Use with extreeme care
+        """
+
+        self.__info[key][field] = value
+
     # define getters
     def getSize(self):
         """

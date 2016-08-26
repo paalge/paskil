@@ -144,8 +144,8 @@ Writing Your Own Plugin:
         
 """
 
-import allskyImage
-import misc
+
+from PASKIL import misc
 import pyfits
 from gi.repository import GExiv2 as pyexiv2
 from PIL import Image, ImageOps
@@ -254,6 +254,7 @@ class PASKIL_Allsky_Image_PNG:
     ##########################################################################
 
     def open(self, image_filename, info_filename):
+        from PASKIL import allskyImage
         """
         Returns an allskyImage object containing the image data and image metadata contained in 'image_filename'.
         """
@@ -307,11 +308,11 @@ class PASKIL_Allsky_Image_JPEG:
         Returns true if 'image_filename' is in the PASKIL JPEG format, false otherwise.
         """
         # check exif
-        exif = pyexiv2.Metadata(image_filename)
+#         exif = pyexiv2.Metadata(image_filename)
+        exif_data = misc.readExifData(image_filename)
 #         exif.read()
-
         try:
-            if exif['Exif.Image.ProcessingSoftware'].value == "PASKIL":
+            if exif_data['Exif.Image.ProcessingSoftware'] == "PASKIL":
                 return True
             else:
                 return False
@@ -321,6 +322,7 @@ class PASKIL_Allsky_Image_JPEG:
     ##########################################################################
 
     def open(self, image_filename, info_filename):
+        from PASKIL import allskyImage
         """
         Returns an allskyImage object containing the image data and image metadata contained in 'image_filename'.
         """
@@ -389,6 +391,7 @@ class PASKIL_Allsky_Image_FITS:
     ##########################################################################
 
     def open(self, image_filename, info_filename):
+        from PASKIL import allskyImage
         """
         Returns an allskyImage object containing the image data and image metadata contained in 'image'.
         """
