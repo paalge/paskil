@@ -147,6 +147,7 @@ Writing Your Own Plugin:
 
 from PASKIL import misc
 import pyfits
+import sys
 from gi.repository import GExiv2 as pyexiv2
 from PIL import Image, ImageOps
 
@@ -312,10 +313,16 @@ class PASKIL_Allsky_Image_JPEG:
         exif_data = misc.readExifData(image_filename)
 #         exif.read()
         try:
-            if exif_data['Exif.Image.ProcessingSoftware'] == "PASKIL":
-                return True
+            if sys.version_info[0] > 2:
+                if exif['Exif.Image.ProcessingSoftware'].value == "PASKIL":
+                    return True
+                else:
+                    return False
             else:
-                return False
+                if exif_data['Exif.Image.ProcessingSoftware'] == "PASKIL":
+                    return True
+                else:
+                    return False
         except:
             return False
 

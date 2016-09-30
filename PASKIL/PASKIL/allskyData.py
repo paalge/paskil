@@ -95,6 +95,7 @@ import datetime
 import pickle
 import os
 import os.path
+import sys
 
 from PASKIL import allskyImage, allskyColour, misc
 
@@ -265,8 +266,10 @@ def fromList(file_names, wavelength, filetype, site_info_file=None):
                          "were found " + str(found_wavelengths))
 
     # sort the list into chronological order
-    data.sort()
-#     data.sort(misc.tupleCompare)
+    if sys.version_info[0] > 2:
+        data.sort(misc.tupleCompare)
+    else:
+        data.sort()
 
     # return a dataset object
     return dataset(data, wavelength, filetype, mode, colour_table,

@@ -80,6 +80,7 @@ Example:
 """
 
 ###############################################################################
+import sys
 import datetime
 import calendar
 import math
@@ -310,20 +311,26 @@ def new(data, angle, start_time=None, end_time=None, strip_width=5,
     # else num_chunks remains as 1
 
     # create argument tuples
-#     args = (,k)
-    kwargs['interpolate'] = False  # don't want to interpolate the sections
-    arg_tuples = list(
-        zip(data.split(num_chunks), [angle] * num_chunks, [kwargs] * num_chunks))
+    if sys.version_info[0] > 2:
+        args = map(None, data.split(num_chunks), [angle] * num_chunks)
+        arg_tuples = map(None, args, [kwargs] * num_chunks)
+
+    else:
+        kwargs['interpolate'] = False  # don't want to interpolate the sections
+        arg_tuples = list(
+            zip(data.split(num_chunks), [angle] * num_chunks, [kwargs] * num_chunks))
 
     # create processing pool
     try:
         processing_pool = multiprocessing.Pool(processes=num_chunks)
 
         # create the keogram segments
-#         results = processing_pool.map(__fromDatasetWrapper, arg_tuples,
-#                                       chunksize=1)
-        results = [__fromDataset(data, angle, **k)
-                   for data, angle, k in arg_tuples]  # Non threaded test version
+
+        results = processing_pool.map(
+            __fromDatasetWrapper, arg_tuples, chunksize=1)
+
+#             results = [__fromDataset(data, angle, **k)
+#                        for data, angle, k in arg_tuples]  # Non threaded test version
 #         results = __fromDatasetWrapper(arg_tuples)
     except Exception as ex:
         # if anything goes wrong, kill the child processes
@@ -611,7 +618,10 @@ def __fromDatasetWrapper(args_tuple):
     Simple wrapper function to allow the __fromDataset function to be called
     using an argument tuple (args, kwargs).
     """
-    return __fromDataset(args_tuple[0], args_tuple[1], **args_tuple[2])
+    if sys.version_info[0] > 2:
+        return __fromDataset(*args_tuple[0], **args_tuple[1])
+    else:
+        return __fromDataset(args_tuple[0], args_tuple[1], **args_tuple[2])
 
 
 ###############################################################################
