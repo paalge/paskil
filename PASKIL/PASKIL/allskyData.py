@@ -267,9 +267,9 @@ def fromList(file_names, wavelength, filetype, site_info_file=None):
 
     # sort the list into chronological order
     if sys.version_info[0] > 2:
-        data.sort(misc.tupleCompare)
-    else:
         data.sort()
+    else:
+        data.sort(misc.tupleCompare)
 
     # return a dataset object
     return dataset(data, wavelength, filetype, mode, colour_table,
@@ -775,10 +775,14 @@ class datasetIterator:
 
     ###########################################################################
 
+    def next(self):
+        """ Needed to work in python 2.7"""
+        return self.__next__()
+
     def __next__(self):
         """
         Required for the iterator protocol. Returns the next allskyImage in the
-        dataset. 
+        dataset.
         """
 
         if self.__current_index < self.__largest_index:

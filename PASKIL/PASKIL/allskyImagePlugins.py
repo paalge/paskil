@@ -313,16 +313,10 @@ class PASKIL_Allsky_Image_JPEG:
         exif_data = misc.readExifData(image_filename)
 #         exif.read()
         try:
-            if sys.version_info[0] > 2:
-                if exif['Exif.Image.ProcessingSoftware'].value == "PASKIL":
-                    return True
-                else:
-                    return False
+            if exif_data['Exif.Image.ProcessingSoftware'] == "PASKIL":
+                return True
             else:
-                if exif_data['Exif.Image.ProcessingSoftware'] == "PASKIL":
-                    return True
-                else:
-                    return False
+                return False
         except:
             return False
 

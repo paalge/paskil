@@ -311,14 +311,14 @@ def new(data, angle, start_time=None, end_time=None, strip_width=5,
     # else num_chunks remains as 1
 
     # create argument tuples
-    if sys.version_info[0] > 2:
-        args = map(None, data.split(num_chunks), [angle] * num_chunks)
-        arg_tuples = map(None, args, [kwargs] * num_chunks)
-
-    else:
-        kwargs['interpolate'] = False  # don't want to interpolate the sections
-        arg_tuples = list(
-            zip(data.split(num_chunks), [angle] * num_chunks, [kwargs] * num_chunks))
+#     if sys.version_info[0] > 2:
+#         args = None, data.split(num_chunks), [angle] * num_chunks)
+#         arg_tuples = map(None, args, [kwargs] * num_chunks)
+#
+#     else:
+    kwargs['interpolate'] = False  # don't want to interpolate the sections
+    arg_tuples = list(
+        zip(data.split(num_chunks), [angle] * num_chunks, [kwargs] * num_chunks))
 
     # create processing pool
     try:
@@ -328,10 +328,8 @@ def new(data, angle, start_time=None, end_time=None, strip_width=5,
 
         results = processing_pool.map(
             __fromDatasetWrapper, arg_tuples, chunksize=1)
-
-#             results = [__fromDataset(data, angle, **k)
-#                        for data, angle, k in arg_tuples]  # Non threaded test version
-#         results = __fromDatasetWrapper(arg_tuples)
+# results = [__fromDatasetWrapper(tup) for tup in arg_tuples] # Non
+# threaded test version
     except Exception as ex:
         # if anything goes wrong, kill the child processes
         processing_pool.terminate()
@@ -618,10 +616,7 @@ def __fromDatasetWrapper(args_tuple):
     Simple wrapper function to allow the __fromDataset function to be called
     using an argument tuple (args, kwargs).
     """
-    if sys.version_info[0] > 2:
-        return __fromDataset(*args_tuple[0], **args_tuple[1])
-    else:
-        return __fromDataset(args_tuple[0], args_tuple[1], **args_tuple[2])
+    return __fromDataset(args_tuple[0], args_tuple[1], **args_tuple[2])
 
 
 ###############################################################################
@@ -847,7 +842,7 @@ def __fromDataset(data, angle, start_time=None, end_time=None, strip_width=5,
 
     min_pix = im_angle2pix(keo_fov_angle[0])
     max_pix = im_angle2pix(keo_fov_angle[1])
-    keo_height = max_pix - min_pix + 2
+    keo_height = numpy.int(max_pix - min_pix + 2)
 
     # create new array to hold keogram data
     keo_arr = _generate_keo_arr(mode, keo_width, keo_height)
@@ -2081,8 +2076,8 @@ class keogram:
                     minutes=self.time_label_spacing)
 
             else:
-                # otherwise only tick every hour
-                current_time += datetime.timedelta(hours=1)
+                # otherwise only tick every 3 hours
+                current_time += datetime.timedelta(hours=3)
 
         subplot.xaxis.set_major_locator(FixedLocator(x_ticks))
         subplot.xaxis.set_major_formatter(FixedFormatter(x_labels))
