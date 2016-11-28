@@ -996,8 +996,8 @@ def _putData(image, keo_arr, strip_width, angle, keo_fov_angle, start_time,
                                                90 + im_fov_angle),
                                               im_lens_proj)
 
-    min_fov_pix = numpy.floor(strip_a2p(keo_fov_angle[0]))
-    max_fov_pix = numpy.ceil(strip_a2p(keo_fov_angle[1]))
+    min_fov_pix = numpy.int(numpy.floor(strip_a2p(keo_fov_angle[0])))
+    max_fov_pix = numpy.int(numpy.ceil(strip_a2p(keo_fov_angle[1])))
 
     fov_corrected_strip = numpy.zeros((strip.shape[0],
                                        (max_fov_pix - min_fov_pix +
